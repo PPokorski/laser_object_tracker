@@ -39,7 +39,6 @@
 
 // PROJECT
 #include "laser_object_tracker/data_types/definitions.hpp"
-#include "laser_object_tracker/data_types/fragment_iterator.hpp"
 
 namespace laser_object_tracker {
 namespace data_types {
@@ -50,6 +49,10 @@ namespace data_types {
  */
 class LaserScanFragment {
  public:
+    using ContainerType = std::vector<FragmentElement>;
+    using Iterator = ContainerType::iterator;
+    using ConstIterator = ContainerType::const_iterator;
+
     /**
      * @brief Factory class for producing LaserScanFragments from LaserScanType
      */
@@ -140,23 +143,23 @@ class LaserScanFragment {
      *
      * @return Iterator pointing to the first measurement (counting from min to max angle)
      */
-    FragmentIterator begin();
+    Iterator begin();
     /**
      *
      * @return Const iterator pointing to the first measurement (counting from min to max angle)
      */
-    ConstFragmentIterator cbegin() const;
+    ConstIterator cbegin() const;
 
     /**
      *
      * @return Iterator pointing to the one measurement beyond last (counting from min to max angle)
      */
-    FragmentIterator end();
+    Iterator end();
     /**
      *
      * @return Const iterator pointing to the one measurement beyond last (counting from min to max angle)
      */
-    ConstFragmentIterator cend() const;
+    ConstIterator cend() const;
 
  private:
     LaserScanFragment() = default;
@@ -164,6 +167,7 @@ class LaserScanFragment {
     LaserScanType laser_scan_;
     OcclusionType occlusion_vector_;
     PointCloudType laser_scan_cloud_;
+    ContainerType elements_;
 };
 }  // namespace data_types
 }  // namespace laser_object_tracker

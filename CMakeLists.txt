@@ -69,7 +69,6 @@ include_directories(
 catkin_add_gtest(${PROJECT_NAME}_test
         test/src/test_motion_tracking.cpp
         test/src/data_types/definitions_test.cpp
-        test/src/data_types/iterators_test.cpp
         test/src/data_types/laser_scan_fragment_test.cpp)
 
 target_link_libraries(${PROJECT_NAME}_test

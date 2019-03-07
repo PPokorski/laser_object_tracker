@@ -50,6 +50,17 @@ LaserScanFragment LaserScanFragment::LaserScanFragmentFactory::fromLaserScan(con
 
     fragment.occlusion_vector_.resize(fragment.laser_scan_.ranges.size(), false);
 
+    fragment.elements_.reserve(fragment.laser_scan_.ranges.size());
+    for (int i = 0; i < fragment.laser_scan_.ranges.size(); ++i)
+    {
+        fragment.elements_.push_back({
+            fragment.laser_scan_.angle_min + i * laser_scan.angle_increment,
+            fragment.laser_scan_.ranges[i],
+            fragment.occlusion_vector_[i],
+            fragment.laser_scan_cloud_[i]
+        });
+    }
+
     return fragment;
 }
 
@@ -63,47 +74,34 @@ LaserScanFragment LaserScanFragment::LaserScanFragmentFactory::fromLaserScan(Las
 
     fragment.occlusion_vector_.resize(fragment.laser_scan_.ranges.size(), false);
 
+    fragment.elements_.reserve(fragment.laser_scan_.ranges.size());
+    for (int i = 0; i < fragment.laser_scan_.ranges.size(); ++i)
+    {
+        fragment.elements_.push_back({
+             fragment.laser_scan_.angle_min + i * laser_scan.angle_increment,
+             fragment.laser_scan_.ranges[i],
+             fragment.occlusion_vector_[i],
+             fragment.laser_scan_cloud_[i]
+         });
+    }
+
     return fragment;
 }
 
-FragmentIterator LaserScanFragment::begin() {
-    return {
-            laser_scan_.angle_min,
-            laser_scan_.angle_increment,
-            laser_scan_.ranges.begin(),
-            occlusion_vector_.begin(),
-            laser_scan_cloud_.begin()
-    };
+LaserScanFragment::Iterator LaserScanFragment::begin() {
+    return elements_.begin();
 }
 
-ConstFragmentIterator LaserScanFragment::cbegin() const {
-    return {
-            laser_scan_.angle_min,
-            laser_scan_.angle_increment,
-            laser_scan_.ranges.begin(),
-            occlusion_vector_.begin(),
-            laser_scan_cloud_.begin()
-    };
+LaserScanFragment::ConstIterator LaserScanFragment::cbegin() const {
+    return elements_.cbegin();
 }
 
-FragmentIterator LaserScanFragment::end() {
-    return {
-            laser_scan_.angle_max + laser_scan_.angle_increment,
-            laser_scan_.angle_increment,
-            laser_scan_.ranges.end(),
-            occlusion_vector_.end(),
-            laser_scan_cloud_.end()
-    };
+LaserScanFragment::Iterator LaserScanFragment::end() {
+    return elements_.end();
 }
 
-ConstFragmentIterator LaserScanFragment::cend() const {
-    return {
-            laser_scan_.angle_max + laser_scan_.angle_increment,
-            laser_scan_.angle_increment,
-            laser_scan_.ranges.end(),
-            occlusion_vector_.end(),
-            laser_scan_cloud_.end()
-    };
+LaserScanFragment::ConstIterator LaserScanFragment::cend() const {
+    return elements_.cend();
 }
 }  // namespace data_types
 }  // namespace laser_object_tracker
