@@ -31,11 +31,25 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
+#ifndef LASER_OBJECT_TRACKER_BASE_SEGMENTATION_HPP
+#define LASER_OBJECT_TRACKER_BASE_SEGMENTATION_HPP
+
+#include <vector>
+
 #include "laser_object_tracker/data_types/laser_scan_fragment.hpp"
-#include "laser_object_tracker/segmentation/adaptive_breakpoint_detection.hpp"
 
-int main(int ac, char** av) {
-    laser_object_tracker::segmentation::AdaptiveBreakpointDetection abd(1.0, 1.0);
+namespace laser_object_tracker {
+namespace segmentation {
 
-    return 0;
-}
+class BaseSegmentation {
+ public:
+    virtual std::vector<data_types::LaserScanFragment> segment(const data_types::LaserScanFragment& fragment) = 0;
+
+    virtual ~BaseSegmentation() = default;
+
+};
+
+}  // namespace segmentation
+}  // namespace laser_object_tracker
+
+#endif  // LASER_OBJECT_TRACKER_BASE_SEGMENTATION_HPP

@@ -31,11 +31,48 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include "laser_object_tracker/data_types/laser_scan_fragment.hpp"
-#include "laser_object_tracker/segmentation/adaptive_breakpoint_detection.hpp"
+#include "laser_object_tracker/segmentation/breakpoint_detection.hpp"
 
-int main(int ac, char** av) {
-    laser_object_tracker::segmentation::AdaptiveBreakpointDetection abd(1.0, 1.0);
+#include "laser_object_tracker/segmentation/distance_calculation.hpp"
 
-    return 0;
+namespace laser_object_tracker {
+namespace segmentation {
+
+BreakpointDetection::BreakpointDetection(double distance_threshold) :
+        BaseSegmentation(),
+        distance_threshold_(distance_threshold) {}
+
+std::vector<data_types::LaserScanFragment> BreakpointDetection::segment(const data_types::LaserScanFragment& fragment) {
+    if (fragment.empty())
+    {
+        return {};
+    }
+
+    auto current_begin = fragment.cbegin();
+    auto previous = fragment.cbegin();
+    auto current = fragment.cbegin();
+
+    std::vector<data_types::LaserScanFragment> segments;
+    while (current != fragment.cend())
+    {
+        previous = current++;
+
+        if (current == fragment.cend() ||
+                isAboveThreshold(previous->range(), current->range()))
+        {
+            segments.emplace_back(fragment,
+                    current_begin - fragment.cbegin(),
+                    current - fragment.cbegin());
+
+            current_begin = current;
+        }
+    }
+    return segments;
 }
+
+bool BreakpointDetection::isAboveThreshold(float previous_range, float current_range) {
+    return distance(previous_range, current_range) > distance_threshold_;
+}
+
+}  // namespace segmentation
+}  // namespace laser_object_tracker

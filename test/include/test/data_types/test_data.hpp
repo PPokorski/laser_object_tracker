@@ -31,8 +31,8 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_TEST_DATA_HPP
-#define LASER_OBJECT_TRACKER_TEST_DATA_HPP
+#ifndef LASER_OBJECT_TRACKER_TEST_DATA_TYPES_TEST_DATA_HPP
+#define LASER_OBJECT_TRACKER_TEST_DATA_TYPES_TEST_DATA_HPP
 
 #include <cmath>
 
@@ -48,9 +48,10 @@ struct ReferenceFragment {
 inline ReferenceFragment getFragment1() {
     ReferenceFragment fragment;
 
-    fragment.laser_scan_.header.frame_id = "test";
-    fragment.laser_scan_.range_max = 10.0;
-    fragment.laser_scan_.ranges.push_back(1.0f);
+    fragment.laser_scan_ = generateLaserScan({1.0f},
+            0.0,
+            0.0,
+            "test");
 
     fragment.occlusion_array_.push_back(false);
 
@@ -62,11 +63,10 @@ inline ReferenceFragment getFragment1() {
 inline ReferenceFragment getFragment11() {
     ReferenceFragment fragment;
 
-    fragment.laser_scan_.header.frame_id = "test";
-    fragment.laser_scan_.angle_min = M_PI_4;
-    fragment.laser_scan_.angle_max = M_PI_4;
-    fragment.laser_scan_.range_max = 10.0;
-    fragment.laser_scan_.ranges.push_back(1.0f);
+    fragment.laser_scan_ = test::generateLaserScan({1.0f},
+            M_PI_4,
+            M_PI_4,
+            "test");
 
     fragment.occlusion_array_.push_back(false);
 
@@ -77,12 +77,10 @@ inline ReferenceFragment getFragment11() {
 
 inline ReferenceFragment getFragment2() {
     ReferenceFragment fragment;
-    fragment.laser_scan_.header.frame_id = "test";
-    fragment.laser_scan_.angle_min = -M_PI_2;
-    fragment.laser_scan_.angle_max = M_PI_2;
-    fragment.laser_scan_.angle_increment = M_PI / 10;
-    fragment.laser_scan_.range_max = 10.0;
-    fragment.laser_scan_.ranges = {1.0, 2.0, 3.0, 2.0, 5.0, 6.0, 1.0, 2.0, 7.0, 5.0, 4.3};
+    fragment.laser_scan_ = generateLaserScan({1.0, 2.0, 3.0, 2.0, 5.0, 6.0, 1.0, 2.0, 7.0, 5.0, 4.3},
+            -M_PI_2,
+            M_PI_2,
+            "test");
 
     fragment.occlusion_array_.resize(11, false);
 
@@ -105,12 +103,10 @@ inline ReferenceFragment getFragment2() {
 
 inline ReferenceFragment getFragmentUnique1() {
     ReferenceFragment fragment;
-    fragment.laser_scan_.header.frame_id = "test";
-    fragment.laser_scan_.angle_min = 0;
-    fragment.laser_scan_.angle_max = M_PI;
-    fragment.laser_scan_.angle_increment = M_PI;
-    fragment.laser_scan_.range_max = 10.0;
-    fragment.laser_scan_.ranges = {1.0, 2.0};
+    fragment.laser_scan_ = generateLaserScan({1.0f, 2.0f},
+            0.0,
+            M_PI,
+            "test");
 
     fragment.occlusion_array_.resize(2, false);
 
@@ -124,12 +120,12 @@ inline ReferenceFragment getFragmentUnique1() {
 
 inline ReferenceFragment getFragmentUnique2() {
     ReferenceFragment fragment;
-    fragment.laser_scan_.header.frame_id = "test";
-    fragment.laser_scan_.angle_min = 0;
-    fragment.laser_scan_.angle_max = M_PI;
-    fragment.laser_scan_.angle_increment = M_PI / 9.0;
-    fragment.laser_scan_.range_max = 20.0;
-    fragment.laser_scan_.ranges = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0};
+    fragment.laser_scan_ = generateLaserScan({1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0},
+            0.0,
+            M_PI,
+            "test",
+            0.0,
+            20.0);
 
     fragment.occlusion_array_.resize(10, false);
 
@@ -151,4 +147,4 @@ inline ReferenceFragment getFragmentUnique2() {
 
 }  // namespace test
 
-#endif  // LASER_OBJECT_TRACKER_TEST_DATA_HPP
+#endif  // LASER_OBJECT_TRACKER_TEST_DATA_TYPES_TEST_DATA_HPP

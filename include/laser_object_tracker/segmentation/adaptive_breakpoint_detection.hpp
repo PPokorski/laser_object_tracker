@@ -31,11 +31,37 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include "laser_object_tracker/data_types/laser_scan_fragment.hpp"
-#include "laser_object_tracker/segmentation/adaptive_breakpoint_detection.hpp"
+#ifndef LASER_OBJECT_TRACKER_ADAPTIVE_BREAKPOINT_DETECTION_HPP
+#define LASER_OBJECT_TRACKER_ADAPTIVE_BREAKPOINT_DETECTION_HPP
 
-int main(int ac, char** av) {
-    laser_object_tracker::segmentation::AdaptiveBreakpointDetection abd(1.0, 1.0);
+#include "laser_object_tracker/segmentation/base_segmentation.hpp"
 
-    return 0;
-}
+namespace laser_object_tracker {
+namespace segmentation {
+
+class AdaptiveBreakpointDetection : public BaseSegmentation {
+ public:
+    AdaptiveBreakpointDetection(double incidence_angle, double distance_resolution);
+
+    std::vector<data_types::LaserScanFragment> segment(const data_types::LaserScanFragment& fragment) override;
+
+    double getIncidenceAngle() const;
+
+    void setIncidenceAngle(double incidence_angle);
+
+    double getDistanceResolution() const;
+
+    void setDistanceResolution(double distance_resolution);
+
+ private:
+    bool isAboveThreshold(double previous_range, double current_range, double threshold);
+    double calculateThreshold(double previous_range, double angle_increment);
+    
+    double distance_resolution_;
+    double incidence_angle_;
+};
+
+}  // namespace segmentation
+}  // namespace laser_object_tracker
+
+#endif //LASER_OBJECT_TRACKER_ADAPTIVE_BREAKPOINT_DETECTION_HPP

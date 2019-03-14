@@ -72,8 +72,35 @@ class LaserScanFragment {
         LaserScanFragment fromLaserScan(LaserScanType&& laser_scan);
 
      private:
+        /**
+         * @brief Given fragment with initialized laser_scan, initialize rest of the fields
+         * @param fragment Fragment to be initialized
+         */
+        void completeInitialization(LaserScanFragment& fragment);
+
         laser_geometry::LaserProjection laser_projector_;
     };
+
+    /**
+     * @brief Default c-tor. Creates empty fields
+     */
+    LaserScanFragment() = default;
+
+    LaserScanFragment(const LaserScanFragment& other);
+
+    LaserScanFragment(LaserScanFragment&& other);
+
+    LaserScanFragment& operator=(const LaserScanFragment& other);
+
+    LaserScanFragment& operator=(LaserScanFragment&& other);
+
+    /**
+     * @brief Constructs the container as a sub-container of other with range of [first, last)
+     * @param other Prototype container
+     * @param first First element of the range, included
+     * @param last Last element of the range, not included
+     */
+    LaserScanFragment(const LaserScanFragment& other, long first, long last);
 
     /**
      *
@@ -97,6 +124,14 @@ class LaserScanFragment {
      */
     double getAngleMax() const {
         return laser_scan_.angle_max;
+    }
+
+    /**
+     *
+     * @return Angle resolution of the laser scanner
+     */
+    double getAngleIncrement() const {
+        return laser_scan_.angle_increment;
     }
 
     /**
@@ -161,8 +196,27 @@ class LaserScanFragment {
      */
     ConstIterator cend() const;
 
+    /**
+     *
+     * @return True if the container is empty, false otherwise
+     */
+    bool empty() const {
+        return elements_.empty();
+    }
+    
+    /**
+     * 
+     * @return The number of elements in the container 
+     */
+    long size() const {
+        return elements_.size();
+    }
+
  private:
-    LaserScanFragment() = default;
+    /**
+     * @brief This method clear and initializes internal elements_ container
+     */
+    void initializeInternalContainer();
 
     LaserScanType laser_scan_;
     OcclusionType occlusion_vector_;
