@@ -136,11 +136,23 @@ inline bool compare(const laser_object_tracker::data_types::PointCloudType& lhs,
 namespace laser_object_tracker {
 namespace data_types {
 
-inline bool operator==(const laser_object_tracker::data_types::LaserScanFragment& lhs,
-                       const laser_object_tracker::data_types::LaserScanFragment& rhs) {
+inline bool operator==(const FragmentElement& lhs,
+                       const FragmentElement& rhs) {
+    return test::close(lhs.getAngle(), rhs.getAngle()) &&
+                    test::close(lhs.range(), rhs.range()) &&
+                    test::compare(lhs.point(), rhs.point()) &&
+                    lhs.isOccluded() == rhs.isOccluded() &&
+                    lhs.lessThanMin() == rhs.lessThanMin() &&
+                    lhs.moreThanMax() == rhs.moreThanMax();
+
+}
+
+inline bool operator==(const LaserScanFragment& lhs,
+                       const LaserScanFragment& rhs) {
     return test::compare(lhs.laserScan(), rhs.laserScan()) &&
            lhs.occlusionVector() == rhs.occlusionVector() &&
-           test::compare(lhs.pointCloud(), rhs.pointCloud());
+           test::compare(lhs.pointCloud(), rhs.pointCloud()) &&
+           std::equal(lhs.cbegin(), lhs.cend(), rhs.cbegin(), rhs.cend());
 }
 
 }  // namespace data_types

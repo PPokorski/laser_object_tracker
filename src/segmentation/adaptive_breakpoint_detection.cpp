@@ -61,9 +61,16 @@ AdaptiveBreakpointDetection::segment(const data_types::LaserScanFragment& fragme
     {
         previous = current++;
 
-        if (current == fragment.cend() ||
-            isAboveThreshold(previous->range(), current->range(), calculateThreshold(previous->range(), fragment.getAngleIncrement())))
+        if (!current_begin->isValid())
         {
+            current_begin = current;
+        }
+        else if (current == fragment.cend() ||
+                !current->isValid() ||
+                isAboveThreshold(previous->range(), current->range(),
+                    calculateThreshold(previous->range(), fragment.getAngleIncrement())))
+        {
+
             segments.emplace_back(fragment,
                                   current_begin - fragment.cbegin(),
                                   current - fragment.cbegin());

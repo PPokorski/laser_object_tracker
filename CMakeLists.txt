@@ -2,7 +2,7 @@
 ## Project ##
 #############
 
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.5)
 project(laser_object_tracker)
 
 ## Build flags ##
@@ -63,7 +63,8 @@ target_link_libraries(${PROJECT_NAME}_segmentation
 
 ## Executables ##
 add_executable(${PROJECT_NAME}_node
-        src/laser_object_tracker.cpp)
+        src/laser_object_tracker.cpp
+        src/visualization/laser_object_tracker_visualization.cpp)
 
 target_link_libraries(${PROJECT_NAME}_node
         ${catkin_LIBRARIES}

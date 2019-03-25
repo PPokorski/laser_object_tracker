@@ -57,12 +57,17 @@ std::vector<data_types::LaserScanFragment> BreakpointDetection::segment(const da
     {
         previous = current++;
 
-        if (current == fragment.cend() ||
+        if (!current_begin->isValid())
+        {
+            current_begin = current;
+        }
+        else if (current == fragment.cend() ||
+                !current->isValid() ||
                 isAboveThreshold(previous->range(), current->range()))
         {
             segments.emplace_back(fragment,
-                    current_begin - fragment.cbegin(),
-                    current - fragment.cbegin());
+                                  current_begin - fragment.cbegin(),
+                                  current - fragment.cbegin());
 
             current_begin = current;
         }

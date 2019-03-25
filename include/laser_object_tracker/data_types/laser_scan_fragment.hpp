@@ -86,13 +86,13 @@ class LaserScanFragment {
      */
     LaserScanFragment() = default;
 
-    LaserScanFragment(const LaserScanFragment& other);
+    LaserScanFragment(const LaserScanFragment& other) noexcept;
 
-    LaserScanFragment(LaserScanFragment&& other);
+    LaserScanFragment(LaserScanFragment&& other) noexcept;
 
-    LaserScanFragment& operator=(const LaserScanFragment& other);
+    LaserScanFragment& operator=(const LaserScanFragment& other) noexcept;
 
-    LaserScanFragment& operator=(LaserScanFragment&& other);
+    LaserScanFragment& operator=(LaserScanFragment&& other) noexcept;
 
     /**
      * @brief Constructs the container as a sub-container of other with range of [first, last)

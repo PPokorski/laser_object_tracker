@@ -65,24 +65,36 @@ void LaserScanFragment::LaserScanFragmentFactory::completeInitialization(LaserSc
 
     fragment.occlusion_vector_.resize(fragment.laser_scan_.ranges.size(), false);
 
+    auto range_it = fragment.laser_scan_.ranges.cbegin();
+    auto pcl_it = fragment.laser_scan_cloud_.begin();
+    for (; range_it != fragment.laser_scan_.ranges.cend(); ++range_it, ++pcl_it)
+    {
+        if (*range_it < fragment.getRangeMin() || *range_it >= fragment.getRangeMax())
+        {
+            pcl_it = fragment.laser_scan_cloud_.insert(pcl_it, {std::numeric_limits<float>::quiet_NaN(),
+                                                                std::numeric_limits<float>::quiet_NaN(),
+                                                                std::numeric_limits<float>::quiet_NaN()});
+        }
+    }
+
     fragment.initializeInternalContainer();
 }
 
-LaserScanFragment::LaserScanFragment(const LaserScanFragment& other) :
+LaserScanFragment::LaserScanFragment(const LaserScanFragment& other) noexcept :
     laser_scan_(other.laser_scan_),
     occlusion_vector_(other.occlusion_vector_),
     laser_scan_cloud_(other.laser_scan_cloud_) {
     initializeInternalContainer();
 }
 
-LaserScanFragment::LaserScanFragment(LaserScanFragment&& other) :
+LaserScanFragment::LaserScanFragment(LaserScanFragment&& other) noexcept :
         laser_scan_(std::move(other.laser_scan_)),
         occlusion_vector_(std::move(other.occlusion_vector_)),
         laser_scan_cloud_(std::move(other.laser_scan_cloud_)) {
     initializeInternalContainer();
 }
 
-LaserScanFragment& LaserScanFragment::operator=(const LaserScanFragment& other) {
+LaserScanFragment& LaserScanFragment::operator=(const LaserScanFragment& other) noexcept {
     laser_scan_ = other.laser_scan_;
     occlusion_vector_ = other.occlusion_vector_;
     laser_scan_cloud_ = other.laser_scan_cloud_;
@@ -92,7 +104,7 @@ LaserScanFragment& LaserScanFragment::operator=(const LaserScanFragment& other) 
     return *this;
 }
 
-LaserScanFragment& LaserScanFragment::operator=(LaserScanFragment&& other) {
+LaserScanFragment& LaserScanFragment::operator=(LaserScanFragment&& other) noexcept {
     laser_scan_ = std::move(other.laser_scan_);
     occlusion_vector_ = std::move(other.occlusion_vector_);
     laser_scan_cloud_ = std::move(other.laser_scan_cloud_);
@@ -142,6 +154,8 @@ LaserScanFragment::LaserScanFragment(const LaserScanFragment& other, long first,
     laser_scan_cloud_.insert(laser_scan_cloud_.begin(),
             other.laser_scan_cloud_.begin() + first,
             other.laser_scan_cloud_.begin() + last);
+
+    initializeInternalContainer();
 }
 
 LaserScanFragment::Iterator LaserScanFragment::begin() {
@@ -170,7 +184,9 @@ void LaserScanFragment::initializeInternalContainer() {
                  laser_scan_.angle_min + i * laser_scan_.angle_increment,
                  laser_scan_.ranges[i],
                  occlusion_vector_[i],
-                 laser_scan_cloud_[i]
+                 laser_scan_cloud_[i],
+                 laser_scan_.ranges[i] < getRangeMin(),
+                 laser_scan_.ranges[i] > getRangeMax()
          });
     }
 }

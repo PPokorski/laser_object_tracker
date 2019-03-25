@@ -31,52 +31,62 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include "laser_object_tracker/data_types/laser_scan_fragment.hpp"
-#include "laser_object_tracker/segmentation/adaptive_breakpoint_detection.hpp"
-#include "laser_object_tracker/segmentation/breakpoint_detection.hpp"
 #include "laser_object_tracker/visualization/laser_object_tracker_visualization.hpp"
 
-laser_object_tracker::data_types::LaserScanFragment::LaserScanFragmentFactory factory;
-laser_object_tracker::data_types::LaserScanFragment fragment;
+#include <random>
 
-void laserScanCallback(const sensor_msgs::LaserScan::Ptr& laser_scan) {
-    ROS_INFO("Received laser scan");
-    fragment = factory.fromLaserScan(std::move(*laser_scan));
+namespace laser_object_tracker {
+namespace visualization {
 
-    ROS_INFO("Fragment has %d elements.", fragment.size());
-}
-
-int main(int ac, char** av) {
-    ros::init(ac, av, "laser_object_detector");
-    ros::NodeHandle pnh("~");
-
-    ROS_INFO("Initializing segmentation");
-    laser_object_tracker::segmentation::AdaptiveBreakpointDetection segmentation(0.7, 0.1);
-    ROS_INFO("Initializing visualization");
-    laser_object_tracker::visualization::LaserObjectTrackerVisualization visualization(pnh, "base_link");
-    ROS_INFO("Initializing subscriber");
-    ros::Subscriber subscriber_laser_scan = pnh.subscribe("/scan/front/filtered", 1, laserScanCallback);
-
-    ros::Rate rate(10.0);
-    ROS_INFO("Done initialization");
-    while (ros::ok())
+void LaserObjectTrackerVisualization::publishPointClouds(const std::vector<data_types::LaserScanFragment>& fragments) {
+    pcl::PointCloud<pcl::PointXYZRGB> pcl;
+    if (!fragments.empty())
     {
-        ros::spinOnce();
+        pcl.header = fragments.front().pointCloud().header;
+    }
+    expandToNColors(fragments.size());
 
-        if (!fragment.empty())
+    for (int i = 0; i < fragments.size(); ++i)
+    {
+        const auto& fragment = fragments.at(i);
+        const auto& color = colours_.at(i);
+
+        pcl::PointCloud<pcl::PointXYZRGB> tmp;
+        pcl::copyPointCloud(fragment.pointCloud(), tmp);
+        for (auto& point : tmp.points)
         {
-            visualization.publishPointCloud(fragment);
-            auto segments = segmentation.segment(fragment);
-            ROS_INFO("Detected %d segments", segments.size());
-            visualization.publishPointClouds(segments);
-        }
-        else
-        {
-            ROS_WARN("Received laser scan is empty");
+            point.rgb = color;
         }
 
-        rate.sleep();
+        pcl += tmp;
     }
 
-    return 0;
+    pub_point_clouds_.publish(pcl);
 }
+
+void LaserObjectTrackerVisualization::expandToNColors(int colors) {
+    // Taken from
+    // http://docs.pointclouds.org/1.9.1/structpcl_1_1_point_x_y_z_r_g_b.html#ab8cae6380d0d2c30c63ac92053aa2e82
+    if (colors < colours_.size())
+    {
+        return;
+    }
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<uint8_t> dist;
+
+    while (colors > colours_.size())
+    {
+        uint8_t r = dist(gen),
+                g = dist(gen),
+                b = dist(gen);
+        uint32_t rgb = static_cast<uint32_t>(r) << 16 |
+                       static_cast<uint32_t>(g) << 8  |
+                       static_cast<uint32_t>(b);
+
+        colours_.push_back(*reinterpret_cast<float*>(&rgb));
+    }
+}
+}  // namespace visualization
+}  // namespace laser_object_tracker
