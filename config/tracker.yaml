@@ -1,0 +1,15 @@
+base_frame: "base_laser_link"
+segmentation:
+  type: "BreakpointDetection"
+  threshold: 0.2
+
+#    type: "AdaptiveThresholdDetection"
+#    angle: 0.1
+#    sigma: 0.1
+feature_extraction:
+#  type: "SearchBasedCornerDetection"
+#  angle_resolution: 0.01
+#  criterion: "varianceCriterion"
+  distance_threshold: 0.01
+  max_iterations: 100
+  probability: 0.99

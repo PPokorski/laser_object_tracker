@@ -49,9 +49,12 @@ namespace data_types {
  */
 class LaserScanFragment {
  public:
-    using ContainerType = std::vector<FragmentElement>;
+    using Value = FragmentElement;
+    using ContainerType = std::vector<Value>;
     using Iterator = ContainerType::iterator;
     using ConstIterator = ContainerType::const_iterator;
+    using Reference = ContainerType::reference;
+    using ConstReference = ContainerType::const_reference;
 
     /**
      * @brief Factory class for producing LaserScanFragments from LaserScanType
@@ -196,6 +199,14 @@ class LaserScanFragment {
      */
     ConstIterator cend() const;
 
+    Reference at(size_t index);
+
+    ConstReference at(size_t index) const;
+
+    Reference operator[](size_t index);
+
+    ConstReference operator[](size_t index) const;
+
     /**
      *
      * @return True if the container is empty, false otherwise
@@ -211,6 +222,8 @@ class LaserScanFragment {
     long size() const {
         return elements_.size();
     }
+
+    bool isValid() const;
 
  private:
     /**

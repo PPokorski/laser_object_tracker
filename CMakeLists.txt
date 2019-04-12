@@ -59,6 +59,14 @@ add_library(${PROJECT_NAME}_segmentation
 target_link_libraries(${PROJECT_NAME}_segmentation
         ${PROJECT_NAME}_data_types)
 
+add_library(${PROJECT_NAME}_feature_extraction
+        src/feature_extraction/random_sample_consensus_corner_detection.cpp
+        src/feature_extraction/random_sample_consensus_segment_detection.cpp
+        src/feature_extraction/search_based_corner_detection.cpp)
+
+target_link_libraries(${PROJECT_NAME}_feature_extraction
+        ${PROJECT_NAME}_data_types)
+
 
 
 ## Executables ##
@@ -69,7 +77,8 @@ add_executable(${PROJECT_NAME}_node
 target_link_libraries(${PROJECT_NAME}_node
         ${catkin_LIBRARIES}
         ${PROJECT_NAME}_data_types
-        ${PROJECT_NAME}_segmentation)
+        ${PROJECT_NAME}_segmentation
+        ${PROJECT_NAME}_feature_extraction)
 
 
 ## Tests ##
@@ -80,10 +89,14 @@ catkin_add_gtest(${PROJECT_NAME}_test
         test/src/test_motion_tracking.cpp
         test/src/data_types/definitions_test.cpp
         test/src/data_types/laser_scan_fragment_test.cpp
+        test/src/feautre_extraction/random_sample_consensus_segment_detection_test.cpp
+        test/src/feautre_extraction/sample_consensus_model_cross2d_test.cpp
+        test/src/feautre_extraction/search_based_corner_detection_test.cpp
         test/src/segmentation/adaptive_breakpoint_detection_test.cpp
         test/src/segmentation/breakpoint_detection_test.cpp
         test/src/segmentation/distance_calculation_test.cpp)
 
 target_link_libraries(${PROJECT_NAME}_test
         ${PROJECT_NAME}_data_types
-        ${PROJECT_NAME}_segmentation)
+        ${PROJECT_NAME}_segmentation
+        ${PROJECT_NAME}_feature_extraction)
