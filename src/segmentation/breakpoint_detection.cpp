@@ -31,52 +31,53 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include "laser_object_tracker/data_types/laser_scan_fragment.hpp"
-#include "laser_object_tracker/segmentation/adaptive_breakpoint_detection.hpp"
 #include "laser_object_tracker/segmentation/breakpoint_detection.hpp"
-#include "laser_object_tracker/visualization/laser_object_tracker_visualization.hpp"
 
-laser_object_tracker::data_types::LaserScanFragment::LaserScanFragmentFactory factory;
-laser_object_tracker::data_types::LaserScanFragment fragment;
+#include "laser_object_tracker/segmentation/distance_calculation.hpp"
 
-void laserScanCallback(const sensor_msgs::LaserScan::Ptr& laser_scan) {
-    ROS_INFO("Received laser scan");
-    fragment = factory.fromLaserScan(std::move(*laser_scan));
+namespace laser_object_tracker {
+namespace segmentation {
 
-    ROS_INFO("Fragment has %d elements.", fragment.size());
-}
+BreakpointDetection::BreakpointDetection(double distance_threshold) :
+        BaseSegmentation(),
+        distance_threshold_(distance_threshold) {}
 
-int main(int ac, char** av) {
-    ros::init(ac, av, "laser_object_detector");
-    ros::NodeHandle pnh("~");
-
-    ROS_INFO("Initializing segmentation");
-    laser_object_tracker::segmentation::AdaptiveBreakpointDetection segmentation(0.7, 0.1);
-    ROS_INFO("Initializing visualization");
-    laser_object_tracker::visualization::LaserObjectTrackerVisualization visualization(pnh, "base_link");
-    ROS_INFO("Initializing subscriber");
-    ros::Subscriber subscriber_laser_scan = pnh.subscribe("/scan/front/filtered", 1, laserScanCallback);
-
-    ros::Rate rate(10.0);
-    ROS_INFO("Done initialization");
-    while (ros::ok())
+std::vector<data_types::LaserScanFragment> BreakpointDetection::segment(const data_types::LaserScanFragment& fragment) {
+    if (fragment.empty())
     {
-        ros::spinOnce();
-
-        if (!fragment.empty())
-        {
-            visualization.publishPointCloud(fragment);
-            auto segments = segmentation.segment(fragment);
-            ROS_INFO("Detected %d segments", segments.size());
-            visualization.publishPointClouds(segments);
-        }
-        else
-        {
-            ROS_WARN("Received laser scan is empty");
-        }
-
-        rate.sleep();
+        return {};
     }
 
-    return 0;
+    auto current_begin = fragment.cbegin();
+    auto previous = fragment.cbegin();
+    auto current = fragment.cbegin();
+
+    std::vector<data_types::LaserScanFragment> segments;
+    while (current != fragment.cend())
+    {
+        previous = current++;
+
+        if (!current_begin->isValid())
+        {
+            current_begin = current;
+        }
+        else if (current == fragment.cend() ||
+                !current->isValid() ||
+                isAboveThreshold(previous->range(), current->range()))
+        {
+            segments.emplace_back(fragment,
+                                  current_begin - fragment.cbegin(),
+                                  current - fragment.cbegin());
+
+            current_begin = current;
+        }
+    }
+    return segments;
 }
+
+bool BreakpointDetection::isAboveThreshold(float previous_range, float current_range) {
+    return distance(previous_range, current_range) > distance_threshold_;
+}
+
+}  // namespace segmentation
+}  // namespace laser_object_tracker

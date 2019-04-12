@@ -31,52 +31,45 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
+#ifndef LASER_OBJECT_TRACKER_LASER_OBJECT_TRACKER_VISUALIZATION_HPP
+#define LASER_OBJECT_TRACKER_LASER_OBJECT_TRACKER_VISUALIZATION_HPP
+
+#include <ros/ros.h>
+
+#include <pcl_ros/point_cloud.h>
+#include <rviz_visual_tools/rviz_visual_tools.h>
+
+#include "laser_object_tracker/data_types/definitions.hpp"
 #include "laser_object_tracker/data_types/laser_scan_fragment.hpp"
-#include "laser_object_tracker/segmentation/adaptive_breakpoint_detection.hpp"
-#include "laser_object_tracker/segmentation/breakpoint_detection.hpp"
-#include "laser_object_tracker/visualization/laser_object_tracker_visualization.hpp"
 
-laser_object_tracker::data_types::LaserScanFragment::LaserScanFragmentFactory factory;
-laser_object_tracker::data_types::LaserScanFragment fragment;
+namespace laser_object_tracker {
+namespace visualization {
+class LaserObjectTrackerVisualization {
+ public:
+    LaserObjectTrackerVisualization(ros::NodeHandle& pnh, std::string base_frame) {
+        rviz_visual_tools_.reset(new rviz_visual_tools::RvizVisualTools(base_frame, "visualization/markers"));
 
-void laserScanCallback(const sensor_msgs::LaserScan::Ptr& laser_scan) {
-    ROS_INFO("Received laser scan");
-    fragment = factory.fromLaserScan(std::move(*laser_scan));
-
-    ROS_INFO("Fragment has %d elements.", fragment.size());
-}
-
-int main(int ac, char** av) {
-    ros::init(ac, av, "laser_object_detector");
-    ros::NodeHandle pnh("~");
-
-    ROS_INFO("Initializing segmentation");
-    laser_object_tracker::segmentation::AdaptiveBreakpointDetection segmentation(0.7, 0.1);
-    ROS_INFO("Initializing visualization");
-    laser_object_tracker::visualization::LaserObjectTrackerVisualization visualization(pnh, "base_link");
-    ROS_INFO("Initializing subscriber");
-    ros::Subscriber subscriber_laser_scan = pnh.subscribe("/scan/front/filtered", 1, laserScanCallback);
-
-    ros::Rate rate(10.0);
-    ROS_INFO("Done initialization");
-    while (ros::ok())
-    {
-        ros::spinOnce();
-
-        if (!fragment.empty())
-        {
-            visualization.publishPointCloud(fragment);
-            auto segments = segmentation.segment(fragment);
-            ROS_INFO("Detected %d segments", segments.size());
-            visualization.publishPointClouds(segments);
-        }
-        else
-        {
-            ROS_WARN("Received laser scan is empty");
-        }
-
-        rate.sleep();
+        pub_point_cloud_ = pnh.advertise<data_types::PointCloudType>("visualization/point_cloud", 1);
+        pub_point_clouds_ = pnh.advertise<pcl::PointCloud<pcl::PointXYZRGB>>("visualization/point_clouds", 1);
     }
 
-    return 0;
-}
+    void publishPointCloud(const data_types::LaserScanFragment& fragment) {
+        pub_point_cloud_.publish(fragment.pointCloud());
+    }
+
+    void publishPointClouds(const std::vector<data_types::LaserScanFragment>& fragments);
+
+ private:
+    void expandToNColors(int colors);
+
+    rviz_visual_tools::RvizVisualToolsPtr rviz_visual_tools_;
+    ros::Publisher pub_point_cloud_;
+    ros::Publisher pub_point_clouds_;
+
+    std::vector<float> colours_;
+};
+
+}  // namespace visualization
+}  // namespace laser_object_tracker
+
+#endif //LASER_OBJECT_TRACKER_LASER_OBJECT_TRACKER_VISUALIZATION_HPP

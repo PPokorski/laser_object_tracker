@@ -2,7 +2,7 @@
 ## Project ##
 #############
 
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.5)
 project(laser_object_tracker)
 
 ## Build flags ##
@@ -47,19 +47,29 @@ include_directories(
 ## Libraries ##
 
 add_library(${PROJECT_NAME}_data_types
-        src/data_types/laser_scan_fragment.cpp test/include/test/data_types/test_data.hpp)
+        src/data_types/laser_scan_fragment.cpp)
 
 target_link_libraries(${PROJECT_NAME}_data_types
-        ${catkin_LIBRARIES}
-        ${OpenCV_LIBS})
+        ${catkin_LIBRARIES})
+
+add_library(${PROJECT_NAME}_segmentation
+        src/segmentation/breakpoint_detection.cpp
+        src/segmentation/adaptive_breakpoint_detection.cpp)
+
+target_link_libraries(${PROJECT_NAME}_segmentation
+        ${PROJECT_NAME}_data_types)
+
+
 
 ## Executables ##
 add_executable(${PROJECT_NAME}_node
-        src/laser_object_tracker.cpp)
+        src/laser_object_tracker.cpp
+        src/visualization/laser_object_tracker_visualization.cpp)
 
 target_link_libraries(${PROJECT_NAME}_node
         ${catkin_LIBRARIES}
-        ${PROJECT_NAME}_data_types)
+        ${PROJECT_NAME}_data_types
+        ${PROJECT_NAME}_segmentation)
 
 
 ## Tests ##
@@ -69,7 +79,11 @@ include_directories(
 catkin_add_gtest(${PROJECT_NAME}_test
         test/src/test_motion_tracking.cpp
         test/src/data_types/definitions_test.cpp
-        test/src/data_types/laser_scan_fragment_test.cpp)
+        test/src/data_types/laser_scan_fragment_test.cpp
+        test/src/segmentation/adaptive_breakpoint_detection_test.cpp
+        test/src/segmentation/breakpoint_detection_test.cpp
+        test/src/segmentation/distance_calculation_test.cpp)
 
 target_link_libraries(${PROJECT_NAME}_test
-        ${PROJECT_NAME}_data_types)
+        ${PROJECT_NAME}_data_types
+        ${PROJECT_NAME}_segmentation)

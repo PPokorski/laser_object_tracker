@@ -31,52 +31,42 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
+#ifndef LASER_OBJECT_TRACKER_TEST_SEGMENTATION_TEST_DATA_HPP
+#define LASER_OBJECT_TRACKER_TEST_SEGMENTATION_TEST_DATA_HPP
+
+#include "laser_object_tracker/data_types/definitions.hpp"
 #include "laser_object_tracker/data_types/laser_scan_fragment.hpp"
-#include "laser_object_tracker/segmentation/adaptive_breakpoint_detection.hpp"
-#include "laser_object_tracker/segmentation/breakpoint_detection.hpp"
-#include "laser_object_tracker/visualization/laser_object_tracker_visualization.hpp"
 
-laser_object_tracker::data_types::LaserScanFragment::LaserScanFragmentFactory factory;
-laser_object_tracker::data_types::LaserScanFragment fragment;
+#include "test/utils.hpp"
 
-void laserScanCallback(const sensor_msgs::LaserScan::Ptr& laser_scan) {
-    ROS_INFO("Received laser scan");
-    fragment = factory.fromLaserScan(std::move(*laser_scan));
+namespace test {
+struct ReferenceSegmentation {
+    laser_object_tracker::data_types::LaserScanFragment fragment_;
+    double threshold_;
+    double resolution_;
+    std::vector<laser_object_tracker::data_types::LaserScanFragment> segmented_fragment_;
+};
 
-    ROS_INFO("Fragment has %d elements.", fragment.size());
+inline ReferenceSegmentation getSegmentationEmpty() {
+    ReferenceSegmentation segmentation;
+
+    return segmentation;
 }
 
-int main(int ac, char** av) {
-    ros::init(ac, av, "laser_object_detector");
-    ros::NodeHandle pnh("~");
+inline ReferenceSegmentation getSegmentation1() {
+    ReferenceSegmentation segmentation;
+    laser_object_tracker::data_types::LaserScanFragment::LaserScanFragmentFactory factory;
 
-    ROS_INFO("Initializing segmentation");
-    laser_object_tracker::segmentation::AdaptiveBreakpointDetection segmentation(0.7, 0.1);
-    ROS_INFO("Initializing visualization");
-    laser_object_tracker::visualization::LaserObjectTrackerVisualization visualization(pnh, "base_link");
-    ROS_INFO("Initializing subscriber");
-    ros::Subscriber subscriber_laser_scan = pnh.subscribe("/scan/front/filtered", 1, laserScanCallback);
+    auto laser_scan = generateLaserScan({3.0},
+            0.0,
+            0.0);
 
-    ros::Rate rate(10.0);
-    ROS_INFO("Done initialization");
-    while (ros::ok())
-    {
-        ros::spinOnce();
+    segmentation.fragment_ = factory.fromLaserScan(laser_scan);
+    segmentation.segmented_fragment_.push_back(factory.fromLaserScan(laser_scan));
 
-        if (!fragment.empty())
-        {
-            visualization.publishPointCloud(fragment);
-            auto segments = segmentation.segment(fragment);
-            ROS_INFO("Detected %d segments", segments.size());
-            visualization.publishPointClouds(segments);
-        }
-        else
-        {
-            ROS_WARN("Received laser scan is empty");
-        }
-
-        rate.sleep();
-    }
-
-    return 0;
+    return segmentation;
 }
+
+}  // namespace test
+
+#endif  // LASER_OBJECT_TRACKER_TEST_SEGMENTATION_TEST_DATA_HPP

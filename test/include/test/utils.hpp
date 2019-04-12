@@ -31,12 +31,54 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_UTILS_HPP
-#define LASER_OBJECT_TRACKER_UTILS_HPP
+#ifndef LASER_OBJECT_TRACKER_TEST_UTILS_HPP
+#define LASER_OBJECT_TRACKER_TEST_UTILS_HPP
 
 #include "laser_object_tracker/data_types/definitions.hpp"
+#include "laser_object_tracker/data_types/laser_scan_fragment.hpp"
 
 namespace test {
+
+inline laser_object_tracker::data_types::LaserScanType generateLaserScan(
+        const std::vector<float>& ranges,
+        float min_angle = -M_PI,
+        float max_angle = M_PI,
+        const std::string& frame = "",
+        float min_range = 0.0,
+        float max_range = 10.0) {
+    laser_object_tracker::data_types::LaserScanType laser_scan;
+    laser_scan.header.frame_id = frame;
+    laser_scan.angle_min = min_angle;
+    laser_scan.angle_max = max_angle;
+    laser_scan.angle_increment = ranges.size() == 1? 0.0f : (max_angle - min_angle) / (ranges.size() - 1);
+    laser_scan.range_min = min_range;
+    laser_scan.range_max = max_range;
+    laser_scan.ranges = ranges;
+
+    return laser_scan;
+}
+
+inline laser_object_tracker::data_types::LaserScanType generateLaserScan(
+        const laser_object_tracker::data_types::LaserScanType& prototype,
+        long first_element,
+        long last_element) {
+    laser_object_tracker::data_types::LaserScanType laser_scan;
+    laser_scan.header = prototype.header;
+    laser_scan.angle_increment = prototype.angle_increment;
+    laser_scan.range_min = prototype.range_min;
+    laser_scan.range_max = prototype.range_max;
+
+    laser_scan.angle_min = prototype.angle_min + first_element * prototype.angle_increment;
+    laser_scan.angle_max = prototype.angle_min + last_element * prototype.angle_increment;
+
+    for (long i = first_element; i <= last_element; ++i)
+    {
+        laser_scan.ranges.push_back(prototype.ranges.at(i));
+    }
+
+    return laser_scan;
+}
+
 template<class T>
 constexpr static T PRECISION = T(0.0001);
 
@@ -91,4 +133,29 @@ inline bool compare(const laser_object_tracker::data_types::PointCloudType& lhs,
 
 }  // namespace test
 
-#endif  // LASER_OBJECT_TRACKER_UTILS_HPP
+namespace laser_object_tracker {
+namespace data_types {
+
+inline bool operator==(const FragmentElement& lhs,
+                       const FragmentElement& rhs) {
+    return test::close(lhs.getAngle(), rhs.getAngle()) &&
+                    test::close(lhs.range(), rhs.range()) &&
+                    test::compare(lhs.point(), rhs.point()) &&
+                    lhs.isOccluded() == rhs.isOccluded() &&
+                    lhs.lessThanMin() == rhs.lessThanMin() &&
+                    lhs.moreThanMax() == rhs.moreThanMax();
+
+}
+
+inline bool operator==(const LaserScanFragment& lhs,
+                       const LaserScanFragment& rhs) {
+    return test::compare(lhs.laserScan(), rhs.laserScan()) &&
+           lhs.occlusionVector() == rhs.occlusionVector() &&
+           test::compare(lhs.pointCloud(), rhs.pointCloud()) &&
+           std::equal(lhs.cbegin(), lhs.cend(), rhs.cbegin(), rhs.cend());
+}
+
+}  // namespace data_types
+}  // namespace laser_object_tracker
+
+#endif  // LASER_OBJECT_TRACKER_TEST_UTILS_HPP

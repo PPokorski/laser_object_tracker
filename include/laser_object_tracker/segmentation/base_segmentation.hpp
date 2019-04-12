@@ -31,52 +31,25 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
+#ifndef LASER_OBJECT_TRACKER_BASE_SEGMENTATION_HPP
+#define LASER_OBJECT_TRACKER_BASE_SEGMENTATION_HPP
+
+#include <vector>
+
 #include "laser_object_tracker/data_types/laser_scan_fragment.hpp"
-#include "laser_object_tracker/segmentation/adaptive_breakpoint_detection.hpp"
-#include "laser_object_tracker/segmentation/breakpoint_detection.hpp"
-#include "laser_object_tracker/visualization/laser_object_tracker_visualization.hpp"
 
-laser_object_tracker::data_types::LaserScanFragment::LaserScanFragmentFactory factory;
-laser_object_tracker::data_types::LaserScanFragment fragment;
+namespace laser_object_tracker {
+namespace segmentation {
 
-void laserScanCallback(const sensor_msgs::LaserScan::Ptr& laser_scan) {
-    ROS_INFO("Received laser scan");
-    fragment = factory.fromLaserScan(std::move(*laser_scan));
+class BaseSegmentation {
+ public:
+    virtual std::vector<data_types::LaserScanFragment> segment(const data_types::LaserScanFragment& fragment) = 0;
 
-    ROS_INFO("Fragment has %d elements.", fragment.size());
-}
+    virtual ~BaseSegmentation() = default;
 
-int main(int ac, char** av) {
-    ros::init(ac, av, "laser_object_detector");
-    ros::NodeHandle pnh("~");
+};
 
-    ROS_INFO("Initializing segmentation");
-    laser_object_tracker::segmentation::AdaptiveBreakpointDetection segmentation(0.7, 0.1);
-    ROS_INFO("Initializing visualization");
-    laser_object_tracker::visualization::LaserObjectTrackerVisualization visualization(pnh, "base_link");
-    ROS_INFO("Initializing subscriber");
-    ros::Subscriber subscriber_laser_scan = pnh.subscribe("/scan/front/filtered", 1, laserScanCallback);
+}  // namespace segmentation
+}  // namespace laser_object_tracker
 
-    ros::Rate rate(10.0);
-    ROS_INFO("Done initialization");
-    while (ros::ok())
-    {
-        ros::spinOnce();
-
-        if (!fragment.empty())
-        {
-            visualization.publishPointCloud(fragment);
-            auto segments = segmentation.segment(fragment);
-            ROS_INFO("Detected %d segments", segments.size());
-            visualization.publishPointClouds(segments);
-        }
-        else
-        {
-            ROS_WARN("Received laser scan is empty");
-        }
-
-        rate.sleep();
-    }
-
-    return 0;
-}
+#endif  // LASER_OBJECT_TRACKER_BASE_SEGMENTATION_HPP

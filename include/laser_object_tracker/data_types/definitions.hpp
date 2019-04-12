@@ -93,11 +93,15 @@ class FragmentElement {
     FragmentElement(double angle,
             LaserScanType::_ranges_type::reference range,
             OcclusionType::reference is_occluded,
-            PointCloudType::PointType& point) :
+            PointCloudType::PointType& point,
+            bool less_than_min,
+            bool more_than_max) :
             angle_(angle),
             range_(range),
             is_occluded_(is_occluded),
-            point_(point) {}
+            point_(point),
+            less_than_min_(less_than_min),
+            more_than_max_(more_than_max) {}
 
     double getAngle() const {
         return angle_;
@@ -124,11 +128,26 @@ class FragmentElement {
         return point_;
     }
 
+    bool isValid() const {
+        return !less_than_min_ && !more_than_max_;
+    }
+
+    bool lessThanMin() const {
+        return less_than_min_;
+    }
+
+    bool moreThanMax() const {
+        return more_than_max_;
+    }
+
  private:
     double angle_;
     LaserScanType::_ranges_type::reference range_;
     OcclusionType::reference is_occluded_;
     PointCloudType::PointType& point_;
+
+    bool less_than_min_;
+    bool more_than_max_;
 };
 
 }  // namespace data_types
