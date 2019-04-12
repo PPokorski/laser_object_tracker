@@ -41,12 +41,13 @@
 
 #include "laser_object_tracker/data_types/definitions.hpp"
 #include "laser_object_tracker/data_types/laser_scan_fragment.hpp"
+#include "laser_object_tracker/feature_extraction/features/features.hpp"
 
 namespace laser_object_tracker {
 namespace visualization {
 class LaserObjectTrackerVisualization {
  public:
-    LaserObjectTrackerVisualization(ros::NodeHandle& pnh, std::string base_frame) {
+    LaserObjectTrackerVisualization(ros::NodeHandle& pnh, const std::string& base_frame) {
         rviz_visual_tools_.reset(new rviz_visual_tools::RvizVisualTools(base_frame, "visualization/markers"));
 
         pub_point_cloud_ = pnh.advertise<data_types::PointCloudType>("visualization/point_cloud", 1);
@@ -57,7 +58,23 @@ class LaserObjectTrackerVisualization {
         pub_point_cloud_.publish(fragment.pointCloud());
     }
 
+    void trigger() {
+        rviz_visual_tools_->trigger();
+    }
+
+    void clearMarkers() {
+        rviz_visual_tools_->deleteAllMarkers();
+    }
+
     void publishPointClouds(const std::vector<data_types::LaserScanFragment>& fragments);
+
+    void publishSegment(const feature_extraction::features::Segment2D& segment, const std_msgs::ColorRGBA& color);
+
+    void publishSegments(const feature_extraction::features::Segments2D& segments);
+
+    void publishCorner(const feature_extraction::features::Corner2D& corner, const std_msgs::ColorRGBA& color);
+
+    void publishCorners(const feature_extraction::features::Corners2D& corners);
 
  private:
     void expandToNColors(int colors);
@@ -67,6 +84,7 @@ class LaserObjectTrackerVisualization {
     ros::Publisher pub_point_clouds_;
 
     std::vector<float> colours_;
+    std::vector<std_msgs::ColorRGBA> rgb_colors_;
 };
 
 }  // namespace visualization

@@ -35,6 +35,7 @@
 
 // ROS
 #include <pcl_conversions/pcl_conversions.h>
+#include <laser_object_tracker/data_types/laser_scan_fragment.hpp>
 
 
 namespace laser_object_tracker {
@@ -174,6 +175,28 @@ LaserScanFragment::ConstIterator LaserScanFragment::cend() const {
     return elements_.cend();
 }
 
+LaserScanFragment::Reference LaserScanFragment::at(size_t index) {
+    return elements_.at(index);
+}
+
+LaserScanFragment::ConstReference LaserScanFragment::at(size_t index) const {
+    return elements_.at(index);
+}
+
+LaserScanFragment::Reference LaserScanFragment::operator[](size_t index) {
+    return elements_[index];
+}
+
+LaserScanFragment::ConstReference LaserScanFragment::operator[](size_t index) const {
+    return elements_[index];
+}
+
+bool LaserScanFragment::isValid() const {
+    return std::all_of(elements_.cbegin(), elements_.cend(), [](const auto& el) {
+        return el.isValid();
+    });
+}
+
 void LaserScanFragment::initializeInternalContainer() {
     elements_.clear();
 
@@ -186,7 +209,7 @@ void LaserScanFragment::initializeInternalContainer() {
                  occlusion_vector_[i],
                  laser_scan_cloud_[i],
                  laser_scan_.ranges[i] < getRangeMin(),
-                 laser_scan_.ranges[i] > getRangeMax()
+                 laser_scan_.ranges[i] >= getRangeMax()
          });
     }
 }

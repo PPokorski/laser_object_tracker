@@ -86,6 +86,46 @@ void LaserObjectTrackerVisualization::expandToNColors(int colors) {
                        static_cast<uint32_t>(b);
 
         colours_.push_back(*reinterpret_cast<float*>(&rgb));
+
+        std_msgs::ColorRGBA color;
+        color.r = r / 255.0;
+        color.g = g / 255.0;
+        color.b = b / 255.0;
+        color.a = 1.0;
+        rgb_colors_.push_back(color);
+    }
+}
+
+void LaserObjectTrackerVisualization::publishSegment(const feature_extraction::features::Segment2D& segment,
+                                                     const std_msgs::ColorRGBA& color) {
+    Eigen::Vector3d point_1, point_2;
+    point_1.head<2>() = segment.start_;
+    point_2.head<2>() = segment.end_;
+
+    rviz_visual_tools_->publishLine(point_1, point_2, color);
+}
+
+void LaserObjectTrackerVisualization::publishSegments(const feature_extraction::features::Segments2D& segments) {
+    expandToNColors(segments.size());
+
+    for (int i = 0; i < segments.size(); ++i)
+    {
+        publishSegment(segments.at(i), rgb_colors_.at(i));
+    }
+}
+
+void LaserObjectTrackerVisualization::publishCorner(const feature_extraction::features::Corner2D& corner,
+                                                    const std_msgs::ColorRGBA& color) {
+    publishSegment({corner.corner_, corner.point_1_}, color);
+    publishSegment({corner.corner_, corner.point_2_}, color);
+}
+
+void LaserObjectTrackerVisualization::publishCorners(const feature_extraction::features::Corners2D& corners) {
+    expandToNColors(corners.size());
+
+    for (int i = 0; i < corners.size(); ++i)
+    {
+        publishCorner(corners.at(i), rgb_colors_.at(i));
     }
 }
 }  // namespace visualization

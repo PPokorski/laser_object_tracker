@@ -1,0 +1,5 @@
+<launch>
+    <include file="$(find laser_object_tracker)/launch/world.launch" />
+    <include file="$(find laser_object_tracker)/launch/filters.launch" />
+<!--    <include file="$(find laser_object_tracker)/launch/laser_object_tracker.launch" />-->
+</launch>

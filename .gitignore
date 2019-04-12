@@ -22,7 +22,7 @@
 
 # Compiled Static libraries
 *.lai
-*.la
+*.lagit
 *.a
 *.lib
 
@@ -33,4 +33,6 @@
 
 # IDE
 cmake-build-debug/*
+cmake-build-release/*
+venv/*
 .idea/*
