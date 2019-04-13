@@ -31,8 +31,8 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_LASER_SCAN_FRAGMENT_HPP
-#define LASER_OBJECT_TRACKER_LASER_SCAN_FRAGMENT_HPP
+#ifndef LASER_OBJECT_TRACKER_DATA_TYPES_LASER_SCAN_FRAGMENT_HPP
+#define LASER_OBJECT_TRACKER_DATA_TYPES_LASER_SCAN_FRAGMENT_HPP
 
 // ROS
 #include <laser_geometry/laser_geometry.h>
@@ -49,194 +49,194 @@ namespace data_types {
  */
 class LaserScanFragment {
  public:
-    using Value = FragmentElement;
-    using ContainerType = std::vector<Value>;
-    using Iterator = ContainerType::iterator;
-    using ConstIterator = ContainerType::const_iterator;
-    using Reference = ContainerType::reference;
-    using ConstReference = ContainerType::const_reference;
+  using Value = FragmentElement;
+  using ContainerType = std::vector<Value>;
+  using Iterator = ContainerType::iterator;
+  using ConstIterator = ContainerType::const_iterator;
+  using Reference = ContainerType::reference;
+  using ConstReference = ContainerType::const_reference;
 
+  /**
+   * @brief Factory class for producing LaserScanFragments from LaserScanType
+   */
+  class LaserScanFragmentFactory {
+   public:
     /**
-     * @brief Factory class for producing LaserScanFragments from LaserScanType
+     * @brief Copy factory method, initializes all internal data.
+     * @param laser_scan LaserScan measurement. This value is being copied.
+     * @return Fully initialized LaserScanFragment object
      */
-    class LaserScanFragmentFactory {
-     public:
-        /**
-         * @brief Copy factory method, initializes all internal data.
-         * @param laser_scan LaserScan measurement. This value is being copied.
-         * @return Fully initialized LaserScanFragment object
-         */
-        LaserScanFragment fromLaserScan(const LaserScanType& laser_scan);
-        /**
-         * @brief Move factory method, initializes all internal data.
-         * @param laser_scan LaserScan measurement. This value is being moved from, e.g. invalidated.
-         * @return Fully initialized LaserScanFragment object
-         */
-        LaserScanFragment fromLaserScan(LaserScanType&& laser_scan);
-
-     private:
-        /**
-         * @brief Given fragment with initialized laser_scan, initialize rest of the fields
-         * @param fragment Fragment to be initialized
-         */
-        void completeInitialization(LaserScanFragment& fragment);
-
-        laser_geometry::LaserProjection laser_projector_;
-    };
-
+    LaserScanFragment fromLaserScan(const LaserScanType& laser_scan);
     /**
-     * @brief Default c-tor. Creates empty fields
+     * @brief Move factory method, initializes all internal data.
+     * @param laser_scan LaserScan measurement. This value is being moved from, e.g. invalidated.
+     * @return Fully initialized LaserScanFragment object
      */
-    LaserScanFragment() = default;
+    LaserScanFragment fromLaserScan(LaserScanType&& laser_scan);
 
-    LaserScanFragment(const LaserScanFragment& other) noexcept;
-
-    LaserScanFragment(LaserScanFragment&& other) noexcept;
-
-    LaserScanFragment& operator=(const LaserScanFragment& other) noexcept;
-
-    LaserScanFragment& operator=(LaserScanFragment&& other) noexcept;
-
+   private:
     /**
-     * @brief Constructs the container as a sub-container of other with range of [first, last)
-     * @param other Prototype container
-     * @param first First element of the range, included
-     * @param last Last element of the range, not included
+     * @brief Given fragment with initialized laser_scan, initialize rest of the fields
+     * @param fragment Fragment to be initialized
      */
-    LaserScanFragment(const LaserScanFragment& other, long first, long last);
+    void completeInitialization(LaserScanFragment& fragment);
 
-    /**
-     *
-     * @return Header of LaserScanType measurement
-     */
-    std_msgs::Header getHeader() const {
-        return laser_scan_.header;
-    }
+    laser_geometry::LaserProjection laser_projector_;
+  };
 
-    /**
-     *
-     * @return Min angle of the measurement (in polar coordinates)
-     */
-    double getAngleMin() const {
-        return laser_scan_.angle_min;
-    }
+  /**
+   * @brief Default c-tor. Creates empty fields
+   */
+  LaserScanFragment() = default;
 
-    /**
-     *
-     * @return Max angle of the measurement (in polar coordinates)
-     */
-    double getAngleMax() const {
-        return laser_scan_.angle_max;
-    }
+  LaserScanFragment(const LaserScanFragment& other) noexcept;
 
-    /**
-     *
-     * @return Angle resolution of the laser scanner
-     */
-    double getAngleIncrement() const {
-        return laser_scan_.angle_increment;
-    }
+  LaserScanFragment(LaserScanFragment&& other) noexcept;
 
-    /**
-     *
-     * @return Min range of the laser scanner
-     */
-    double getRangeMin() const {
-        return laser_scan_.range_min;
-    }
+  LaserScanFragment& operator=(const LaserScanFragment& other) noexcept;
 
-    /**
-     *
-     * @return Max range of the laser scanner
-     */
-    double getRangeMax() const {
-        return laser_scan_.range_max;
-    }
+  LaserScanFragment& operator=(LaserScanFragment&& other) noexcept;
 
-    /**
-     * @brief Accessor to the underlying LaserScanType data.
-     * @return Underlying LaserScanType data.
-     */
-    const LaserScanType& laserScan() const {
-        return laser_scan_;
-    }
+  /**
+   * @brief Constructs the container as a sub-container of other with range of [first, last)
+   * @param other Prototype container
+   * @param first First element of the range, included
+   * @param last Last element of the range, not included
+   */
+  LaserScanFragment(const LaserScanFragment& other, long first, long last);
 
-    /**
-     * @brief Accessor to the underlying OcclusionType data.
-     * @return Underlying OcclusionType data.
-     */
-    const OcclusionType& occlusionVector() const {
-        return occlusion_vector_;
-    }
+  /**
+   *
+   * @return Header of LaserScanType measurement
+   */
+  std_msgs::Header getHeader() const {
+    return laser_scan_.header;
+  }
 
-    /**
-     * @brief Accessor to the underlying PointCloudType data.
-     * @return Underlying PointCloudType data.
-     */
-    const PointCloudType& pointCloud() const {
-        return laser_scan_cloud_;
-    }
+  /**
+   *
+   * @return Min angle of the measurement (in polar coordinates)
+   */
+  double getAngleMin() const {
+    return laser_scan_.angle_min;
+  }
 
-    /**
-     *
-     * @return Iterator pointing to the first measurement (counting from min to max angle)
-     */
-    Iterator begin();
-    /**
-     *
-     * @return Const iterator pointing to the first measurement (counting from min to max angle)
-     */
-    ConstIterator cbegin() const;
+  /**
+   *
+   * @return Max angle of the measurement (in polar coordinates)
+   */
+  double getAngleMax() const {
+    return laser_scan_.angle_max;
+  }
 
-    /**
-     *
-     * @return Iterator pointing to the one measurement beyond last (counting from min to max angle)
-     */
-    Iterator end();
-    /**
-     *
-     * @return Const iterator pointing to the one measurement beyond last (counting from min to max angle)
-     */
-    ConstIterator cend() const;
+  /**
+   *
+   * @return Angle resolution of the laser scanner
+   */
+  double getAngleIncrement() const {
+    return laser_scan_.angle_increment;
+  }
 
-    Reference at(size_t index);
+  /**
+   *
+   * @return Min range of the laser scanner
+   */
+  double getRangeMin() const {
+    return laser_scan_.range_min;
+  }
 
-    ConstReference at(size_t index) const;
+  /**
+   *
+   * @return Max range of the laser scanner
+   */
+  double getRangeMax() const {
+    return laser_scan_.range_max;
+  }
 
-    Reference operator[](size_t index);
+  /**
+   * @brief Accessor to the underlying LaserScanType data.
+   * @return Underlying LaserScanType data.
+   */
+  const LaserScanType& laserScan() const {
+    return laser_scan_;
+  }
 
-    ConstReference operator[](size_t index) const;
+  /**
+   * @brief Accessor to the underlying OcclusionType data.
+   * @return Underlying OcclusionType data.
+   */
+  const OcclusionType& occlusionVector() const {
+    return occlusion_vector_;
+  }
 
-    /**
-     *
-     * @return True if the container is empty, false otherwise
-     */
-    bool empty() const {
-        return elements_.empty();
-    }
-    
-    /**
-     * 
-     * @return The number of elements in the container 
-     */
-    long size() const {
-        return elements_.size();
-    }
+  /**
+   * @brief Accessor to the underlying PointCloudType data.
+   * @return Underlying PointCloudType data.
+   */
+  const PointCloudType& pointCloud() const {
+    return laser_scan_cloud_;
+  }
 
-    bool isValid() const;
+  /**
+   *
+   * @return Iterator pointing to the first measurement (counting from min to max angle)
+   */
+  Iterator begin();
+  /**
+   *
+   * @return Const iterator pointing to the first measurement (counting from min to max angle)
+   */
+  ConstIterator cbegin() const;
+
+  /**
+   *
+   * @return Iterator pointing to the one measurement beyond last (counting from min to max angle)
+   */
+  Iterator end();
+  /**
+   *
+   * @return Const iterator pointing to the one measurement beyond last (counting from min to max angle)
+   */
+  ConstIterator cend() const;
+
+  Reference at(size_t index);
+
+  ConstReference at(size_t index) const;
+
+  Reference operator[](size_t index);
+
+  ConstReference operator[](size_t index) const;
+
+  /**
+   *
+   * @return True if the container is empty, false otherwise
+   */
+  bool empty() const {
+    return elements_.empty();
+  }
+
+  /**
+   *
+   * @return The number of elements in the container
+   */
+  long size() const {
+    return elements_.size();
+  }
+
+  bool isValid() const;
 
  private:
-    /**
-     * @brief This method clear and initializes internal elements_ container
-     */
-    void initializeInternalContainer();
+  /**
+   * @brief This method clear and initializes internal elements_ container
+   */
+  void initializeInternalContainer();
 
-    LaserScanType laser_scan_;
-    OcclusionType occlusion_vector_;
-    PointCloudType laser_scan_cloud_;
-    ContainerType elements_;
+  LaserScanType laser_scan_;
+  OcclusionType occlusion_vector_;
+  PointCloudType laser_scan_cloud_;
+  ContainerType elements_;
 };
 }  // namespace data_types
 }  // namespace laser_object_tracker
 
-#endif  // LASER_OBJECT_TRACKER_LASER_SCAN_FRAGMENT_HPP
+#endif  // LASER_OBJECT_TRACKER_DATA_TYPES_LASER_SCAN_FRAGMENT_HPP

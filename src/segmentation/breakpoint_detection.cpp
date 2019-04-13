@@ -39,45 +39,39 @@ namespace laser_object_tracker {
 namespace segmentation {
 
 BreakpointDetection::BreakpointDetection(double distance_threshold) :
-        BaseSegmentation(),
-        distance_threshold_(distance_threshold) {}
+    BaseSegmentation(),
+    distance_threshold_(distance_threshold) {}
 
 std::vector<data_types::LaserScanFragment> BreakpointDetection::segment(const data_types::LaserScanFragment& fragment) {
-    if (fragment.empty())
-    {
-        return {};
+  if (fragment.empty()) {
+    return {};
+  }
+
+  auto current_begin = fragment.cbegin();
+  auto previous = fragment.cbegin();
+  auto current = fragment.cbegin();
+
+  std::vector<data_types::LaserScanFragment> segments;
+  while (current != fragment.cend()) {
+    previous = current++;
+
+    if (!current_begin->isValid()) {
+      current_begin = current;
+    } else if (current == fragment.cend() ||
+        !current->isValid() ||
+        isAboveThreshold(previous->range(), current->range())) {
+      segments.emplace_back(fragment,
+                            current_begin - fragment.cbegin(),
+                            current - fragment.cbegin());
+
+      current_begin = current;
     }
-
-    auto current_begin = fragment.cbegin();
-    auto previous = fragment.cbegin();
-    auto current = fragment.cbegin();
-
-    std::vector<data_types::LaserScanFragment> segments;
-    while (current != fragment.cend())
-    {
-        previous = current++;
-
-        if (!current_begin->isValid())
-        {
-            current_begin = current;
-        }
-        else if (current == fragment.cend() ||
-                !current->isValid() ||
-                isAboveThreshold(previous->range(), current->range()))
-        {
-            segments.emplace_back(fragment,
-                                  current_begin - fragment.cbegin(),
-                                  current - fragment.cbegin());
-
-            current_begin = current;
-        }
-    }
-    return segments;
+  }
+  return segments;
 }
 
 bool BreakpointDetection::isAboveThreshold(float previous_range, float current_range) {
-    return distance(previous_range, current_range) > distance_threshold_;
+  return distance(previous_range, current_range) > distance_threshold_;
 }
-
 }  // namespace segmentation
 }  // namespace laser_object_tracker

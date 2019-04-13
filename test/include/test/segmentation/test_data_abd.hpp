@@ -39,85 +39,84 @@
 namespace test {
 
 inline ReferenceSegmentation getSegmentationABD2() {
-    ReferenceSegmentation segmentation;
-    laser_object_tracker::data_types::LaserScanFragment::LaserScanFragmentFactory factory;
+  ReferenceSegmentation segmentation;
+  laser_object_tracker::data_types::LaserScanFragment::LaserScanFragmentFactory factory;
 
-    // 5 elements, resolution is PI/2
-    auto laser_scan = generateLaserScan({1.0, 1.5, 3.1, 4.0, 9.0});
+  // 5 elements, resolution is PI/2
+  auto laser_scan = generateLaserScan({1.0, 1.5, 3.1, 4.0, 9.0});
 
-    segmentation.fragment_ = factory.fromLaserScan(laser_scan);
-    // Incidence angle is PI, so distance threshold will be simply a current range
-    segmentation.threshold_ = M_PI;
-    segmentation.resolution_ = 0.0;
+  segmentation.fragment_ = factory.fromLaserScan(laser_scan);
+  // Incidence angle is PI, so distance threshold will be simply a current range
+  segmentation.threshold_ = M_PI;
+  segmentation.resolution_ = 0.0;
 
-    auto segment = generateLaserScan(laser_scan, 0, 1);
-    segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
+  auto segment = generateLaserScan(laser_scan, 0, 1);
+  segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
 
-    segment = generateLaserScan(laser_scan, 2, 3);
-    segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
+  segment = generateLaserScan(laser_scan, 2, 3);
+  segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
 
-    segment = generateLaserScan(laser_scan, 4, 4);
-    segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
+  segment = generateLaserScan(laser_scan, 4, 4);
+  segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
 
-    return segmentation;
+  return segmentation;
 }
 
 inline ReferenceSegmentation getSegmentationABD3() {
-    ReferenceSegmentation segmentation;
-    laser_object_tracker::data_types::LaserScanFragment::LaserScanFragmentFactory factory;
+  ReferenceSegmentation segmentation;
+  laser_object_tracker::data_types::LaserScanFragment::LaserScanFragmentFactory factory;
 
-    // 9 elements, resolution is PI/4
-    auto laser_scan = generateLaserScan({1.0, 1.7, 2.9, 5.0, 8.5, 14.5, 24.8, 42.3, 72.3},
-            -M_PI,
-            M_PI,
-            "",
-            0.0,
-            100.0);
+  // 9 elements, resolution is PI/4
+  auto laser_scan = generateLaserScan({1.0, 1.7, 2.9, 5.0, 8.5, 14.5, 24.8, 42.3, 72.3},
+                                      -M_PI,
+                                      M_PI,
+                                      "",
+                                      0.0,
+                                      100.0);
 
-    segmentation.fragment_ = factory.fromLaserScan(laser_scan);
-    // Incidence angle is 3 PI/4, so distance threshold will be range * sqrt(2)/2
-    segmentation.threshold_ = 3 * M_PI_4;
-    segmentation.resolution_ = 0.0;
+  segmentation.fragment_ = factory.fromLaserScan(laser_scan);
+  // Incidence angle is 3 PI/4, so distance threshold will be range * sqrt(2)/2
+  segmentation.threshold_ = 3 * M_PI_4;
+  segmentation.resolution_ = 0.0;
 
-    auto segment = generateLaserScan(laser_scan, 0, 2);
-    segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
+  auto segment = generateLaserScan(laser_scan, 0, 2);
+  segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
 
-    segment = generateLaserScan(laser_scan, 3, 5);
-    segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
+  segment = generateLaserScan(laser_scan, 3, 5);
+  segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
 
-    segment = generateLaserScan(laser_scan, 6, 7);
-    segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
+  segment = generateLaserScan(laser_scan, 6, 7);
+  segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
 
-    segment = generateLaserScan(laser_scan, 8, 8);
-    segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
+  segment = generateLaserScan(laser_scan, 8, 8);
+  segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
 
-    return segmentation;
+  return segmentation;
 }
 
 inline ReferenceSegmentation getSegmentationABD4() {
-    ReferenceSegmentation segmentation;
-    laser_object_tracker::data_types::LaserScanFragment::LaserScanFragmentFactory factory;
+  ReferenceSegmentation segmentation;
+  laser_object_tracker::data_types::LaserScanFragment::LaserScanFragmentFactory factory;
 
-    // 5 elements, resolution is PI/2
-    auto laser_scan = generateLaserScan({1.0, 1.5, 3.7, 8.1, 9.9});
+  // 5 elements, resolution is PI/2
+  auto laser_scan = generateLaserScan({1.0, 1.5, 3.7, 8.1, 9.9});
 
-    segmentation.fragment_ = factory.fromLaserScan(laser_scan);
-    // Incidence angle is PI, so distance threshold will be simply a current range
-    segmentation.threshold_ = M_PI;
-    segmentation.resolution_ = 0.2;
+  segmentation.fragment_ = factory.fromLaserScan(laser_scan);
+  // Incidence angle is PI, so distance threshold will be simply a current range
+  segmentation.threshold_ = M_PI;
+  segmentation.resolution_ = 0.2;
 
-    auto segment = generateLaserScan(laser_scan, 0, 1);
-    segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
+  auto segment = generateLaserScan(laser_scan, 0, 1);
+  segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
 
-    segment = generateLaserScan(laser_scan, 2, 2);
-    segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
+  segment = generateLaserScan(laser_scan, 2, 2);
+  segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
 
-    segment = generateLaserScan(laser_scan, 3, 4);
-    segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
+  segment = generateLaserScan(laser_scan, 3, 4);
+  segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
 
-    return segmentation;
+  return segmentation;
 }
-
 }  // namespace test
 
 #endif  // LASER_OBJECT_TRACKER_TEST_SEGMENTATION_TEST_DATA_ABD_HPP

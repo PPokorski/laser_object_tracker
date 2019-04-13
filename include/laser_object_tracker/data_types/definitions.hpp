@@ -31,8 +31,8 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_DEFINITIONS_HPP
-#define LASER_OBJECT_TRACKER_DEFINITIONS_HPP
+#ifndef LASER_OBJECT_TRACKER_DATA_TYPES_DEFINITIONS_HPP
+#define LASER_OBJECT_TRACKER_DATA_TYPES_DEFINITIONS_HPP
 
 // STD
 #include <vector>
@@ -44,7 +44,6 @@
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 
-
 namespace laser_object_tracker {
 namespace data_types {
 
@@ -54,29 +53,29 @@ namespace data_types {
 */
 class Bool {
  public:
-    /**
-     * @brief Implicit conversion c-tor from bool type.
-     * @param value Value to be initialized to.
-     */
-    Bool(bool value) : value_(value) {}
+  /**
+   * @brief Implicit conversion c-tor from bool type.
+   * @param value Value to be initialized to.
+   */
+  Bool(bool value) : value_(value) {}
 
-    /**
-     * @brief Conversion operator to type bool&.
-     * @return Reference to underlying bool value.
-     */
-    operator bool&() {
-        return value_;
-    }
-    /**
-     * @brief Conversion operator to type const bool&.
-     * @return Const reference to underlying bool value.
-     */
-    operator const bool&() const {
-        return value_;
-    }
+  /**
+   * @brief Conversion operator to type bool&.
+   * @return Reference to underlying bool value.
+   */
+  operator bool&() {
+    return value_;
+  }
+  /**
+   * @brief Conversion operator to type const bool&.
+   * @return Const reference to underlying bool value.
+   */
+  operator const bool&() const {
+    return value_;
+  }
 
  private:
-    bool value_;
+  bool value_;
 };
 
 using LaserScanType = sensor_msgs::LaserScan;
@@ -90,67 +89,66 @@ using PointCloudType = pcl::PointCloud<pcl::PointXYZ>;
  */
 class FragmentElement {
  public:
-    FragmentElement(double angle,
-            LaserScanType::_ranges_type::reference range,
-            OcclusionType::reference is_occluded,
-            PointCloudType::PointType& point,
-            bool less_than_min,
-            bool more_than_max) :
-            angle_(angle),
-            range_(range),
-            is_occluded_(is_occluded),
-            point_(point),
-            less_than_min_(less_than_min),
-            more_than_max_(more_than_max) {}
+  FragmentElement(double angle,
+                  LaserScanType::_ranges_type::reference range,
+                  OcclusionType::reference is_occluded,
+                  PointCloudType::PointType& point,
+                  bool less_than_min,
+                  bool more_than_max) :
+      angle_(angle),
+      range_(range),
+      is_occluded_(is_occluded),
+      point_(point),
+      less_than_min_(less_than_min),
+      more_than_max_(more_than_max) {}
 
-    double getAngle() const {
-        return angle_;
-    }
+  double getAngle() const {
+    return angle_;
+  }
 
-    LaserScanType::_ranges_type::reference range() {
-        return range_;
-    }
-    LaserScanType::_ranges_type::const_reference range() const {
-        return range_;
-    }
+  LaserScanType::_ranges_type::reference range() {
+    return range_;
+  }
+  LaserScanType::_ranges_type::const_reference range() const {
+    return range_;
+  }
 
-    OcclusionType::reference isOccluded() {
-        return is_occluded_;
-    }
-    OcclusionType::const_reference isOccluded() const {
-        return is_occluded_;
-    }
+  OcclusionType::reference isOccluded() {
+    return is_occluded_;
+  }
+  OcclusionType::const_reference isOccluded() const {
+    return is_occluded_;
+  }
 
-    PointCloudType::PointType& point() {
-        return point_;
-    }
-    const PointCloudType::PointType& point() const {
-        return point_;
-    }
+  PointCloudType::PointType& point() {
+    return point_;
+  }
+  const PointCloudType::PointType& point() const {
+    return point_;
+  }
 
-    bool isValid() const {
-        return !less_than_min_ && !more_than_max_;
-    }
+  bool isValid() const {
+    return !less_than_min_ && !more_than_max_;
+  }
 
-    bool lessThanMin() const {
-        return less_than_min_;
-    }
+  bool lessThanMin() const {
+    return less_than_min_;
+  }
 
-    bool moreThanMax() const {
-        return more_than_max_;
-    }
+  bool moreThanMax() const {
+    return more_than_max_;
+  }
 
  private:
-    double angle_;
-    LaserScanType::_ranges_type::reference range_;
-    OcclusionType::reference is_occluded_;
-    PointCloudType::PointType& point_;
+  double angle_;
+  LaserScanType::_ranges_type::reference range_;
+  OcclusionType::reference is_occluded_;
+  PointCloudType::PointType& point_;
 
-    bool less_than_min_;
-    bool more_than_max_;
+  bool less_than_min_;
+  bool more_than_max_;
 };
-
 }  // namespace data_types
 }  // namespace laser_object_tracker
 
-#endif  // LASER_OBJECT_TRACKER_DEFINITIONS_HPP
+#endif  // LASER_OBJECT_TRACKER_DATA_TYPES_DEFINITIONS_HPP

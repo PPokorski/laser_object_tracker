@@ -31,8 +31,8 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_LASER_OBJECT_TRACKER_VISUALIZATION_HPP
-#define LASER_OBJECT_TRACKER_LASER_OBJECT_TRACKER_VISUALIZATION_HPP
+#ifndef LASER_OBJECT_TRACKER_VISUALIZATION_LASER_OBJECT_TRACKER_VISUALIZATION_HPP
+#define LASER_OBJECT_TRACKER_VISUALIZATION_LASER_OBJECT_TRACKER_VISUALIZATION_HPP
 
 #include <ros/ros.h>
 
@@ -47,47 +47,46 @@ namespace laser_object_tracker {
 namespace visualization {
 class LaserObjectTrackerVisualization {
  public:
-    LaserObjectTrackerVisualization(ros::NodeHandle& pnh, const std::string& base_frame) {
-        rviz_visual_tools_.reset(new rviz_visual_tools::RvizVisualTools(base_frame, "visualization/markers"));
+  LaserObjectTrackerVisualization(ros::NodeHandle& pnh, const std::string& base_frame) {
+    rviz_visual_tools_.reset(new rviz_visual_tools::RvizVisualTools(base_frame, "visualization/markers"));
 
-        pub_point_cloud_ = pnh.advertise<data_types::PointCloudType>("visualization/point_cloud", 1);
-        pub_point_clouds_ = pnh.advertise<pcl::PointCloud<pcl::PointXYZRGB>>("visualization/point_clouds", 1);
-    }
+    pub_point_cloud_ = pnh.advertise<data_types::PointCloudType>("visualization/point_cloud", 1);
+    pub_point_clouds_ = pnh.advertise<pcl::PointCloud<pcl::PointXYZRGB>>("visualization/point_clouds", 1);
+  }
 
-    void publishPointCloud(const data_types::LaserScanFragment& fragment) {
-        pub_point_cloud_.publish(fragment.pointCloud());
-    }
+  void publishPointCloud(const data_types::LaserScanFragment& fragment) {
+    pub_point_cloud_.publish(fragment.pointCloud());
+  }
 
-    void trigger() {
-        rviz_visual_tools_->trigger();
-    }
+  void trigger() {
+    rviz_visual_tools_->trigger();
+  }
 
-    void clearMarkers() {
-        rviz_visual_tools_->deleteAllMarkers();
-    }
+  void clearMarkers() {
+    rviz_visual_tools_->deleteAllMarkers();
+  }
 
-    void publishPointClouds(const std::vector<data_types::LaserScanFragment>& fragments);
+  void publishPointClouds(const std::vector<data_types::LaserScanFragment>& fragments);
 
-    void publishSegment(const feature_extraction::features::Segment2D& segment, const std_msgs::ColorRGBA& color);
+  void publishSegment(const feature_extraction::features::Segment2D& segment, const std_msgs::ColorRGBA& color);
 
-    void publishSegments(const feature_extraction::features::Segments2D& segments);
+  void publishSegments(const feature_extraction::features::Segments2D& segments);
 
-    void publishCorner(const feature_extraction::features::Corner2D& corner, const std_msgs::ColorRGBA& color);
+  void publishCorner(const feature_extraction::features::Corner2D& corner, const std_msgs::ColorRGBA& color);
 
-    void publishCorners(const feature_extraction::features::Corners2D& corners);
+  void publishCorners(const feature_extraction::features::Corners2D& corners);
 
  private:
-    void expandToNColors(int colors);
+  void expandToNColors(int colors);
 
-    rviz_visual_tools::RvizVisualToolsPtr rviz_visual_tools_;
-    ros::Publisher pub_point_cloud_;
-    ros::Publisher pub_point_clouds_;
+  rviz_visual_tools::RvizVisualToolsPtr rviz_visual_tools_;
+  ros::Publisher pub_point_cloud_;
+  ros::Publisher pub_point_clouds_;
 
-    std::vector<float> colours_;
-    std::vector<std_msgs::ColorRGBA> rgb_colors_;
+  std::vector<float> colours_;
+  std::vector<std_msgs::ColorRGBA> rgb_colors_;
 };
-
 }  // namespace visualization
 }  // namespace laser_object_tracker
 
-#endif //LASER_OBJECT_TRACKER_LASER_OBJECT_TRACKER_VISUALIZATION_HPP
+#endif //LASER_OBJECT_TRACKER_VISUALIZATION_LASER_OBJECT_TRACKER_VISUALIZATION_HPP

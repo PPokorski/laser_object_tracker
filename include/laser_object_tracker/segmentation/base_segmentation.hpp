@@ -31,8 +31,8 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_BASE_SEGMENTATION_HPP
-#define LASER_OBJECT_TRACKER_BASE_SEGMENTATION_HPP
+#ifndef LASER_OBJECT_TRACKER_SEGMENTATION_BASE_SEGMENTATION_HPP
+#define LASER_OBJECT_TRACKER_SEGMENTATION_BASE_SEGMENTATION_HPP
 
 #include <vector>
 
@@ -43,13 +43,11 @@ namespace segmentation {
 
 class BaseSegmentation {
  public:
-    virtual std::vector<data_types::LaserScanFragment> segment(const data_types::LaserScanFragment& fragment) = 0;
+  virtual std::vector<data_types::LaserScanFragment> segment(const data_types::LaserScanFragment& fragment) = 0;
 
-    virtual ~BaseSegmentation() = default;
-
+  virtual ~BaseSegmentation() = default;
 };
-
 }  // namespace segmentation
 }  // namespace laser_object_tracker
 
-#endif  // LASER_OBJECT_TRACKER_BASE_SEGMENTATION_HPP
+#endif  // LASER_OBJECT_TRACKER_SEGMENTATION_BASE_SEGMENTATION_HPP

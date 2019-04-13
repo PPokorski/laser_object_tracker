@@ -31,8 +31,8 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_BREAKPOINT_DETECTION_HPP
-#define LASER_OBJECT_TRACKER_BREAKPOINT_DETECTION_HPP
+#ifndef LASER_OBJECT_TRACKER_SEGMENTATION_BREAKPOINT_DETECTION_HPP
+#define LASER_OBJECT_TRACKER_SEGMENTATION_BREAKPOINT_DETECTION_HPP
 
 #include "laser_object_tracker/segmentation/base_segmentation.hpp"
 
@@ -41,25 +41,24 @@ namespace segmentation {
 
 class BreakpointDetection : public BaseSegmentation {
  public:
-    explicit BreakpointDetection(double distance_threshold);
+  explicit BreakpointDetection(double distance_threshold);
 
-    std::vector<data_types::LaserScanFragment> segment(const data_types::LaserScanFragment &fragment) override;
+  std::vector<data_types::LaserScanFragment> segment(const data_types::LaserScanFragment& fragment) override;
 
-    double getDistanceThreshold() const {
-        return distance_threshold_;
-    }
+  double getDistanceThreshold() const {
+    return distance_threshold_;
+  }
 
-    void setDistanceThreshold(double distance_threshold) {
-        distance_threshold_ = distance_threshold;
-    }
+  void setDistanceThreshold(double distance_threshold) {
+    distance_threshold_ = distance_threshold;
+  }
 
  private:
-    bool isAboveThreshold(float previous_range, float current_range);
+  bool isAboveThreshold(float previous_range, float current_range);
 
-    double distance_threshold_;
+  double distance_threshold_;
 };
-
 }  // namespace segmentation
 }  // namespace laser_object_tracker
 
-#endif  // LASER_OBJECT_TRACKER_BREAKPOINT_DETECTION_HPP
+#endif  // LASER_OBJECT_TRACKER_SEGMENTATION_BREAKPOINT_DETECTION_HPP

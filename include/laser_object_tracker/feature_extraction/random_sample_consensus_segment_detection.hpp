@@ -45,30 +45,29 @@ namespace feature_extraction {
 
 class RandomSampleConsensusSegmentDetection : public BaseFeatureExtraction {
  public:
-    RandomSampleConsensusSegmentDetection(double distance_threshold,
-            int max_iterations,
-            double probability);
+  RandomSampleConsensusSegmentDetection(double distance_threshold,
+                                        int max_iterations,
+                                        double probability);
 
-    bool extractFeature(const data_types::LaserScanFragment& fragment, Eigen::VectorXd& feature) override;
+  bool extractFeature(const data_types::LaserScanFragment& fragment, Eigen::VectorXd& feature) override;
 
-    double getDistanceThreshold();
+  double getDistanceThreshold();
 
-    void setDistanceThreshold(double distance_threshold);
+  void setDistanceThreshold(double distance_threshold);
 
-    int getMaxIterations();
+  int getMaxIterations();
 
-    void setMaxIterations(int max_iterations);
+  void setMaxIterations(int max_iterations);
 
-    double getProbability();
+  double getProbability();
 
-    void setProbability(double probability);
+  void setProbability(double probability);
 
  private:
-    using PointType = data_types::PointCloudType::PointType;
-    using ModelType = pcl::SampleConsensusModelLine<PointType>;
-    pcl::RandomSampleConsensus<PointType> sample_consensus_;
+  using PointType = data_types::PointCloudType::PointType;
+  using ModelType = pcl::SampleConsensusModelLine<PointType>;
+  pcl::RandomSampleConsensus<PointType> sample_consensus_;
 };
-
 }  // namespace feature_extraction
 }  // namespace laser_object_tracker
 

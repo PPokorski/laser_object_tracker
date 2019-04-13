@@ -40,29 +40,29 @@
 
 class BreakpointDetectionTestWithParam : public testing::TestWithParam<test::ReferenceSegmentation> {
  protected:
-    std::shared_ptr<laser_object_tracker::segmentation::BaseSegmentation> segmentation_ptr_;
+  std::shared_ptr<laser_object_tracker::segmentation::BaseSegmentation> segmentation_ptr_;
 };
 
 TEST(BreakpointDetectionTest, AccessorsTest) {
-    laser_object_tracker::segmentation::BreakpointDetection bd(2.0);
-    EXPECT_NEAR(2.0, bd.getDistanceThreshold(), test::PRECISION<double>);
+  laser_object_tracker::segmentation::BreakpointDetection bd(2.0);
+  EXPECT_NEAR(2.0, bd.getDistanceThreshold(), test::PRECISION<double>);
 
-    bd.setDistanceThreshold(10.0);
-    EXPECT_NEAR(10.0, bd.getDistanceThreshold(), test::PRECISION<double>);
+  bd.setDistanceThreshold(10.0);
+  EXPECT_NEAR(10.0, bd.getDistanceThreshold(), test::PRECISION<double>);
 }
 
 TEST_P(BreakpointDetectionTestWithParam, SegmentationTest) {
-    test::ReferenceSegmentation reference = GetParam();
+  test::ReferenceSegmentation reference = GetParam();
 
-    segmentation_ptr_.reset(new laser_object_tracker::segmentation::BreakpointDetection(reference.threshold_));
+  segmentation_ptr_.reset(new laser_object_tracker::segmentation::BreakpointDetection(reference.threshold_));
 
-    auto value = segmentation_ptr_->segment(reference.fragment_);
-    EXPECT_EQ(reference.segmented_fragment_, value);
+  auto value = segmentation_ptr_->segment(reference.fragment_);
+  EXPECT_EQ(reference.segmented_fragment_, value);
 }
 
 INSTANTIATE_TEST_CASE_P(BreakpointDetectionTestData,
-     BreakpointDetectionTestWithParam,
-     testing::Values(test::getSegmentationEmpty(),
-             test::getSegmentation1(),
-             test::getSegmentationBD2(),
-             test::getSegmentationBD3()));
+                        BreakpointDetectionTestWithParam,
+                        testing::Values(test::getSegmentationEmpty(),
+                                        test::getSegmentation1(),
+                                        test::getSegmentationBD2(),
+                                        test::getSegmentationBD3()));

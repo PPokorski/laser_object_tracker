@@ -38,29 +38,29 @@
 #include "test/utils.hpp"
 
 TEST(DistanceCalculationTest, AbsoluteDistanceTest) {
-    EXPECT_NEAR(laser_object_tracker::segmentation::distance(1.0, 1.0),
-                0.0,
-                test::PRECISION<double>);
+  EXPECT_NEAR(laser_object_tracker::segmentation::distance(1.0, 1.0),
+              0.0,
+              test::PRECISION<double>);
 
-    EXPECT_NEAR(laser_object_tracker::segmentation::distance(2.0, 10.0),
-                8.0,
-                test::PRECISION<double>);
+  EXPECT_NEAR(laser_object_tracker::segmentation::distance(2.0, 10.0),
+              8.0,
+              test::PRECISION<double>);
 
-    EXPECT_NEAR(laser_object_tracker::segmentation::distance(10.0, 2.0),
-                8.0,
-                test::PRECISION<double>);
+  EXPECT_NEAR(laser_object_tracker::segmentation::distance(10.0, 2.0),
+              8.0,
+              test::PRECISION<double>);
 }
 
 TEST(DistanceCalculationTest, OrientedDistanceTest) {
-    EXPECT_NEAR(laser_object_tracker::segmentation::distanceDirected(1.0, 1.0),
-                0.0,
-                test::PRECISION<double>);
+  EXPECT_NEAR(laser_object_tracker::segmentation::distanceDirected(1.0, 1.0),
+              0.0,
+              test::PRECISION<double>);
 
-    EXPECT_NEAR(laser_object_tracker::segmentation::distanceDirected(2.0, 10.0),
-                -8.0,
-                test::PRECISION<double>);
+  EXPECT_NEAR(laser_object_tracker::segmentation::distanceDirected(2.0, 10.0),
+              -8.0,
+              test::PRECISION<double>);
 
-    EXPECT_NEAR(laser_object_tracker::segmentation::distanceDirected(10.0, 2.0),
-                8.0,
-                test::PRECISION<double>);
+  EXPECT_NEAR(laser_object_tracker::segmentation::distanceDirected(10.0, 2.0),
+              8.0,
+              test::PRECISION<double>);
 }
