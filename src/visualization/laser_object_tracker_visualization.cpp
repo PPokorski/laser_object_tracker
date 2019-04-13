@@ -114,6 +114,15 @@ void LaserObjectTrackerVisualization::publishCorner(const feature_extraction::fe
   publishSegment({corner.corner_, corner.point_2_}, color);
 }
 
+void LaserObjectTrackerVisualization::publishPoint(const feature_extraction::features::Point2D& point,
+                                                   const std_msgs::ColorRGBA& color) {
+    Eigen::Vector3d publish_point;
+    publish_point.head<2>() = point.point_;
+
+    rviz_visual_tools_->publishSphere(publish_point, color,
+            rviz_visual_tools_->getScale(rviz_visual_tools::scales::XLARGE));
+}
+
 void LaserObjectTrackerVisualization::publishCorners(const feature_extraction::features::Corners2D& corners) {
   expandToNColors(corners.size());
 

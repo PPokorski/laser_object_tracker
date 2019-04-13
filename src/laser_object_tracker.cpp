@@ -35,6 +35,7 @@
 #include "laser_object_tracker/feature_extraction/feature_extraction.hpp"
 #include "laser_object_tracker/segmentation/segmentation.hpp"
 #include "laser_object_tracker/visualization/visualization.hpp"
+#include "laser_object_tracker/tracking/kalman_filter.hpp"
 
 laser_object_tracker::data_types::LaserScanFragment::LaserScanFragmentFactory factory;
 laser_object_tracker::data_types::LaserScanFragment fragment;
@@ -75,8 +76,6 @@ std::map<std::string, feature_extraction::SearchBasedCornerDetection::CriterionF
           {"varianceCriterion", feature_extraction::varianceCriterion}};
 }
 
-#include "laser_object_tracker/feature_extraction/pcl/sac_model_cross2d.hpp"
-
 int main(int ac, char **av) {
   pcl::PointCloud<pcl::PointXYZ> pcl;
   pcl::SampleConsenusModelCross2D<pcl::PointXYZ> corner(pcl.makeShared());
@@ -87,35 +86,23 @@ int main(int ac, char **av) {
   ROS_INFO("Initializing segmentation");
   auto segmentation = getSegmentation(pnh);
 
-//    std::string feature_type;
-//    double angle_resolution;
-//    std::string criterion_name;
-//    pnh.getParam("feature_extraction/type", feature_type);
-//    pnh.getParam("feature_extraction/angle_resolution", angle_resolution);
-//    pnh.getParam("feature_extraction/criterion", criterion_name);
-//
-//    feature_extraction::SearchBasedCornerDetection::CriterionFunctor criterion;
-//    try
-//    {
-//        criterion = getCriterions().at(criterion_name);
-//    }
-//    catch (std::exception& e)
-//    {
-//        ROS_ERROR("%s", e.what());
-//        throw;
-//    }
-  double distance_threshold;
-  int max_iterations;
-  double probability;
-  pnh.getParam("feature_extraction/distance_threshold", distance_threshold);
-  pnh.getParam("feature_extraction/max_iterations", max_iterations);
-  pnh.getParam("feature_extraction/probability", probability);
+  std::string feature_type;
+  double angle_resolution;
+  std::string criterion_name;
+  pnh.getParam("feature_extraction/type", feature_type);
+  pnh.getParam("feature_extraction/angle_resolution", angle_resolution);
+  pnh.getParam("feature_extraction/criterion", criterion_name);
 
-  laser_object_tracker::feature_extraction::RandomSampleConsensusCornerDetection detection(distance_threshold,
-                                                                                           max_iterations,
-                                                                                           probability);
+  feature_extraction::SearchBasedCornerDetection::CriterionFunctor criterion;
+  try {
+    criterion = getCriterions().at(criterion_name);
+  } catch (std::exception& e) {
+    ROS_ERROR("%s", e.what());
+    throw;
+  }
+  feature_extraction::SearchBasedCornerDetection detection(angle_resolution, criterion);
+
   ROS_INFO("Initializing visualization");
-
   std::string base_frame;
   pnh.getParam("base_frame", base_frame);
   laser_object_tracker::visualization::LaserObjectTrackerVisualization visualization(pnh, base_frame);
@@ -124,7 +111,34 @@ int main(int ac, char **av) {
 
   ros::Rate rate(10.0);
   ROS_INFO("Done initialization");
-//    pcl::console::setVerbosityLevel(pcl::console::L_DEBUG);
+
+  Eigen::MatrixXd transition(4, 4);
+  transition << 1.0, 0.0, 0.1, 0.0,
+      0.0, 1.0, 0.0, 0.1,
+      0.0, 0.0, 1.0, 0.0,
+      0.0, 0.0, 0.0, 1.0;
+
+  Eigen::MatrixXd process_noise_covariance(4, 4);
+  process_noise_covariance << 0.1, 0.0, 0.0, 0.0,
+      0.0, 0.1, 0.0, 0.0,
+      0.0, 0.0, 0.1, 0.0,
+      0.0, 0.0, 0.0, 0.1;
+
+  Eigen::MatrixXd measurement_noise_covariance(2, 2);
+  measurement_noise_covariance << 0.1, 0.0,
+      0.0, 0.1;
+
+  Eigen::MatrixXd initial_state_covariance(4, 4);
+  initial_state_covariance << 1.0, 1.0, 1.0, 1.0,
+      1.0, 1.0, 1.0, 1.0,
+      1.0, 1.0, 1.0, 1.0,
+      1.0, 1.0, 1.0, 1.0;
+  laser_object_tracker::tracking::KalmanFilter tracker(4, 2,
+                                                       transition,
+                                                       process_noise_covariance,
+                                                       measurement_noise_covariance,
+                                                       initial_state_covariance);
+
   while (ros::ok()) {
     ros::spinOnce();
 
@@ -139,10 +153,23 @@ int main(int ac, char **av) {
       for (const auto& segment : segments) {
         if (segment.isValid()) {
           if (detection.extractFeature(segment, feature)) {
+            std::cout << "Feature vector:\n" << feature.head(2) << std::endl;
             corners_2_d.push_back(laser_object_tracker::feature_extraction::features::Corner2D(feature));
+            tracker.update(feature.head(2));
           }
         }
       }
+
+      Eigen::VectorXd state_vector;
+      tracker.getStateVector(state_vector);
+      std::cout << "State vector:\n" << state_vector << std::endl;
+      laser_object_tracker::feature_extraction::features::Point2D point(state_vector.head(2));
+
+      std_msgs::ColorRGBA color;
+      color.r = 1.0f;
+      color.b = 1.0f;
+      color.a = 1.0f;
+      visualization.publishPoint(point, color);
       visualization.publishCorners(corners_2_d);
 
       visualization.trigger();
@@ -150,8 +177,8 @@ int main(int ac, char **av) {
       ROS_WARN("Received laser scan is empty");
     }
 
+    tracker.predict();
     rate.sleep();
   }
-
   return 0;
 }

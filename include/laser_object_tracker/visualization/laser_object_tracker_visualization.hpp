@@ -76,6 +76,8 @@ class LaserObjectTrackerVisualization {
 
   void publishCorners(const feature_extraction::features::Corners2D& corners);
 
+    void publishPoint(const feature_extraction::features::Point2D& point, const std_msgs::ColorRGBA& color);
+
  private:
   void expandToNColors(int colors);
 

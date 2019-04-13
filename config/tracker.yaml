@@ -7,9 +7,9 @@ segmentation:
 #    angle: 0.1
 #    sigma: 0.1
 feature_extraction:
-#  type: "SearchBasedCornerDetection"
-#  angle_resolution: 0.01
-#  criterion: "varianceCriterion"
-  distance_threshold: 0.01
-  max_iterations: 100
-  probability: 0.99
+  type: "SearchBasedCornerDetection"
+  angle_resolution: 0.01
+  criterion: "varianceCriterion"
+#  distance_threshold: 0.01
+#  max_iterations: 100
+#  probability: 0.99

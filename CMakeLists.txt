@@ -67,6 +67,12 @@ add_library(${PROJECT_NAME}_feature_extraction
 target_link_libraries(${PROJECT_NAME}_feature_extraction
         ${PROJECT_NAME}_data_types)
 
+add_library(${PROJECT_NAME}_tracking
+        src/tracking/kalman_filter.cpp)
+
+target_link_libraries(${PROJECT_NAME}_tracking
+        ${OpenCV_LIBS})
+
 
 
 ## Executables ##
@@ -78,7 +84,8 @@ target_link_libraries(${PROJECT_NAME}_node
         ${catkin_LIBRARIES}
         ${PROJECT_NAME}_data_types
         ${PROJECT_NAME}_segmentation
-        ${PROJECT_NAME}_feature_extraction)
+        ${PROJECT_NAME}_feature_extraction
+        ${PROJECT_NAME}_tracking)
 
 
 ## Tests ##
