@@ -39,47 +39,46 @@
 namespace test {
 
 inline ReferenceSegmentation getSegmentationBD2() {
-    ReferenceSegmentation segmentation;
-    laser_object_tracker::data_types::LaserScanFragment::LaserScanFragmentFactory factory;
+  ReferenceSegmentation segmentation;
+  laser_object_tracker::data_types::LaserScanFragment::LaserScanFragmentFactory factory;
 
-    auto laser_scan = generateLaserScan({1.0, 1.1, 1.2, 1.7, 2.5, 2.8, 2.9, 4.0, 5.0, 5.1});
+  auto laser_scan = generateLaserScan({1.0, 1.1, 1.2, 1.7, 2.5, 2.8, 2.9, 4.0, 5.0, 5.1});
 
-    segmentation.fragment_ = factory.fromLaserScan(laser_scan);
-    segmentation.threshold_ = 0.5;
+  segmentation.fragment_ = factory.fromLaserScan(laser_scan);
+  segmentation.threshold_ = 0.5;
 
-    auto segment = generateLaserScan(laser_scan, 0, 3);
-    segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
+  auto segment = generateLaserScan(laser_scan, 0, 3);
+  segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
 
-    segment = generateLaserScan(laser_scan, 4, 6);
-    segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
+  segment = generateLaserScan(laser_scan, 4, 6);
+  segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
 
-    segment = generateLaserScan(laser_scan, 7, 7);
-    segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
+  segment = generateLaserScan(laser_scan, 7, 7);
+  segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
 
-    segment = generateLaserScan(laser_scan, 8, 9);
-    segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
+  segment = generateLaserScan(laser_scan, 8, 9);
+  segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
 
-    return segmentation;
+  return segmentation;
 }
 
 inline ReferenceSegmentation getSegmentationBD3() {
-    ReferenceSegmentation segmentation;
-    laser_object_tracker::data_types::LaserScanFragment::LaserScanFragmentFactory factory;
+  ReferenceSegmentation segmentation;
+  laser_object_tracker::data_types::LaserScanFragment::LaserScanFragmentFactory factory;
 
-    auto laser_scan = generateLaserScan({1.0, 1.1, 1.2, 1.7, 2.5, 2.8, 2.9, 4.0, 5.0, 5.1});
+  auto laser_scan = generateLaserScan({1.0, 1.1, 1.2, 1.7, 2.5, 2.8, 2.9, 4.0, 5.0, 5.1});
 
-    segmentation.fragment_ = factory.fromLaserScan(laser_scan);
-    segmentation.threshold_ = 1.0;
+  segmentation.fragment_ = factory.fromLaserScan(laser_scan);
+  segmentation.threshold_ = 1.0;
 
-    auto segment = generateLaserScan(laser_scan, 0, 6);
-    segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
+  auto segment = generateLaserScan(laser_scan, 0, 6);
+  segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
 
-    segment = generateLaserScan(laser_scan, 7, 9);
-    segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
+  segment = generateLaserScan(laser_scan, 7, 9);
+  segmentation.segmented_fragment_.push_back(factory.fromLaserScan(segment));
 
-    return segmentation;
+  return segmentation;
 }
-
 }  // namespace test
 
 #endif  // LASER_OBJECT_TRACKER_TEST_SEGMENTATION_TEST_DATA_BD_HPP

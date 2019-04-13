@@ -40,111 +40,110 @@
 
 namespace test {
 struct ReferenceFragment {
-    laser_object_tracker::data_types::LaserScanType laser_scan_;
-    laser_object_tracker::data_types::OcclusionType occlusion_array_;
-    laser_object_tracker::data_types::PointCloudType laser_scan_cloud_;
+  laser_object_tracker::data_types::LaserScanType laser_scan_;
+  laser_object_tracker::data_types::OcclusionType occlusion_array_;
+  laser_object_tracker::data_types::PointCloudType laser_scan_cloud_;
 };
 
 inline ReferenceFragment getFragment1() {
-    ReferenceFragment fragment;
+  ReferenceFragment fragment;
 
-    fragment.laser_scan_ = generateLaserScan({1.0f},
-            0.0,
-            0.0,
-            "test");
+  fragment.laser_scan_ = generateLaserScan({1.0f},
+                                           0.0,
+                                           0.0,
+                                           "test");
 
-    fragment.occlusion_array_.push_back(false);
+  fragment.occlusion_array_.push_back(false);
 
-    fragment.laser_scan_cloud_.points.push_back({1.0, 0.0, 0.0});
+  fragment.laser_scan_cloud_.points.push_back({1.0, 0.0, 0.0});
 
-    return fragment;
+  return fragment;
 }
 
 inline ReferenceFragment getFragment11() {
-    ReferenceFragment fragment;
+  ReferenceFragment fragment;
 
-    fragment.laser_scan_ = test::generateLaserScan({1.0f},
-            M_PI_4,
-            M_PI_4,
-            "test");
+  fragment.laser_scan_ = test::generateLaserScan({1.0f},
+                                                 M_PI_4,
+                                                 M_PI_4,
+                                                 "test");
 
-    fragment.occlusion_array_.push_back(false);
+  fragment.occlusion_array_.push_back(false);
 
-    fragment.laser_scan_cloud_.points.push_back({0.707107, 0.707107, 0.0});
+  fragment.laser_scan_cloud_.points.push_back({0.707107, 0.707107, 0.0});
 
-    return fragment;
+  return fragment;
 }
 
 inline ReferenceFragment getFragment2() {
-    ReferenceFragment fragment;
-    fragment.laser_scan_ = generateLaserScan({1.0, 2.0, 3.0, 2.0, 5.0, 6.0, 1.0, 2.0, 7.0, 5.0, 4.3},
-            -M_PI_2,
-            M_PI_2,
-            "test");
+  ReferenceFragment fragment;
+  fragment.laser_scan_ = generateLaserScan({1.0, 2.0, 3.0, 2.0, 5.0, 6.0, 1.0, 2.0, 7.0, 5.0, 4.3},
+                                           -M_PI_2,
+                                           M_PI_2,
+                                           "test");
 
-    fragment.occlusion_array_.resize(11, false);
+  fragment.occlusion_array_.resize(11, false);
 
-    fragment.laser_scan_cloud_.points = {
-            {0.0, -1.0, 0.0},
-            {0.618034, -1.90211, 0.0},
-            {1.76336, -2.42705, 0.0},
-            {1.61803, -1.17557, 0.0},
-            {4.75528, -1.54509, 0.0},
-            {6.0, 0.0, 0.0},
-            {0.951057, 0.309017, 0.0},
-            {1.61803, 1.17557, 0.0},
-            {4.1145, 5.66312, 0.0},
-            {1.54509, 4.75528, 0.0},
-            {0.0, 4.3, 0.0}
-    };
+  fragment.laser_scan_cloud_.points = {
+      {0.0, -1.0, 0.0},
+      {0.618034, -1.90211, 0.0},
+      {1.76336, -2.42705, 0.0},
+      {1.61803, -1.17557, 0.0},
+      {4.75528, -1.54509, 0.0},
+      {6.0, 0.0, 0.0},
+      {0.951057, 0.309017, 0.0},
+      {1.61803, 1.17557, 0.0},
+      {4.1145, 5.66312, 0.0},
+      {1.54509, 4.75528, 0.0},
+      {0.0, 4.3, 0.0}
+  };
 
-    return fragment;
+  return fragment;
 }
 
 inline ReferenceFragment getFragmentUnique1() {
-    ReferenceFragment fragment;
-    fragment.laser_scan_ = generateLaserScan({1.0f, 2.0f},
-            0.0,
-            M_PI,
-            "test");
+  ReferenceFragment fragment;
+  fragment.laser_scan_ = generateLaserScan({1.0f, 2.0f},
+                                           0.0,
+                                           M_PI,
+                                           "test");
 
-    fragment.occlusion_array_.resize(2, false);
+  fragment.occlusion_array_.resize(2, false);
 
-    fragment.laser_scan_cloud_.points = {
-            {1.0, 0.0, 0.0},
-            {-2.0, 0.0, 0.0}
-    };
+  fragment.laser_scan_cloud_.points = {
+      {1.0, 0.0, 0.0},
+      {-2.0, 0.0, 0.0}
+  };
 
-    return fragment;
+  return fragment;
 }
 
 inline ReferenceFragment getFragmentUnique2() {
-    ReferenceFragment fragment;
-    fragment.laser_scan_ = generateLaserScan({1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0},
-            0.0,
-            M_PI,
-            "test",
-            0.0,
-            20.0);
+  ReferenceFragment fragment;
+  fragment.laser_scan_ = generateLaserScan({1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0},
+                                           0.0,
+                                           M_PI,
+                                           "test",
+                                           0.0,
+                                           20.0);
 
-    fragment.occlusion_array_.resize(10, false);
+  fragment.occlusion_array_.resize(10, false);
 
-    fragment.laser_scan_cloud_.points = {
-            {1.0, 0.0, 0.0},
-            {1.8793852416, 0.6840402867, 0.0},
-            {2.2981333294, 1.9283628291, 0.0},
-            {2.0, 3.4641016151, 0.0},
-            {0.8682408883, 4.9240387651, 0.0},
-            {-1.041889066, 5.9088465181, 0.0},
-            {-3.5, 6.0621778265, 0.0},
-            {-6.128355545, 5.1423008775, 0.0},
-            {-8.4572335871, 3.0781812899, 0.0},
-            {-10.0, 1.22464679914735E-15, 0.0}
-    };
+  fragment.laser_scan_cloud_.points = {
+      {1.0, 0.0, 0.0},
+      {1.8793852416, 0.6840402867, 0.0},
+      {2.2981333294, 1.9283628291, 0.0},
+      {2.0, 3.4641016151, 0.0},
+      {0.8682408883, 4.9240387651, 0.0},
+      {-1.041889066, 5.9088465181, 0.0},
+      {-3.5, 6.0621778265, 0.0},
+      {-6.128355545, 5.1423008775, 0.0},
+      {-8.4572335871, 3.0781812899, 0.0},
+      {-10.0, 1.22464679914735E-15, 0.0}
+  };
 
-    return fragment;
+  return fragment;
 }
-
 }  // namespace test
 
 #endif  // LASER_OBJECT_TRACKER_TEST_DATA_TYPES_TEST_DATA_HPP

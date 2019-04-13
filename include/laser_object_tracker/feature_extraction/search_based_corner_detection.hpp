@@ -31,8 +31,8 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_SEARCH_BASED_CORNER_DETECTION_HPP
-#define LASER_OBJECT_TRACKER_SEARCH_BASED_CORNER_DETECTION_HPP
+#ifndef LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_SEARCH_BASED_CORNER_DETECTION_HPP
+#define LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_SEARCH_BASED_CORNER_DETECTION_HPP
 
 #include "laser_object_tracker/feature_extraction/base_feature_extraction.hpp"
 #include "laser_object_tracker/feature_extraction/features/features.hpp"
@@ -42,45 +42,44 @@ namespace feature_extraction {
 
 class SearchBasedCornerDetection : public BaseFeatureExtraction {
  public:
-    using CriterionFunctor = std::function<double(const Eigen::VectorXd&, const Eigen::VectorXd&)>;
+  using CriterionFunctor = std::function<double(const Eigen::VectorXd&, const Eigen::VectorXd&)>;
 
-    SearchBasedCornerDetection(double theta_resolution, CriterionFunctor criterion);
+  SearchBasedCornerDetection(double theta_resolution, CriterionFunctor criterion);
 
-    bool extractFeature(const data_types::LaserScanFragment& fragment, Eigen::VectorXd& feature) override;
+  bool extractFeature(const data_types::LaserScanFragment& fragment, Eigen::VectorXd& feature) override;
 
-    double getThetaResolution() const;
+  double getThetaResolution() const;
 
-    void setThetaResolution(double theta_resolution);
+  void setThetaResolution(double theta_resolution);
 
-    const CriterionFunctor& getCriterion() const;
+  const CriterionFunctor& getCriterion() const;
 
-    void setCriterion(const CriterionFunctor& criterion);
+  void setCriterion(const CriterionFunctor& criterion);
 
  private:
-    Eigen::VectorXd findMatchingCorner(const Eigen::VectorXd& x, const Eigen::VectorXd& y,
-            const Eigen::Hyperplane<double, 2>& one,
-            const Eigen::Hyperplane<double, 2>& two,
-            const Eigen::Hyperplane<double, 2>& three,
-            const Eigen::Hyperplane<double, 2>& four) const;
+  Eigen::VectorXd findMatchingCorner(const Eigen::VectorXd& x, const Eigen::VectorXd& y,
+                                     const Eigen::Hyperplane<double, 2>& one,
+                                     const Eigen::Hyperplane<double, 2>& two,
+                                     const Eigen::Hyperplane<double, 2>& three,
+                                     const Eigen::Hyperplane<double, 2>& four) const;
 
-    double assessLine(const Eigen::VectorXd& x, const Eigen::VectorXd& y,
-                      const Eigen::Hyperplane<double, 2>& line) const;
+  double assessLine(const Eigen::VectorXd& x, const Eigen::VectorXd& y,
+                    const Eigen::Hyperplane<double, 2>& line) const;
 
-    double assessCorner(const Eigen::VectorXd& x, const Eigen::VectorXd& y,
-                        const Eigen::Hyperplane<double, 2>& line_1, const Eigen::Hyperplane<double, 2>& line_2) const;
+  double assessCorner(const Eigen::VectorXd& x, const Eigen::VectorXd& y,
+                      const Eigen::Hyperplane<double, 2>& line_1, const Eigen::Hyperplane<double, 2>& line_2) const;
 
-    bool linesParallel(const Eigen::Hyperplane<double, 2>& one,
-                       const Eigen::Hyperplane<double, 2>& two) const;
+  bool linesParallel(const Eigen::Hyperplane<double, 2>& one,
+                     const Eigen::Hyperplane<double, 2>& two) const;
 
-    double theta_resolution_;
-    CriterionFunctor criterion_;
+  double theta_resolution_;
+  CriterionFunctor criterion_;
 };
 
 double areaCriterion(const Eigen::VectorXd& x, const Eigen::VectorXd& y);
 double closenessCriterion(const Eigen::VectorXd& x, const Eigen::VectorXd& y);
 double varianceCriterion(const Eigen::VectorXd& x, const Eigen::VectorXd& y);
-
 }  // namespace feature_extraction
 }  // namespace laser_object_tracker
 
-#endif  // LASER_OBJECT_TRACKER_SEARCH_BASED_CORNER_DETECTION_HPP
+#endif  // LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_SEARCH_BASED_CORNER_DETECTION_HPP

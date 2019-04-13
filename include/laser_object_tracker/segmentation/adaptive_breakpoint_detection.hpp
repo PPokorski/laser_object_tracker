@@ -31,8 +31,8 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_ADAPTIVE_BREAKPOINT_DETECTION_HPP
-#define LASER_OBJECT_TRACKER_ADAPTIVE_BREAKPOINT_DETECTION_HPP
+#ifndef LASER_OBJECT_TRACKER_SEGMENTATION_ADAPTIVE_BREAKPOINT_DETECTION_HPP
+#define LASER_OBJECT_TRACKER_SEGMENTATION_ADAPTIVE_BREAKPOINT_DETECTION_HPP
 
 #include "laser_object_tracker/segmentation/base_segmentation.hpp"
 
@@ -41,27 +41,26 @@ namespace segmentation {
 
 class AdaptiveBreakpointDetection : public BaseSegmentation {
  public:
-    AdaptiveBreakpointDetection(double incidence_angle, double distance_resolution);
+  AdaptiveBreakpointDetection(double incidence_angle, double distance_resolution);
 
-    std::vector<data_types::LaserScanFragment> segment(const data_types::LaserScanFragment& fragment) override;
+  std::vector<data_types::LaserScanFragment> segment(const data_types::LaserScanFragment& fragment) override;
 
-    double getIncidenceAngle() const;
+  double getIncidenceAngle() const;
 
-    void setIncidenceAngle(double incidence_angle);
+  void setIncidenceAngle(double incidence_angle);
 
-    double getDistanceResolution() const;
+  double getDistanceResolution() const;
 
-    void setDistanceResolution(double distance_resolution);
+  void setDistanceResolution(double distance_resolution);
 
  private:
-    bool isAboveThreshold(double previous_range, double current_range, double threshold);
-    double calculateThreshold(double previous_range, double angle_increment);
-    
-    double distance_resolution_;
-    double incidence_angle_;
-};
+  bool isAboveThreshold(double previous_range, double current_range, double threshold);
+  double calculateThreshold(double previous_range, double angle_increment);
 
+  double distance_resolution_;
+  double incidence_angle_;
+};
 }  // namespace segmentation
 }  // namespace laser_object_tracker
 
-#endif //LASER_OBJECT_TRACKER_ADAPTIVE_BREAKPOINT_DETECTION_HPP
+#endif //LASER_OBJECT_TRACKER_SEGMENTATION_ADAPTIVE_BREAKPOINT_DETECTION_HPP

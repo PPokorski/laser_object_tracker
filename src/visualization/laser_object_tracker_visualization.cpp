@@ -39,94 +39,87 @@ namespace laser_object_tracker {
 namespace visualization {
 
 void LaserObjectTrackerVisualization::publishPointClouds(const std::vector<data_types::LaserScanFragment>& fragments) {
-    pcl::PointCloud<pcl::PointXYZRGB> pcl;
-    if (!fragments.empty())
-    {
-        pcl.header = fragments.front().pointCloud().header;
-    }
-    expandToNColors(fragments.size());
+  pcl::PointCloud<pcl::PointXYZRGB> pcl;
+  if (!fragments.empty()) {
+    pcl.header = fragments.front().pointCloud().header;
+  }
+  expandToNColors(fragments.size());
 
-    for (int i = 0; i < fragments.size(); ++i)
-    {
-        const auto& fragment = fragments.at(i);
-        const auto& color = colours_.at(i);
+  for (int i = 0; i < fragments.size(); ++i) {
+    const auto& fragment = fragments.at(i);
+    const auto& color = colours_.at(i);
 
-        pcl::PointCloud<pcl::PointXYZRGB> tmp;
-        pcl::copyPointCloud(fragment.pointCloud(), tmp);
-        for (auto& point : tmp.points)
-        {
-            point.rgb = color;
-        }
-
-        pcl += tmp;
+    pcl::PointCloud<pcl::PointXYZRGB> tmp;
+    pcl::copyPointCloud(fragment.pointCloud(), tmp);
+    for (auto& point : tmp.points) {
+      point.rgb = color;
     }
 
-    pub_point_clouds_.publish(pcl);
+    pcl += tmp;
+  }
+
+  pub_point_clouds_.publish(pcl);
 }
 
 void LaserObjectTrackerVisualization::expandToNColors(int colors) {
-    // Taken from
-    // http://docs.pointclouds.org/1.9.1/structpcl_1_1_point_x_y_z_r_g_b.html#ab8cae6380d0d2c30c63ac92053aa2e82
-    if (colors < colours_.size())
-    {
-        return;
-    }
+  // Taken from
+  // http://docs.pointclouds.org/1.9.1/structpcl_1_1_point_x_y_z_r_g_b.html#ab8cae6380d0d2c30c63ac92053aa2e82
+  if (colors < colours_.size()) {
+    return;
+  }
 
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<uint8_t> dist;
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_int_distribution<uint8_t> dist;
 
-    while (colors > colours_.size())
-    {
-        uint8_t r = dist(gen),
-                g = dist(gen),
-                b = dist(gen);
-        uint32_t rgb = static_cast<uint32_t>(r) << 16 |
-                       static_cast<uint32_t>(g) << 8  |
-                       static_cast<uint32_t>(b);
+  while (colors > colours_.size()) {
+    uint8_t r = dist(gen),
+        g = dist(gen),
+        b = dist(gen);
+    uint32_t rgb = static_cast<uint32_t>(r) << 16 |
+        static_cast<uint32_t>(g) << 8 |
+        static_cast<uint32_t>(b);
 
-        colours_.push_back(*reinterpret_cast<float*>(&rgb));
+    colours_.push_back(*reinterpret_cast<float *>(&rgb));
 
-        std_msgs::ColorRGBA color;
-        color.r = r / 255.0;
-        color.g = g / 255.0;
-        color.b = b / 255.0;
-        color.a = 1.0;
-        rgb_colors_.push_back(color);
-    }
+    std_msgs::ColorRGBA color;
+    color.r = r / 255.0;
+    color.g = g / 255.0;
+    color.b = b / 255.0;
+    color.a = 1.0;
+    rgb_colors_.push_back(color);
+  }
 }
 
 void LaserObjectTrackerVisualization::publishSegment(const feature_extraction::features::Segment2D& segment,
                                                      const std_msgs::ColorRGBA& color) {
-    Eigen::Vector3d point_1, point_2;
-    point_1.head<2>() = segment.start_;
-    point_2.head<2>() = segment.end_;
+  Eigen::Vector3d point_1, point_2;
+  point_1.head<2>() = segment.start_;
+  point_2.head<2>() = segment.end_;
 
-    rviz_visual_tools_->publishLine(point_1, point_2, color);
+  rviz_visual_tools_->publishLine(point_1, point_2, color);
 }
 
 void LaserObjectTrackerVisualization::publishSegments(const feature_extraction::features::Segments2D& segments) {
-    expandToNColors(segments.size());
+  expandToNColors(segments.size());
 
-    for (int i = 0; i < segments.size(); ++i)
-    {
-        publishSegment(segments.at(i), rgb_colors_.at(i));
-    }
+  for (int i = 0; i < segments.size(); ++i) {
+    publishSegment(segments.at(i), rgb_colors_.at(i));
+  }
 }
 
 void LaserObjectTrackerVisualization::publishCorner(const feature_extraction::features::Corner2D& corner,
                                                     const std_msgs::ColorRGBA& color) {
-    publishSegment({corner.corner_, corner.point_1_}, color);
-    publishSegment({corner.corner_, corner.point_2_}, color);
+  publishSegment({corner.corner_, corner.point_1_}, color);
+  publishSegment({corner.corner_, corner.point_2_}, color);
 }
 
 void LaserObjectTrackerVisualization::publishCorners(const feature_extraction::features::Corners2D& corners) {
-    expandToNColors(corners.size());
+  expandToNColors(corners.size());
 
-    for (int i = 0; i < corners.size(); ++i)
-    {
-        publishCorner(corners.at(i), rgb_colors_.at(i));
-    }
+  for (int i = 0; i < corners.size(); ++i) {
+    publishCorner(corners.at(i), rgb_colors_.at(i));
+  }
 }
 }  // namespace visualization
 }  // namespace laser_object_tracker

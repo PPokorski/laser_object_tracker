@@ -9,7 +9,7 @@ project(laser_object_tracker)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
+set(CMAKE_CXX_CPPLINT /usr/local/bin/cpplint;--linelength=120 --root=include)
 
 ## Dependancies ##
 find_package(OpenCV REQUIRED COMPONENTS

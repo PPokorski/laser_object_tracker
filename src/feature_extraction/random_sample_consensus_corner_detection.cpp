@@ -39,86 +39,80 @@ namespace laser_object_tracker {
 namespace feature_extraction {
 
 RandomSampleConsensusCornerDetection::RandomSampleConsensusCornerDetection(double distance_threshold,
-                                                                             int max_iterations,
-                                                                             double probability) :
-        sample_consensus_(ModelType::Ptr(nullptr), 0.0) {
-    sample_consensus_.setDistanceThreshold(distance_threshold);
-    sample_consensus_.setMaxIterations(max_iterations);
-    sample_consensus_.setProbability(probability);
+                                                                           int max_iterations,
+                                                                           double probability) :
+    sample_consensus_(ModelType::Ptr(nullptr), 0.0) {
+  sample_consensus_.setDistanceThreshold(distance_threshold);
+  sample_consensus_.setMaxIterations(max_iterations);
+  sample_consensus_.setProbability(probability);
 }
-
 
 bool RandomSampleConsensusCornerDetection::extractFeature(const data_types::LaserScanFragment& fragment,
                                                           Eigen::VectorXd& feature) {
-    if (fragment.empty())
-    {
-        throw std::invalid_argument("Passed fragment is empty.");
-    }
+  if (fragment.empty()) {
+    throw std::invalid_argument("Passed fragment is empty.");
+  }
 
-    data_types::PointCloudType::ConstPtr point_cloud_ptr = fragment.pointCloud().makeShared();
-    if (sample_consensus_.getSampleConsensusModel())
-    {
-        sample_consensus_.getSampleConsensusModel()->setInputCloud(
-                data_types::PointCloudType::ConstPtr(point_cloud_ptr));
-    }
-    else
-    {
-        sample_consensus_.setSampleConsensusModel(ModelType::Ptr(
-                new ModelType(point_cloud_ptr, true)));
-    }
+  data_types::PointCloudType::ConstPtr point_cloud_ptr = fragment.pointCloud().makeShared();
+  if (sample_consensus_.getSampleConsensusModel()) {
+    sample_consensus_.getSampleConsensusModel()->setInputCloud(
+        data_types::PointCloudType::ConstPtr(point_cloud_ptr));
+  } else {
+    sample_consensus_.setSampleConsensusModel(ModelType::Ptr(
+        new ModelType(point_cloud_ptr, true)));
+  }
 
-    if (!sample_consensus_.computeModel())
-    {
-        return false;
-    }
+  if (!sample_consensus_.computeModel()) {
+    return false;
+  }
 
-    Eigen::VectorXf coefficients;
-    sample_consensus_.getModelCoefficients(coefficients);
+  Eigen::VectorXf coefficients;
+  sample_consensus_.getModelCoefficients(coefficients);
 
-    Eigen::Hyperplane<double, 2> line_1 = Eigen::Hyperplane<double, 2>::Through(
-            Eigen::Vector2d(coefficients(0),
-                            coefficients(1)),
-            Eigen::Vector2d(coefficients(0) + coefficients(2),
-                            coefficients(1) + coefficients(3))),
-                                line_2 = Eigen::Hyperplane<double, 2>::Through(
-            Eigen::Vector2d(coefficients(0),
-                            coefficients(1)),
-            Eigen::Vector2d(coefficients(0) - coefficients(3),
-                            coefficients(1) + coefficients(2)));
+  Eigen::Hyperplane<double, 2> line_1 = Eigen::Hyperplane<double, 2>::Through(
+      Eigen::Vector2d(coefficients(0),
+                      coefficients(1)),
+      Eigen::Vector2d(coefficients(0) + coefficients(2),
+                      coefficients(1) + coefficients(3))),
+      line_2 = Eigen::Hyperplane<double, 2>::Through(
+      Eigen::Vector2d(coefficients(0),
+                      coefficients(1)),
+      Eigen::Vector2d(coefficients(0) - coefficients(3),
+                      coefficients(1) + coefficients(2)));
 
-    PointType min, max;
-    pcl::getMinMax3D(*point_cloud_ptr, min, max);
+  PointType min, max;
+  pcl::getMinMax3D(*point_cloud_ptr, min, max);
 
-    feature.resize(6);
-    feature.template head<2>() = coefficients.template head<2>().cast<double>();
-    feature.template segment<2>(2) = line_1.projection(Eigen::Vector2d(min.x, min.y));
-    feature.template tail<2>() = line_2.projection(Eigen::Vector2d(max.x, max.y));
+  feature.resize(6);
+  feature.template head<2>() = coefficients.template head<2>().cast<double>();
+  feature.template segment<2>(2) = line_1.projection(Eigen::Vector2d(min.x, min.y));
+  feature.template tail<2>() = line_2.projection(Eigen::Vector2d(max.x, max.y));
 
-    return true;
+  return true;
 }
 
 double RandomSampleConsensusCornerDetection::getDistanceThreshold() {
-    return sample_consensus_.getDistanceThreshold();
+  return sample_consensus_.getDistanceThreshold();
 }
 
 void RandomSampleConsensusCornerDetection::setDistanceThreshold(double distance_threshold) {
-    sample_consensus_.setDistanceThreshold(distance_threshold);
+  sample_consensus_.setDistanceThreshold(distance_threshold);
 }
 
 int RandomSampleConsensusCornerDetection::getMaxIterations() {
-    return sample_consensus_.getMaxIterations();
+  return sample_consensus_.getMaxIterations();
 }
 
 void RandomSampleConsensusCornerDetection::setMaxIterations(int max_iterations) {
-    sample_consensus_.setMaxIterations(max_iterations);
+  sample_consensus_.setMaxIterations(max_iterations);
 }
 
 double RandomSampleConsensusCornerDetection::getProbability() {
-    return sample_consensus_.getProbability();
+  return sample_consensus_.getProbability();
 }
 
 void RandomSampleConsensusCornerDetection::setProbability(double probability) {
-    sample_consensus_.setProbability(probability);
+  sample_consensus_.setProbability(probability);
 }
 }  // namespace feature_extraction
 }  // namespace laser_object_tracker

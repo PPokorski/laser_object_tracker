@@ -31,26 +31,9 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_SEGMENTATION_DISTANCE_CALCULATION_HPP
-#define LASER_OBJECT_TRACKER_SEGMENTATION_DISTANCE_CALCULATION_HPP
+#ifndef LASER_OBJECT_TRACKER_VISUALIZATION_VISUALIZATION_HPP
+#define LASER_OBJECT_TRACKER_VISUALIZATION_VISUALIZATION_HPP
 
-#include "laser_object_tracker/data_types/definitions.hpp"
+#include "laser_object_tracker/visualization/laser_object_tracker_visualization.hpp"
 
-namespace laser_object_tracker {
-namespace segmentation {
-
-template<class T>
-T distance(const T& one,
-           const T& two) {
-  return std::fabs(one - two);
-}
-
-template<class T>
-T distanceDirected(const T& one,
-                   const T& two) {
-  return one - two;
-}
-}  // namespace segmentation
-}  // namespace laser_object_tracker
-
-#endif  // LASER_OBJECT_TRACKER_SEGMENTATION_DISTANCE_CALCULATION_HPP
+#endif  // LASER_OBJECT_TRACKER_VISUALIZATION_VISUALIZATION_HPP

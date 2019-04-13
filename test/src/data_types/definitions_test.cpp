@@ -36,28 +36,28 @@
 #include "laser_object_tracker/data_types/definitions.hpp"
 
 TEST(DefinitionsTest, BoolConversionTest) {
-    using laser_object_tracker::data_types::Bool;
+  using laser_object_tracker::data_types::Bool;
 
-    EXPECT_EQ(Bool(true), true);
-    EXPECT_NE(Bool(true), false);
+  EXPECT_EQ(Bool(true), true);
+  EXPECT_NE(Bool(true), false);
 
-    EXPECT_EQ(Bool(false), false);
-    EXPECT_NE(Bool(false), true);
+  EXPECT_EQ(Bool(false), false);
+  EXPECT_NE(Bool(false), true);
 }
 
 TEST(DefinitionsTest, BoolOperations) {
-    using laser_object_tracker::data_types::Bool;
+  using laser_object_tracker::data_types::Bool;
 
-    EXPECT_FALSE(!Bool(true));
-    EXPECT_TRUE(!Bool(false));
+  EXPECT_FALSE(!Bool(true));
+  EXPECT_TRUE(!Bool(false));
 
-    EXPECT_TRUE(Bool(true) && Bool(true));
-    EXPECT_FALSE(Bool(true) && Bool(false));
-    EXPECT_FALSE(Bool(false) && Bool(true));
-    EXPECT_FALSE(Bool(false) && Bool(false));
+  EXPECT_TRUE(Bool(true) && Bool(true));
+  EXPECT_FALSE(Bool(true) && Bool(false));
+  EXPECT_FALSE(Bool(false) && Bool(true));
+  EXPECT_FALSE(Bool(false) && Bool(false));
 
-    EXPECT_TRUE(Bool(true) || Bool(true));
-    EXPECT_TRUE(Bool(true) || Bool(false));
-    EXPECT_TRUE(Bool(false) || Bool(true));
-    EXPECT_FALSE(Bool(false) || Bool(false));
+  EXPECT_TRUE(Bool(true) || Bool(true));
+  EXPECT_TRUE(Bool(true) || Bool(false));
+  EXPECT_TRUE(Bool(false) || Bool(true));
+  EXPECT_FALSE(Bool(false) || Bool(false));
 }

@@ -41,32 +41,31 @@
 
 namespace test {
 struct ReferenceSegmentation {
-    laser_object_tracker::data_types::LaserScanFragment fragment_;
-    double threshold_;
-    double resolution_;
-    std::vector<laser_object_tracker::data_types::LaserScanFragment> segmented_fragment_;
+  laser_object_tracker::data_types::LaserScanFragment fragment_;
+  double threshold_;
+  double resolution_;
+  std::vector<laser_object_tracker::data_types::LaserScanFragment> segmented_fragment_;
 };
 
 inline ReferenceSegmentation getSegmentationEmpty() {
-    ReferenceSegmentation segmentation;
+  ReferenceSegmentation segmentation;
 
-    return segmentation;
+  return segmentation;
 }
 
 inline ReferenceSegmentation getSegmentation1() {
-    ReferenceSegmentation segmentation;
-    laser_object_tracker::data_types::LaserScanFragment::LaserScanFragmentFactory factory;
+  ReferenceSegmentation segmentation;
+  laser_object_tracker::data_types::LaserScanFragment::LaserScanFragmentFactory factory;
 
-    auto laser_scan = generateLaserScan({3.0},
-            0.0,
-            0.0);
+  auto laser_scan = generateLaserScan({3.0},
+                                      0.0,
+                                      0.0);
 
-    segmentation.fragment_ = factory.fromLaserScan(laser_scan);
-    segmentation.segmented_fragment_.push_back(factory.fromLaserScan(laser_scan));
+  segmentation.fragment_ = factory.fromLaserScan(laser_scan);
+  segmentation.segmented_fragment_.push_back(factory.fromLaserScan(laser_scan));
 
-    return segmentation;
+  return segmentation;
 }
-
 }  // namespace test
 
 #endif  // LASER_OBJECT_TRACKER_TEST_SEGMENTATION_TEST_DATA_HPP

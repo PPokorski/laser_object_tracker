@@ -31,8 +31,6 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include <laser_object_tracker/segmentation/adaptive_breakpoint_detection.hpp>
-
 #include "laser_object_tracker/segmentation/adaptive_breakpoint_detection.hpp"
 
 #include "laser_object_tracker/segmentation/distance_calculation.hpp"
@@ -41,71 +39,64 @@ namespace laser_object_tracker {
 namespace segmentation {
 
 AdaptiveBreakpointDetection::AdaptiveBreakpointDetection(double incidence_angle, double distance_resolution) :
-        BaseSegmentation(),
-        incidence_angle_(incidence_angle),
-        distance_resolution_(distance_resolution) {}
+    BaseSegmentation(),
+    incidence_angle_(incidence_angle),
+    distance_resolution_(distance_resolution) {}
 
 std::vector<data_types::LaserScanFragment>
 AdaptiveBreakpointDetection::segment(const data_types::LaserScanFragment& fragment) {
-    if (fragment.empty())
-    {
-        return {};
+  if (fragment.empty()) {
+    return {};
+  }
+
+  auto current_begin = fragment.cbegin();
+  auto previous = fragment.cbegin();
+  auto current = fragment.cbegin();
+
+  std::vector<data_types::LaserScanFragment> segments;
+  while (current != fragment.cend()) {
+    previous = current++;
+
+    if (!current_begin->isValid()) {
+      current_begin = current;
+    } else if (current == fragment.cend() ||
+        !current->isValid() ||
+        isAboveThreshold(previous->range(), current->range(),
+                         calculateThreshold(previous->range(), fragment.getAngleIncrement()))) {
+      segments.emplace_back(fragment,
+                            current_begin - fragment.cbegin(),
+                            current - fragment.cbegin());
+
+      current_begin = current;
     }
-
-    auto current_begin = fragment.cbegin();
-    auto previous = fragment.cbegin();
-    auto current = fragment.cbegin();
-
-    std::vector<data_types::LaserScanFragment> segments;
-    while (current != fragment.cend())
-    {
-        previous = current++;
-
-        if (!current_begin->isValid())
-        {
-            current_begin = current;
-        }
-        else if (current == fragment.cend() ||
-                !current->isValid() ||
-                isAboveThreshold(previous->range(), current->range(),
-                    calculateThreshold(previous->range(), fragment.getAngleIncrement())))
-        {
-
-            segments.emplace_back(fragment,
-                                  current_begin - fragment.cbegin(),
-                                  current - fragment.cbegin());
-
-            current_begin = current;
-        }
-    }
-    return segments;
+  }
+  return segments;
 }
 
 double AdaptiveBreakpointDetection::getIncidenceAngle() const {
-    return incidence_angle_;
+  return incidence_angle_;
 }
 
 void AdaptiveBreakpointDetection::setIncidenceAngle(double incidence_angle) {
-    incidence_angle_ = incidence_angle;
+  incidence_angle_ = incidence_angle;
 }
 
 double AdaptiveBreakpointDetection::getDistanceResolution() const {
-    return distance_resolution_;
+  return distance_resolution_;
 }
 
 void AdaptiveBreakpointDetection::setDistanceResolution(double distance_resolution) {
-    distance_resolution_ = distance_resolution;
+  distance_resolution_ = distance_resolution;
 }
 
 bool AdaptiveBreakpointDetection::isAboveThreshold(double previous_range, double current_range, double threshold) {
-    return distance(previous_range, current_range) > threshold;
+  return distance(previous_range, current_range) > threshold;
 }
 
 double AdaptiveBreakpointDetection::calculateThreshold(double previous_range, double angle_increment) {
-    return previous_range * (std::sin(angle_increment) /
-                             std::sin(incidence_angle_ - angle_increment)) +
-                             3 * distance_resolution_;
+  return previous_range * (std::sin(angle_increment) /
+      std::sin(incidence_angle_ - angle_increment)) +
+      3 * distance_resolution_;
 }
-
 }  // namespace segmentation
 }  // namespace laser_object_tracker
