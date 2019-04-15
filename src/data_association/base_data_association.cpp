@@ -31,39 +31,13 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include "laser_object_tracker/tracking/kalman_filter.hpp"
-
-#include <opencv2/core/eigen.hpp>
+#include "laser_object_tracker/data_association/base_data_association.hpp"
 
 namespace laser_object_tracker {
-namespace tracking {
+namespace data_association {
+constexpr int BaseDataAssociation::NO_ASSIGNMENT;
+const Eigen::MatrixXd BaseDataAssociation::NOT_NEEDED = Eigen::MatrixXd();
 
-KalmanFilter::KalmanFilter(int state_dimensions, int measurement_dimensions,
-                           const Eigen::MatrixXd& transition_matrix,
-                           const Eigen::MatrixXd& process_noise_covariance,
-                           const Eigen::MatrixXd& measurement_noise_covariance,
-                           const Eigen::MatrixXd& initial_state_covariance) :
-    kalman_filter_(state_dimensions, measurement_dimensions, 0, CV_64F) {
-  cv::eigen2cv(transition_matrix, kalman_filter_.transitionMatrix);
-  cv::eigen2cv(process_noise_covariance, kalman_filter_.processNoiseCov);
-  cv::eigen2cv(measurement_noise_covariance, kalman_filter_.measurementNoiseCov);
-  cv::eigen2cv(initial_state_covariance, kalman_filter_.errorCovPost);
-
-  cv::setIdentity(kalman_filter_.measurementMatrix);
-}
-
-void KalmanFilter::predict() {
-  kalman_filter_.predict();
-}
-
-void KalmanFilter::update(const Eigen::VectorXd& observation) {
-  cv::Mat measurement;
-  cv::eigen2cv(observation, measurement);
-  kalman_filter_.correct(measurement);
-}
-
-void KalmanFilter::getStateVector(Eigen::VectorXd& state_vector) {
-  cv::cv2eigen(kalman_filter_.statePost, state_vector);
-}
-}  // namespace tracking
+BaseDataAssociation::BaseDataAssociation(double max_allowed_cost) : max_allowed_cost_(max_allowed_cost) {}
+}  // namespace data_association
 }  // namespace laser_object_tracker

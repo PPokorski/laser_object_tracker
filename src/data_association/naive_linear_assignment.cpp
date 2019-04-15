@@ -31,39 +31,34 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include "laser_object_tracker/tracking/kalman_filter.hpp"
-
-#include <opencv2/core/eigen.hpp>
+#include "laser_object_tracker/data_association/naive_linear_assignment.hpp"
 
 namespace laser_object_tracker {
-namespace tracking {
+namespace data_association {
+NaiveLinearAssignment::NaiveLinearAssignment(double max_allowed_cost) : BaseDataAssociation(max_allowed_cost) {}
 
-KalmanFilter::KalmanFilter(int state_dimensions, int measurement_dimensions,
-                           const Eigen::MatrixXd& transition_matrix,
-                           const Eigen::MatrixXd& process_noise_covariance,
-                           const Eigen::MatrixXd& measurement_noise_covariance,
-                           const Eigen::MatrixXd& initial_state_covariance) :
-    kalman_filter_(state_dimensions, measurement_dimensions, 0, CV_64F) {
-  cv::eigen2cv(transition_matrix, kalman_filter_.transitionMatrix);
-  cv::eigen2cv(process_noise_covariance, kalman_filter_.processNoiseCov);
-  cv::eigen2cv(measurement_noise_covariance, kalman_filter_.measurementNoiseCov);
-  cv::eigen2cv(initial_state_covariance, kalman_filter_.errorCovPost);
+double NaiveLinearAssignment::solve(const Eigen::MatrixXd& cost_matrix,
+                                    const Eigen::MatrixXd& covariance_matrix,
+                                    Eigen::VectorXi& assignment_vector) {
+  assignment_vector.setConstant(cost_matrix.rows(), NO_ASSIGNMENT);
+  double assignment_cost = 0.0;
+  for (int row = 0; row < cost_matrix.rows(); ++row) {
+    double cost = std::numeric_limits<double>::infinity();
+    int assigned_index = NO_ASSIGNMENT;
+    for (int col = 0; col < cost_matrix.cols(); ++col) {
+      if (cost_matrix(row, col) < cost &&
+          cost_matrix(row, col) <= max_allowed_cost_ &&
+          (assignment_vector.head(row).array() != col).all()) {
+        cost = cost_matrix(row, col);
+        assigned_index = col;
+      }
+    }
 
-  cv::setIdentity(kalman_filter_.measurementMatrix);
+    assignment_vector(row) = assigned_index;
+    assignment_cost += std::isfinite(cost) ? cost : 0.0;
+  }
+
+  return assignment_cost;
 }
-
-void KalmanFilter::predict() {
-  kalman_filter_.predict();
-}
-
-void KalmanFilter::update(const Eigen::VectorXd& observation) {
-  cv::Mat measurement;
-  cv::eigen2cv(observation, measurement);
-  kalman_filter_.correct(measurement);
-}
-
-void KalmanFilter::getStateVector(Eigen::VectorXd& state_vector) {
-  cv::cv2eigen(kalman_filter_.statePost, state_vector);
-}
-}  // namespace tracking
+}  // namespace data_association
 }  // namespace laser_object_tracker

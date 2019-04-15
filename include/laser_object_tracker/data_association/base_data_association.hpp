@@ -31,39 +31,39 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include "laser_object_tracker/tracking/kalman_filter.hpp"
+#ifndef LASER_OBJECT_TRACKER_DATA_ASSOCIATION_BASE_DATA_ASSOCIATION_HPP
+#define LASER_OBJECT_TRACKER_DATA_ASSOCIATION_BASE_DATA_ASSOCIATION_HPP
 
-#include <opencv2/core/eigen.hpp>
+#include <Eigen/Core>
 
 namespace laser_object_tracker {
-namespace tracking {
+namespace data_association {
 
-KalmanFilter::KalmanFilter(int state_dimensions, int measurement_dimensions,
-                           const Eigen::MatrixXd& transition_matrix,
-                           const Eigen::MatrixXd& process_noise_covariance,
-                           const Eigen::MatrixXd& measurement_noise_covariance,
-                           const Eigen::MatrixXd& initial_state_covariance) :
-    kalman_filter_(state_dimensions, measurement_dimensions, 0, CV_64F) {
-  cv::eigen2cv(transition_matrix, kalman_filter_.transitionMatrix);
-  cv::eigen2cv(process_noise_covariance, kalman_filter_.processNoiseCov);
-  cv::eigen2cv(measurement_noise_covariance, kalman_filter_.measurementNoiseCov);
-  cv::eigen2cv(initial_state_covariance, kalman_filter_.errorCovPost);
+class BaseDataAssociation {
+ public:
+  static constexpr int NO_ASSIGNMENT = -1;
+  static const Eigen::MatrixXd NOT_NEEDED;
 
-  cv::setIdentity(kalman_filter_.measurementMatrix);
-}
+  explicit BaseDataAssociation(double max_allowed_cost = std::numeric_limits<double>::infinity());
 
-void KalmanFilter::predict() {
-  kalman_filter_.predict();
-}
+  virtual double solve(const Eigen::MatrixXd& cost_matrix,
+                       const Eigen::MatrixXd& covariance_matrix,
+                       Eigen::VectorXi& assignment_vector) = 0;
 
-void KalmanFilter::update(const Eigen::VectorXd& observation) {
-  cv::Mat measurement;
-  cv::eigen2cv(observation, measurement);
-  kalman_filter_.correct(measurement);
-}
+  virtual ~BaseDataAssociation() = default;
 
-void KalmanFilter::getStateVector(Eigen::VectorXd& state_vector) {
-  cv::cv2eigen(kalman_filter_.statePost, state_vector);
-}
-}  // namespace tracking
+  double getMaxAllowedCost() const {
+    return max_allowed_cost_;
+  }
+
+  void setMaxAllowedCost(double max_allowed_cost) {
+    max_allowed_cost_ = max_allowed_cost;
+  }
+
+ protected:
+  double max_allowed_cost_;
+};
+}  // namespace data_association
 }  // namespace laser_object_tracker
+
+#endif //LASER_OBJECT_TRACKER_DATA_ASSOCIATION_BASE_DATA_ASSOCIATION_HPP

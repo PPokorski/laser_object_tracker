@@ -31,6 +31,7 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
+#include "laser_object_tracker/data_association/data_association.hpp"
 #include "laser_object_tracker/data_types/data_types.hpp"
 #include "laser_object_tracker/feature_extraction/feature_extraction.hpp"
 #include "laser_object_tracker/segmentation/segmentation.hpp"

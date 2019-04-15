@@ -73,6 +73,11 @@ add_library(${PROJECT_NAME}_tracking
 target_link_libraries(${PROJECT_NAME}_tracking
         ${OpenCV_LIBS})
 
+add_library(${PROJECT_NAME}_data_association
+        src/data_association/base_data_association.cpp
+        src/data_association/hungarian_algorithm.cpp
+        src/data_association/naive_linear_assignment.cpp)
+
 
 
 ## Executables ##
@@ -82,6 +87,7 @@ add_executable(${PROJECT_NAME}_node
 
 target_link_libraries(${PROJECT_NAME}_node
         ${catkin_LIBRARIES}
+        ${PROJECT_NAME}_data_association
         ${PROJECT_NAME}_data_types
         ${PROJECT_NAME}_segmentation
         ${PROJECT_NAME}_feature_extraction
@@ -94,6 +100,8 @@ include_directories(
 
 catkin_add_gtest(${PROJECT_NAME}_test
         test/src/test_motion_tracking.cpp
+        test/src/data_association/hungarian_algorithm_test.cpp
+        test/src/data_association/naive_linear_assignment_test.cpp
         test/src/data_types/definitions_test.cpp
         test/src/data_types/laser_scan_fragment_test.cpp
         test/src/feautre_extraction/random_sample_consensus_segment_detection_test.cpp
@@ -106,4 +114,5 @@ catkin_add_gtest(${PROJECT_NAME}_test
 target_link_libraries(${PROJECT_NAME}_test
         ${PROJECT_NAME}_data_types
         ${PROJECT_NAME}_segmentation
-        ${PROJECT_NAME}_feature_extraction)
+        ${PROJECT_NAME}_feature_extraction
+        ${PROJECT_NAME}_data_association)
