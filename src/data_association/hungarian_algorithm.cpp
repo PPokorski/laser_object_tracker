@@ -48,7 +48,7 @@ double HungarianAlgorithm::solve(const Eigen::MatrixXd& cost_matrix,
 
   min_dimension_ = std::min(cost_matrix.rows(), cost_matrix.cols());
   Eigen::ArrayXXd cost_matrix_copy = cost_matrix.array();
-  assignment_vector.setConstant(cost_matrix.rows(), NO_ASSIGNMENT);
+  assignment_vector.setConstant(cost_matrix.cols(), NO_ASSIGNMENT);
 
   star_matrix_.setConstant(cost_matrix.rows(), cost_matrix.cols(), false);
   new_star_matrix_.setConstant(cost_matrix.rows(), cost_matrix.cols(), false);
@@ -114,7 +114,7 @@ void HungarianAlgorithm::buildAssignmentVector(const Eigen::MatrixXd& cost_matri
     for (int col = 0; col < star_matrix_.cols(); ++col) {
       if (star_matrix_(row, col) &&
           cost_matrix(row, col) <= max_allowed_cost_) {
-        assignment(row) = col;
+        assignment(col) = row;
         break;
       }
     }
@@ -125,11 +125,11 @@ double HungarianAlgorithm::computeAssignmentCost(const Eigen::MatrixXd& cost_mat
                                                  Eigen::ArrayXXd& cost_matrix_copy,
                                                  Eigen::VectorXi& assignment) {
   double cost = 0.0;
-  int col = 0;
+  int row = 0;
 
-  for (int row = 0; row < cost_matrix.rows(); ++row) {
-    col = assignment(row);
-    if (col != NO_ASSIGNMENT) {
+  for (int col = 0; col < cost_matrix.cols(); ++col) {
+    row = assignment(col);
+    if (row != NO_ASSIGNMENT) {
       cost += cost_matrix(row, col);
     }
   }

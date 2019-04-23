@@ -31,42 +31,36 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_TRACKING_KALMAN_FILTER_HPP
-#define LASER_OBJECT_TRACKER_TRACKING_KALMAN_FILTER_HPP
+#ifndef LASER_OBJECT_TRACKER_TRACKING_MULTI_TRACKER_H
+#define LASER_OBJECT_TRACKER_TRACKING_MULTI_TRACKER_H
 
-#include <opencv2/video/tracking.hpp>
+#include <vector>
 
+#include "laser_object_tracker/data_association/base_data_association.hpp"
 #include "laser_object_tracker/tracking/base_tracking.hpp"
 
 namespace laser_object_tracker {
 namespace tracking {
-class KalmanFilter : public BaseTracking {
+class MultiTracker {
  public:
-  KalmanFilter(int state_dimensions,
-               int measurement_dimensions,
-               const Eigen::MatrixXd& transition_matrix,
-               const Eigen::MatrixXd& measurement_matrix,
-               const Eigen::MatrixXd& measurement_noise_covariance,
-               const Eigen::MatrixXd& initial_state_covariance,
-               const Eigen::MatrixXd& process_noise_covariance);
+  using DistanceFunctor = std::function<double(const Eigen::VectorXd&, const BaseTracking&)>;
 
-  void initFromState(const Eigen::VectorXd& init_state) override;
+  MultiTracker(DistanceFunctor distance_calculator,
+               std::unique_ptr<data_association::BaseDataAssociation> data_association,
+               std::unique_ptr<BaseTracking> tracker_prototype);
 
-  void initFromMeasurement(const Eigen::VectorXd& measurement) override;
+  void predict();
 
-  void predict() override;
+  void update(const std::vector<Eigen::VectorXd>& measurements);
 
-  void update(const Eigen::VectorXd& measurement) override;
+ private:
+  DistanceFunctor distance_calculator_;
+  std::unique_ptr<data_association::BaseDataAssociation> data_association_;
 
-  Eigen::VectorXd getStateVector() const override;
-
-  std::unique_ptr<BaseTracking> clone() const override;
-
-private:
-  cv::KalmanFilter kalman_filter_;
-  cv::Mat inverse_measurement_matrix_;
+  std::unique_ptr<BaseTracking> tracker_prototype_;
+  std::vector<std::unique_ptr<BaseTracking>> trackers_;
 };
 }  // namespace tracking
 }  // namespace laser_object_tracker
 
-#endif //LASER_OBJECT_TRACKER_TRACKING_KALMAN_FILTER_HPP
+#endif //LASER_OBJECT_TRACKER_TRACKING_MULTI_TRACKER_H

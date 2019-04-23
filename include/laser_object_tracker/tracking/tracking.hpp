@@ -36,5 +36,6 @@
 
 #include "laser_object_tracker/tracking/base_tracking.hpp"
 #include "laser_object_tracker/tracking/kalman_filter.hpp"
+#include "laser_object_tracker/tracking/multi_tracker.hpp"
 
 #endif  // LASER_OBJECT_TRACKER_TRACKING_TRACKING_HPP

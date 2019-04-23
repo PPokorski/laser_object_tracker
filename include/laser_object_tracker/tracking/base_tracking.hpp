@@ -34,6 +34,8 @@
 #ifndef LASER_OBJECT_TRACKER_TRACKING_BASE_TRACKING_HPP
 #define LASER_OBJECT_TRACKER_TRACKING_BASE_TRACKING_HPP
 
+#include <memory>
+
 #include <Eigen/Core>
 
 namespace laser_object_tracker {
@@ -41,13 +43,28 @@ namespace tracking {
 
 class BaseTracking {
  public:
+  BaseTracking(int state_dimensions, int measurement_dimensions);
+
+  virtual void initFromState(const Eigen::VectorXd& init_state) = 0;
+
+  virtual void initFromState();
+
+  virtual void initFromMeasurement(const Eigen::VectorXd& measurement) = 0;
+
+  virtual void initFromMeasurement();
+
   virtual void predict() = 0;
 
-  virtual void update(const Eigen::VectorXd& observation) = 0;
+  virtual void update(const Eigen::VectorXd& measurement) = 0;
 
-  virtual void getStateVector(Eigen::VectorXd& state_vector) = 0;
+  virtual Eigen::VectorXd getStateVector() const = 0;
+
+  virtual std::unique_ptr<BaseTracking> clone() const = 0;
 
   virtual ~BaseTracking() = default;
+
+ protected:
+  int state_dimensions_, measurement_dimensions_;
 };
 }  // namespace tracking
 }  // namespace laser_object_tracker

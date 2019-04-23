@@ -31,42 +31,16 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_TRACKING_KALMAN_FILTER_HPP
-#define LASER_OBJECT_TRACKER_TRACKING_KALMAN_FILTER_HPP
-
-#include <opencv2/video/tracking.hpp>
-
 #include "laser_object_tracker/tracking/base_tracking.hpp"
 
-namespace laser_object_tracker {
-namespace tracking {
-class KalmanFilter : public BaseTracking {
- public:
-  KalmanFilter(int state_dimensions,
-               int measurement_dimensions,
-               const Eigen::MatrixXd& transition_matrix,
-               const Eigen::MatrixXd& measurement_matrix,
-               const Eigen::MatrixXd& measurement_noise_covariance,
-               const Eigen::MatrixXd& initial_state_covariance,
-               const Eigen::MatrixXd& process_noise_covariance);
+laser_object_tracker::tracking::BaseTracking::BaseTracking(int state_dimensions, int measurement_dimensions)
+    : state_dimensions_(state_dimensions), measurement_dimensions_(measurement_dimensions) {}
 
-  void initFromState(const Eigen::VectorXd& init_state) override;
-
-  void initFromMeasurement(const Eigen::VectorXd& measurement) override;
-
-  void predict() override;
-
-  void update(const Eigen::VectorXd& measurement) override;
-
-  Eigen::VectorXd getStateVector() const override;
-
-  std::unique_ptr<BaseTracking> clone() const override;
-
-private:
-  cv::KalmanFilter kalman_filter_;
-  cv::Mat inverse_measurement_matrix_;
-};
-}  // namespace tracking
-}  // namespace laser_object_tracker
-
-#endif //LASER_OBJECT_TRACKER_TRACKING_KALMAN_FILTER_HPP
+void laser_object_tracker::tracking::BaseTracking::initFromState() {
+  Eigen::VectorXd default_state = Eigen::VectorXd::Zero(state_dimensions_);
+  initFromState(default_state);
+}
+void laser_object_tracker::tracking::BaseTracking::initFromMeasurement() {
+  Eigen::VectorXd measurement = Eigen::VectorXd::Zero(measurement_dimensions_);
+  initFromMeasurement(measurement);
+}

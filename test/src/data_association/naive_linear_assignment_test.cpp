@@ -87,11 +87,9 @@ TEST(NaiveLinearAssignmentTest, AllAssignedTest) {
 TEST(NaiveLinearAssignmentTest, NoAssignmentTest) {
   laser_object_tracker::data_association::NaiveLinearAssignment naive_linear_assignment;
 
-  Eigen::MatrixXd cost_matrix(4, 2);
-  cost_matrix << 0.0, 7.0,
-      1.0, 2.0,
-      2.0, 0.0,
-      3.0, 5.0;
+  Eigen::MatrixXd cost_matrix(2, 4);
+  cost_matrix << 0.0, 1.0, 2.0, 3.0,
+                 7.0, 2.0, 0.0, 5.0;
   Eigen::VectorXi assignment_vector;
   EXPECT_NEAR(2.0,
               naive_linear_assignment.solve(cost_matrix,
@@ -108,7 +106,7 @@ TEST(NaiveLinearAssignmentTest, MaxAllowedCostTest) {
 
   Eigen::MatrixXd cost_matrix(2, 2);
   cost_matrix << 11.0, 12.0,
-      13.0, 14.0;
+                 13.0, 14.0;
   Eigen::VectorXi assignment_vector;
   EXPECT_NEAR(0.0,
               naive_linear_assignment.solve(cost_matrix,

@@ -9,7 +9,7 @@ project(laser_object_tracker)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_CPPLINT /usr/local/bin/cpplint;--linelength=120 --root=include)
+#set(CMAKE_CXX_CPPLINT /usr/local/bin/cpplint;--linelength=120 --root=include)
 
 ## Dependancies ##
 find_package(OpenCV REQUIRED COMPONENTS
@@ -68,10 +68,13 @@ target_link_libraries(${PROJECT_NAME}_feature_extraction
         ${PROJECT_NAME}_data_types)
 
 add_library(${PROJECT_NAME}_tracking
-        src/tracking/kalman_filter.cpp)
+        src/tracking/base_tracking.cpp
+        src/tracking/kalman_filter.cpp
+        src/tracking/multi_tracker.cpp)
 
 target_link_libraries(${PROJECT_NAME}_tracking
-        ${OpenCV_LIBS})
+        ${OpenCV_LIBS}
+        ${PROJECT_NAME}_data_association)
 
 add_library(${PROJECT_NAME}_data_association
         src/data_association/base_data_association.cpp
@@ -109,10 +112,12 @@ catkin_add_gtest(${PROJECT_NAME}_test
         test/src/feautre_extraction/search_based_corner_detection_test.cpp
         test/src/segmentation/adaptive_breakpoint_detection_test.cpp
         test/src/segmentation/breakpoint_detection_test.cpp
-        test/src/segmentation/distance_calculation_test.cpp)
+        test/src/segmentation/distance_calculation_test.cpp
+        test/src/tracking/kalman_filter_test.cpp)
 
 target_link_libraries(${PROJECT_NAME}_test
         ${PROJECT_NAME}_data_types
         ${PROJECT_NAME}_segmentation
         ${PROJECT_NAME}_feature_extraction
-        ${PROJECT_NAME}_data_association)
+        ${PROJECT_NAME}_data_association
+        ${PROJECT_NAME}_tracking)

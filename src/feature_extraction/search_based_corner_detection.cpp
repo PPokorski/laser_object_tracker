@@ -134,8 +134,8 @@ Eigen::VectorXd SearchBasedCornerDetection::findMatchingCorner(const Eigen::Vect
   // one with the best
   auto opposite_corner = std::find_if(actual_corner + 1, corners_assessments.end(),
                                       [&actual_corner, this](const auto& element) {
-                                        return linesParallel(*actual_corner->first.first, *element.first.first) &&
-                                            linesParallel(*actual_corner->first.second, *element.first.second);
+                                        return this->linesParallel(*actual_corner->first.first, *element.first.first) &&
+                                            this->linesParallel(*actual_corner->first.second, *element.first.second);
                                       });
 
   if (opposite_corner == corners_assessments.end()) {

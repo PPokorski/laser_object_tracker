@@ -40,21 +40,21 @@ NaiveLinearAssignment::NaiveLinearAssignment(double max_allowed_cost) : BaseData
 double NaiveLinearAssignment::solve(const Eigen::MatrixXd& cost_matrix,
                                     const Eigen::MatrixXd& covariance_matrix,
                                     Eigen::VectorXi& assignment_vector) {
-  assignment_vector.setConstant(cost_matrix.rows(), NO_ASSIGNMENT);
+  assignment_vector.setConstant(cost_matrix.cols(), NO_ASSIGNMENT);
   double assignment_cost = 0.0;
-  for (int row = 0; row < cost_matrix.rows(); ++row) {
+  for (int col = 0; col < cost_matrix.cols(); ++col) {
     double cost = std::numeric_limits<double>::infinity();
     int assigned_index = NO_ASSIGNMENT;
-    for (int col = 0; col < cost_matrix.cols(); ++col) {
+    for (int row = 0; row < cost_matrix.rows(); ++row) {
       if (cost_matrix(row, col) < cost &&
           cost_matrix(row, col) <= max_allowed_cost_ &&
-          (assignment_vector.head(row).array() != col).all()) {
+          (assignment_vector.head(col).array() != row).all()) {
         cost = cost_matrix(row, col);
-        assigned_index = col;
+        assigned_index = row;
       }
     }
 
-    assignment_vector(row) = assigned_index;
+    assignment_vector(col) = assigned_index;
     assignment_cost += std::isfinite(cost) ? cost : 0.0;
   }
 

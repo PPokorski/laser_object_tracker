@@ -38,32 +38,52 @@
 namespace laser_object_tracker {
 namespace tracking {
 
-KalmanFilter::KalmanFilter(int state_dimensions, int measurement_dimensions,
+KalmanFilter::KalmanFilter(int state_dimensions,
+                           int measurement_dimensions,
                            const Eigen::MatrixXd& transition_matrix,
-                           const Eigen::MatrixXd& process_noise_covariance,
+                           const Eigen::MatrixXd& measurement_matrix,
                            const Eigen::MatrixXd& measurement_noise_covariance,
-                           const Eigen::MatrixXd& initial_state_covariance) :
-    kalman_filter_(state_dimensions, measurement_dimensions, 0, CV_64F) {
+                           const Eigen::MatrixXd& initial_state_covariance,
+                           const Eigen::MatrixXd& process_noise_covariance) :
+    BaseTracking(state_dimensions, measurement_dimensions),
+    kalman_filter_(state_dimensions, measurement_dimensions, 0, CV_64F),
+    inverse_measurement_matrix_(measurement_matrix.cols(), measurement_matrix.rows(), CV_64F) {
   cv::eigen2cv(transition_matrix, kalman_filter_.transitionMatrix);
+  cv::eigen2cv(measurement_matrix, kalman_filter_.measurementMatrix);
   cv::eigen2cv(process_noise_covariance, kalman_filter_.processNoiseCov);
   cv::eigen2cv(measurement_noise_covariance, kalman_filter_.measurementNoiseCov);
   cv::eigen2cv(initial_state_covariance, kalman_filter_.errorCovPost);
 
-  cv::setIdentity(kalman_filter_.measurementMatrix);
+  cv::invert(kalman_filter_.measurementMatrix, inverse_measurement_matrix_, cv::DECOMP_SVD);
 }
 
 void KalmanFilter::predict() {
   kalman_filter_.predict();
 }
 
-void KalmanFilter::update(const Eigen::VectorXd& observation) {
-  cv::Mat measurement;
-  cv::eigen2cv(observation, measurement);
-  kalman_filter_.correct(measurement);
+void KalmanFilter::update(const Eigen::VectorXd& measurement) {
+  cv::Mat measurement_cv;
+  cv::eigen2cv(measurement, measurement_cv);
+  kalman_filter_.correct(measurement_cv);
 }
 
-void KalmanFilter::getStateVector(Eigen::VectorXd& state_vector) {
+Eigen::VectorXd KalmanFilter::getStateVector() const {
+  Eigen::VectorXd state_vector;
   cv::cv2eigen(kalman_filter_.statePost, state_vector);
+  return state_vector;
+}
+
+std::unique_ptr<BaseTracking> KalmanFilter::clone() const {
+  return std::unique_ptr<BaseTracking>(new KalmanFilter(*this));
+}
+
+void KalmanFilter::initFromState(const Eigen::VectorXd& init_state) {
+  cv::eigen2cv(init_state, kalman_filter_.statePost);
+}
+void KalmanFilter::initFromMeasurement(const Eigen::VectorXd& measurement) {
+  cv::Mat measurement_cv;
+  cv::eigen2cv(measurement, measurement_cv);
+  kalman_filter_.statePost = inverse_measurement_matrix_ * measurement_cv;
 }
 }  // namespace tracking
 }  // namespace laser_object_tracker

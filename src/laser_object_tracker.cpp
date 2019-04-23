@@ -119,6 +119,10 @@ int main(int ac, char **av) {
       0.0, 0.0, 1.0, 0.0,
       0.0, 0.0, 0.0, 1.0;
 
+  Eigen::MatrixXd measurement(2, 4);
+  measurement << 1.0, 0.0, 0.0, 0.0,
+                 0.0, 1.0, 0.0, 0.0;
+
   Eigen::MatrixXd process_noise_covariance(4, 4);
   process_noise_covariance << 0.1, 0.0, 0.0, 0.0,
       0.0, 0.1, 0.0, 0.0,
@@ -136,9 +140,10 @@ int main(int ac, char **av) {
       1.0, 1.0, 1.0, 1.0;
   laser_object_tracker::tracking::KalmanFilter tracker(4, 2,
                                                        transition,
-                                                       process_noise_covariance,
+                                                       measurement,
                                                        measurement_noise_covariance,
-                                                       initial_state_covariance);
+                                                       initial_state_covariance,
+                                                       process_noise_covariance);
 
   while (ros::ok()) {
     ros::spinOnce();
@@ -162,7 +167,7 @@ int main(int ac, char **av) {
       }
 
       Eigen::VectorXd state_vector;
-      tracker.getStateVector(state_vector);
+      state_vector = tracker.getStateVector();
       std::cout << "State vector:\n" << state_vector << std::endl;
       laser_object_tracker::feature_extraction::features::Point2D point(state_vector.head(2));
 

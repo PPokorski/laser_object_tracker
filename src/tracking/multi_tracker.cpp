@@ -31,42 +31,42 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_TRACKING_KALMAN_FILTER_HPP
-#define LASER_OBJECT_TRACKER_TRACKING_KALMAN_FILTER_HPP
-
-#include <opencv2/video/tracking.hpp>
-
-#include "laser_object_tracker/tracking/base_tracking.hpp"
+#include "laser_object_tracker/tracking/multi_tracker.hpp"
 
 namespace laser_object_tracker {
 namespace tracking {
-class KalmanFilter : public BaseTracking {
- public:
-  KalmanFilter(int state_dimensions,
-               int measurement_dimensions,
-               const Eigen::MatrixXd& transition_matrix,
-               const Eigen::MatrixXd& measurement_matrix,
-               const Eigen::MatrixXd& measurement_noise_covariance,
-               const Eigen::MatrixXd& initial_state_covariance,
-               const Eigen::MatrixXd& process_noise_covariance);
+MultiTracker::MultiTracker(DistanceFunctor distance_calculator,
+                           std::unique_ptr<data_association::BaseDataAssociation> data_association,
+                           std::unique_ptr<BaseTracking> tracker_prototype)
+    : distance_calculator_(std::move(distance_calculator)),
+      data_association_(std::move(data_association)),
+      tracker_prototype_(std::move(tracker_prototype)) {}
 
-  void initFromState(const Eigen::VectorXd& init_state) override;
+void MultiTracker::predict() {
+  for (auto& tracker : trackers_) {
+    tracker->predict();
+  }
+}
 
-  void initFromMeasurement(const Eigen::VectorXd& measurement) override;
+void MultiTracker::update(const std::vector<Eigen::VectorXd>& measurements) {
+  Eigen::MatrixXd cost_matrix(trackers_.size(), measurements.size());
+  for (int row = 0; row < cost_matrix.rows(); ++row) {
+    for (int col = 0; col < cost_matrix.cols(); ++col) {
+      cost_matrix(row, col) = distance_calculator_(measurements.at(col), *trackers_.at(row));
+    }
+  }
 
-  void predict() override;
+  Eigen::VectorXi assignment_vector;
+  data_association_->solve(cost_matrix, data_association_->NOT_NEEDED, assignment_vector);
 
-  void update(const Eigen::VectorXd& measurement) override;
-
-  Eigen::VectorXd getStateVector() const override;
-
-  std::unique_ptr<BaseTracking> clone() const override;
-
-private:
-  cv::KalmanFilter kalman_filter_;
-  cv::Mat inverse_measurement_matrix_;
-};
+  for (int i = 0; i < measurements.size(); ++i) {
+    if (assignment_vector(i) != data_association_->NO_ASSIGNMENT) {
+      trackers_.at(assignment_vector(i))->update(measurements.at(i));
+    } else {
+      trackers_.push_back(std::move(tracker_prototype_->clone()));
+      trackers_.back()->initFromMeasurement(measurements.at(i));
+    }
+  }
+}
 }  // namespace tracking
 }  // namespace laser_object_tracker
-
-#endif //LASER_OBJECT_TRACKER_TRACKING_KALMAN_FILTER_HPP
