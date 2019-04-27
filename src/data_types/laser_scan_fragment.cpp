@@ -58,6 +58,10 @@ LaserScanFragment LaserScanFragment::LaserScanFragmentFactory::fromLaserScan(Las
 }
 
 void LaserScanFragment::LaserScanFragmentFactory::completeInitialization(LaserScanFragment& fragment) {
+  if (fragment.laser_scan_.ranges.empty()) {
+    return;
+  }
+
   sensor_msgs::PointCloud2 pcl2;
   laser_projector_.projectLaser(fragment.laser_scan_, pcl2);
   pcl::moveFromROSMsg(pcl2, fragment.laser_scan_cloud_);
@@ -182,6 +186,22 @@ LaserScanFragment::Reference LaserScanFragment::operator[](size_t index) {
 
 LaserScanFragment::ConstReference LaserScanFragment::operator[](size_t index) const {
   return elements_[index];
+}
+
+FragmentElement& LaserScanFragment::front() {
+  return elements_.front();
+}
+
+const FragmentElement& LaserScanFragment::front() const {
+  return elements_.front();
+}
+
+FragmentElement& LaserScanFragment::back() {
+  return elements_.back();
+}
+
+const FragmentElement& LaserScanFragment::back() const {
+  return elements_.back();
 }
 
 bool LaserScanFragment::isValid() const {

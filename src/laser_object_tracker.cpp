@@ -34,6 +34,7 @@
 #include "laser_object_tracker/data_association/data_association.hpp"
 #include "laser_object_tracker/data_types/data_types.hpp"
 #include "laser_object_tracker/feature_extraction/feature_extraction.hpp"
+#include "laser_object_tracker/filtering/filtering.hpp"
 #include "laser_object_tracker/segmentation/segmentation.hpp"
 #include "laser_object_tracker/visualization/visualization.hpp"
 #include "laser_object_tracker/tracking/tracking.hpp"
@@ -77,6 +78,25 @@ std::map<std::string, feature_extraction::SearchBasedCornerDetection::CriterionF
           {"varianceCriterion", feature_extraction::varianceCriterion}};
 }
 
+std::shared_ptr<laser_object_tracker::filtering::BaseSegmentedFiltering> getFiltering(ros::NodeHandle& nh) {
+  int min_points, max_points;
+  nh.getParam("filtering/min_points", min_points);
+  nh.getParam("filtering/max_points", max_points);
+  auto points = std::make_unique<laser_object_tracker::filtering::PointsNumberFilter>(min_points, max_points);
+
+  double min_area, max_area, min_dimension;
+  nh.getParam("filtering/min_area", min_area);
+  nh.getParam("filtering/max_area", max_area);
+  nh.getParam("filtering/min_dimension", min_dimension);
+  auto obb = std::make_unique<laser_object_tracker::filtering::OBBAreaFilter>(min_area, max_area, min_dimension);
+
+  std::vector<std::unique_ptr<laser_object_tracker::filtering::BaseSegmentedFiltering>> filters;
+  filters.push_back(std::move(points));
+  filters.push_back(std::move(obb));
+
+  return std::make_unique<laser_object_tracker::filtering::AggregateSegmentedFiltering>(std::move(filters));
+}
+
 std::unique_ptr<laser_object_tracker::tracking::BaseTracking> getTracker() {
   Eigen::MatrixXd transition(4, 4);
   transition << 1.0, 0.0, 0.1, 0.0,
@@ -112,8 +132,10 @@ std::unique_ptr<laser_object_tracker::tracking::BaseTracking> getTracker() {
                           process_noise_covariance);
 }
 
-std::unique_ptr<laser_object_tracker::data_association::BaseDataAssociation> getDataASsociation() {
-  return std::make_unique<laser_object_tracker::data_association::HungarianAlgorithm>();
+std::unique_ptr<laser_object_tracker::data_association::BaseDataAssociation> getDataASsociation(ros::NodeHandle& nh) {
+  double max_cost;
+  nh.getParam("data_association/max_cost", max_cost);
+  return std::make_unique<laser_object_tracker::data_association::HungarianAlgorithm>(max_cost);
 }
 
 laser_object_tracker::tracking::MultiTracker::DistanceFunctor getDistanceFunctor() {
@@ -135,6 +157,7 @@ int main(int ac, char **av) {
 
   ROS_INFO("Initializing segmentation");
   auto segmentation = getSegmentation(pnh);
+  auto filtering = getFiltering(pnh);
 
   std::string feature_type;
   double angle_resolution;
@@ -164,7 +187,7 @@ int main(int ac, char **av) {
 
   laser_object_tracker::tracking::MultiTracker multi_tracker(
       getDistanceFunctor(),
-      getDataASsociation(),
+      getDataASsociation(pnh),
       getTracker(),
       getTrackerRejection());
 
@@ -176,6 +199,7 @@ int main(int ac, char **av) {
       visualization.clearMarkers();
       visualization.publishPointCloud(fragment);
       auto segments = segmentation->segment(fragment);
+      filtering->filter(segments);
       ROS_INFO("Detected %lu segments", segments.size());
       visualization.publishFeatures(segments);
 
@@ -198,8 +222,8 @@ int main(int ac, char **av) {
 //      visualization.publishAssignments(multi_tracker, features, cost_matrix, assignment_vector);
 
       multi_tracker.update(features);
-//      visualization.publishCorners(corners_2_d);
-//      visualization.publishMultiTracker(multi_tracker);
+      visualization.publishCorners(corners_2_d);
+      visualization.publishMultiTracker(multi_tracker);
 
       visualization.trigger();
     } else {

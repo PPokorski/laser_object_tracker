@@ -9,7 +9,7 @@ project(laser_object_tracker)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-#set(CMAKE_CXX_CPPLINT /usr/local/bin/cpplint;--linelength=120 --root=include)
+set(CMAKE_CXX_CPPLINT /usr/local/bin/cpplint;--linelength=120 --root=include)
 
 ## Dependancies ##
 find_package(OpenCV REQUIRED COMPONENTS
@@ -59,6 +59,16 @@ add_library(${PROJECT_NAME}_segmentation
 target_link_libraries(${PROJECT_NAME}_segmentation
         ${PROJECT_NAME}_data_types)
 
+add_library(${PROJECT_NAME}_filtering
+        src/filtering/aggregate_segmented_filtering.cpp
+        src/filtering/base_segmented_filtering.cpp
+        src/filtering/obb_area_filter.cpp
+        src/filtering/occlusion_detection.cpp
+        src/filtering/points_number_filter.cpp)
+
+target_link_libraries(${PROJECT_NAME}_filtering
+        ${PROJECT_NAME}_data_types)
+
 add_library(${PROJECT_NAME}_feature_extraction
         src/feature_extraction/random_sample_consensus_corner_detection.cpp
         src/feature_extraction/random_sample_consensus_segment_detection.cpp
@@ -93,8 +103,9 @@ target_link_libraries(${PROJECT_NAME}_node
         ${catkin_LIBRARIES}
         ${PROJECT_NAME}_data_association
         ${PROJECT_NAME}_data_types
-        ${PROJECT_NAME}_segmentation
         ${PROJECT_NAME}_feature_extraction
+        ${PROJECT_NAME}_filtering
+        ${PROJECT_NAME}_segmentation
         ${PROJECT_NAME}_tracking)
 
 #add_executable(${PROJECT_NAME}_multi_tracker
@@ -111,7 +122,6 @@ include_directories(
         test/include)
 
 catkin_add_gtest(${PROJECT_NAME}_test
-        test/src/test_motion_tracking.cpp
         test/src/data_association/hungarian_algorithm_test.cpp
         test/src/data_association/naive_linear_assignment_test.cpp
         test/src/data_types/definitions_test.cpp
@@ -119,6 +129,10 @@ catkin_add_gtest(${PROJECT_NAME}_test
         test/src/feautre_extraction/random_sample_consensus_segment_detection_test.cpp
         test/src/feautre_extraction/sample_consensus_model_cross2d_test.cpp
         test/src/feautre_extraction/search_based_corner_detection_test.cpp
+        test/src/filtering/aggregate_segmented_filtering_test.cpp
+        test/src/filtering/base_segmented_filtering_test.cpp
+        test/src/filtering/obb_area_filter_test.cpp
+        test/src/filtering/points_number_filter_test.cpp
         test/src/segmentation/adaptive_breakpoint_detection_test.cpp
         test/src/segmentation/breakpoint_detection_test.cpp
         test/src/segmentation/distance_calculation_test.cpp
@@ -128,8 +142,10 @@ catkin_add_gtest(${PROJECT_NAME}_test
 
 target_link_libraries(${PROJECT_NAME}_test
         gmock_main
+        gtest_main
         ${PROJECT_NAME}_data_types
         ${PROJECT_NAME}_segmentation
         ${PROJECT_NAME}_feature_extraction
+        ${PROJECT_NAME}_filtering
         ${PROJECT_NAME}_data_association
         ${PROJECT_NAME}_tracking)

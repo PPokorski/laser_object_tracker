@@ -50,6 +50,7 @@ class LaserObjectTrackerVisualization {
  public:
   LaserObjectTrackerVisualization(ros::NodeHandle& pnh, const std::string& base_frame) {
     rviz_visual_tools_.reset(new rviz_visual_tools::RvizVisualTools(base_frame, "visualization/markers"));
+    rviz_visual_tools_->setLifetime(0.0);
 
     pub_point_cloud_ = pnh.advertise<data_types::PointCloudType>("visualization/point_cloud", 1);
     pub_point_clouds_ = pnh.advertise<pcl::PointCloud<pcl::PointXYZRGB>>("visualization/point_clouds", 1);

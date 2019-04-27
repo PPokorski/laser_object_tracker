@@ -31,9 +31,27 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include <gtest/gtest.h>
+#ifndef LASER_OBJECT_TRACKER_FILTERING_AGGREGATE_SEGMENTED_FILTERING_HPP
+#define LASER_OBJECT_TRACKER_FILTERING_AGGREGATE_SEGMENTED_FILTERING_HPP
 
-int main(int argc, char **argv) {
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
+#include "laser_object_tracker/filtering/base_segmented_filtering.hpp"
+
+namespace laser_object_tracker {
+namespace filtering {
+
+class AggregateSegmentedFiltering : public BaseSegmentedFiltering {
+ public:
+  AggregateSegmentedFiltering(std::vector<std::unique_ptr<BaseSegmentedFiltering>>&& filters);
+
+  bool shouldFilter(const data_types::LaserScanFragment& fragment) const override;
+
+  void add(std::unique_ptr<BaseSegmentedFiltering> filter);
+
+ private:
+  std::vector<std::unique_ptr<BaseSegmentedFiltering>> filters_;
+};
+
+}  // namespace filtering
+}  // namespace laser_object_tracker
+
+#endif //LASER_OBJECT_TRACKER_FILTERING_AGGREGATE_SEGMENTED_FILTERING_HPP

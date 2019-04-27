@@ -150,7 +150,9 @@ void LaserObjectTrackerVisualization::publishTracker(const tracking::BaseTrackin
 void LaserObjectTrackerVisualization::publishMultiTracker(const tracking::MultiTracker& multi_tracker) {
   expandToNColors(multi_tracker.size());
   for (int i = 0; i < multi_tracker.size(); ++i) {
-    publishTracker(multi_tracker.at(i), rgb_colors_.at(i));
+    if (multi_tracker.at(i).getStateVector().tail<2>().norm() > 0.1) {
+      publishTracker(multi_tracker.at(i), rgb_colors_.at(i));
+    }
   }
 }
 void LaserObjectTrackerVisualization::publishAssignments(const tracking::MultiTracker& multi_tracker,
@@ -167,7 +169,10 @@ void LaserObjectTrackerVisualization::publishAssignments(const tracking::MultiTr
 
       Eigen::Affine3d pose = rviz_visual_tools_->getVectorBetweenPoints(start, end);
       if (!(end - start).isZero()) {
-        rviz_visual_tools_->publishArrow(pose, rviz_visual_tools::RED, rviz_visual_tools::XXXLARGE, (end - start).norm());
+        rviz_visual_tools_->publishArrow(pose,
+                                         rviz_visual_tools::RED,
+                                         rviz_visual_tools::XXXLARGE,
+                                         (end - start).norm());
       }
 
       using namespace std::string_literals;
