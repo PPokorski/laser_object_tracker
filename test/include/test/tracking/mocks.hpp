@@ -31,52 +31,43 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_TRACKING_KALMAN_FILTER_HPP
-#define LASER_OBJECT_TRACKER_TRACKING_KALMAN_FILTER_HPP
+#ifndef TEST_TEST_TRACKING_MOCKS_HPP
+#define TEST_TEST_TRACKING_MOCKS_HPP
 
-#include <opencv2/video/tracking.hpp>
+#include <gmock/gmock.h>
 
 #include "laser_object_tracker/tracking/base_tracking.hpp"
 
-namespace laser_object_tracker {
-namespace tracking {
-class KalmanFilter : public BaseTracking {
+namespace test {
+class MockTracking : public laser_object_tracker::tracking::BaseTracking {
  public:
-  KalmanFilter(int state_dimensions,
-               int measurement_dimensions,
-               const Eigen::MatrixXd& transition_matrix,
-               const Eigen::MatrixXd& measurement_matrix,
-               const Eigen::MatrixXd& measurement_noise_covariance,
-               const Eigen::MatrixXd& initial_state_covariance,
-               const Eigen::MatrixXd& process_noise_covariance);
+  MockTracking() : BaseTracking(0, 0) {}
 
-  KalmanFilter(const KalmanFilter& other) noexcept;
+  MockTracking(int s, int m) : BaseTracking(0, 0) {}
 
-  KalmanFilter(KalmanFilter&& other) noexcept = default;
+  MOCK_METHOD1(initFromState, void(const Eigen::VectorXd&));
 
-  KalmanFilter& operator=(const KalmanFilter& other) noexcept;
+  MOCK_METHOD1(initFromMeasurement, void(const Eigen::VectorXd&));
 
-  KalmanFilter& operator=(KalmanFilter&& other) noexcept = default;
+  MOCK_METHOD0(predict, void());
 
-  void initFromState(const Eigen::VectorXd& init_state) override;
+  MOCK_METHOD1(update, void(const Eigen::VectorXd&));
 
-  void initFromMeasurement(const Eigen::VectorXd& measurement) override;
+  MOCK_CONST_METHOD0(getStateVector, Eigen::VectorXd());
 
-  void predict() override;
-
-  void update(const Eigen::VectorXd& measurement) override;
-
-  Eigen::VectorXd getStateVector() const override;
-
-  std::unique_ptr<BaseTracking> clone() const override;
-
-private:
-  void copyMats(const KalmanFilter& other);
-
-  cv::KalmanFilter kalman_filter_;
-  cv::Mat inverse_measurement_matrix_;
+  std::unique_ptr<BaseTracking> clone() const override {
+    return std::unique_ptr<BaseTracking>(new MockTracking());
+  }
 };
-}  // namespace tracking
-}  // namespace laser_object_tracker
 
-#endif //LASER_OBJECT_TRACKER_TRACKING_KALMAN_FILTER_HPP
+class MockTrackerRejection : public laser_object_tracker::tracking::BaseTrackerRejection {
+  MOCK_CONST_METHOD1(invalidate, bool(const laser_object_tracker::tracking::BaseTracking& tracker));
+
+  std::unique_ptr<BaseTrackerRejection> clone() const override {
+    return std::unique_ptr<BaseTrackerRejection>(new MockTrackerRejection());
+  }
+};
+
+}  // namespace test
+
+#endif //TEST_TEST_TRACKING_MOCKS_HPP

@@ -31,52 +31,37 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_TRACKING_KALMAN_FILTER_HPP
-#define LASER_OBJECT_TRACKER_TRACKING_KALMAN_FILTER_HPP
-
-#include <opencv2/video/tracking.hpp>
-
-#include "laser_object_tracker/tracking/base_tracking.hpp"
+#include "laser_object_tracker/tracking/iteration_tracker_rejection.hpp"
 
 namespace laser_object_tracker {
 namespace tracking {
-class KalmanFilter : public BaseTracking {
- public:
-  KalmanFilter(int state_dimensions,
-               int measurement_dimensions,
-               const Eigen::MatrixXd& transition_matrix,
-               const Eigen::MatrixXd& measurement_matrix,
-               const Eigen::MatrixXd& measurement_noise_covariance,
-               const Eigen::MatrixXd& initial_state_covariance,
-               const Eigen::MatrixXd& process_noise_covariance);
 
-  KalmanFilter(const KalmanFilter& other) noexcept;
+IterationTrackerRejection::IterationTrackerRejection(int max_iterations_without_update)
+    : max_iterations_without_update_(max_iterations_without_update),
+      iterations_without_update_(0) {}
 
-  KalmanFilter(KalmanFilter&& other) noexcept = default;
+bool IterationTrackerRejection::invalidate(const BaseTracking& tracker) const {
+  return iterations_without_update_ > max_iterations_without_update_;
+}
 
-  KalmanFilter& operator=(const KalmanFilter& other) noexcept;
+void IterationTrackerRejection::updated(const BaseTracking& tracker) {
+  iterations_without_update_ = 0;
+}
 
-  KalmanFilter& operator=(KalmanFilter&& other) noexcept = default;
+void IterationTrackerRejection::notUpdated(const BaseTracking& tracker) {
+  ++iterations_without_update_;
+}
 
-  void initFromState(const Eigen::VectorXd& init_state) override;
+std::unique_ptr<BaseTrackerRejection> IterationTrackerRejection::clone() const {
+  return std::unique_ptr<BaseTrackerRejection>(new IterationTrackerRejection(*this));
+}
 
-  void initFromMeasurement(const Eigen::VectorXd& measurement) override;
+int IterationTrackerRejection::getMaxIterationsWithoutUpdate() const {
+  return max_iterations_without_update_;
+}
 
-  void predict() override;
-
-  void update(const Eigen::VectorXd& measurement) override;
-
-  Eigen::VectorXd getStateVector() const override;
-
-  std::unique_ptr<BaseTracking> clone() const override;
-
-private:
-  void copyMats(const KalmanFilter& other);
-
-  cv::KalmanFilter kalman_filter_;
-  cv::Mat inverse_measurement_matrix_;
-};
+void IterationTrackerRejection::setMaxIterationsWithoutUpdate(int max_iterations_without_update) {
+  max_iterations_without_update_ = max_iterations_without_update;
+}
 }  // namespace tracking
 }  // namespace laser_object_tracker
-
-#endif //LASER_OBJECT_TRACKER_TRACKING_KALMAN_FILTER_HPP

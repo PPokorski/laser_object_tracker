@@ -42,6 +42,7 @@
 #include "laser_object_tracker/data_types/definitions.hpp"
 #include "laser_object_tracker/data_types/laser_scan_fragment.hpp"
 #include "laser_object_tracker/feature_extraction/features/features.hpp"
+#include "laser_object_tracker/tracking/multi_tracker.hpp"
 
 namespace laser_object_tracker {
 namespace visualization {
@@ -76,7 +77,11 @@ class LaserObjectTrackerVisualization {
 
   void publishCorners(const feature_extraction::features::Corners2D& corners);
 
-    void publishPoint(const feature_extraction::features::Point2D& point, const std_msgs::ColorRGBA& color);
+  void publishPoint(const feature_extraction::features::Point2D& point, const std_msgs::ColorRGBA& color);
+
+  void publishTracker(const tracking::BaseTracking& tracker, const std_msgs::ColorRGBA& color);
+
+  void publishMultiTracker(const tracking::MultiTracker& multi_tracker);
 
  private:
   void expandToNColors(int colors);

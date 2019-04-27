@@ -42,7 +42,7 @@ double HungarianAlgorithm::solve(const Eigen::MatrixXd& cost_matrix,
                                  const Eigen::MatrixXd& covariance_matrix,
                                  Eigen::VectorXi& assignment_vector) {
   if (cost_matrix.size() == 0) {
-    assignment_vector.resize(0);
+    assignment_vector.setConstant(cost_matrix.cols(), NO_ASSIGNMENT);
     return 0.0;
   }
 

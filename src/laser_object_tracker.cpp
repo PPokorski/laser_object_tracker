@@ -36,7 +36,7 @@
 #include "laser_object_tracker/feature_extraction/feature_extraction.hpp"
 #include "laser_object_tracker/segmentation/segmentation.hpp"
 #include "laser_object_tracker/visualization/visualization.hpp"
-#include "laser_object_tracker/tracking/kalman_filter.hpp"
+#include "laser_object_tracker/tracking/tracking.hpp"
 
 laser_object_tracker::data_types::LaserScanFragment::LaserScanFragmentFactory factory;
 laser_object_tracker::data_types::LaserScanFragment fragment;
@@ -77,6 +77,51 @@ std::map<std::string, feature_extraction::SearchBasedCornerDetection::CriterionF
           {"varianceCriterion", feature_extraction::varianceCriterion}};
 }
 
+std::unique_ptr<laser_object_tracker::tracking::BaseTracking> getTracker() {
+  Eigen::MatrixXd transition(4, 4);
+  transition << 1.0, 0.0, 0.1, 0.0,
+                0.0, 1.0, 0.0, 0.1,
+                0.0, 0.0, 1.0, 0.0,
+                0.0, 0.0, 0.0, 1.0;
+
+  Eigen::MatrixXd measurement(2, 4);
+  measurement << 1.0, 0.0, 0.0, 0.0,
+                 0.0, 1.0, 0.0, 0.0;
+
+  Eigen::MatrixXd process_noise_covariance(4, 4);
+  process_noise_covariance << 0.1, 0.0, 0.0, 0.0,
+                              0.0, 0.1, 0.0, 0.0,
+                              0.0, 0.0, 0.1, 0.0,
+                              0.0, 0.0, 0.0, 0.1;
+
+  Eigen::MatrixXd measurement_noise_covariance(2, 2);
+  measurement_noise_covariance << 0.01, 0.00,
+                                  0.00, 0.01;
+
+  Eigen::MatrixXd initial_state_covariance(4, 4);
+  initial_state_covariance << 0.3, 0.0, 0.0, 0.0,
+                              0.0, 0.3, 0.0, 0.0,
+                              0.0, 0.0, 1.0, 0.0,
+                              0.0, 0.0, 0.0, 1.0;
+
+  return std::make_unique<laser_object_tracker::tracking::KalmanFilter>(4, 2,
+                          transition,
+                          measurement,
+                          measurement_noise_covariance,
+                          initial_state_covariance,
+                          process_noise_covariance);
+}
+
+std::unique_ptr<laser_object_tracker::data_association::BaseDataAssociation> getDataASsociation() {
+  return std::make_unique<laser_object_tracker::data_association::HungarianAlgorithm>();
+}
+
+laser_object_tracker::tracking::MultiTracker::DistanceFunctor getDistanceFunctor() {
+  return [](const Eigen::VectorXd& observation, const laser_object_tracker::tracking::BaseTracking& tracker) {
+    return (observation - tracker.getStateVector().head<2>()).squaredNorm();
+  };
+}
+
 int main(int ac, char **av) {
   pcl::PointCloud<pcl::PointXYZ> pcl;
   pcl::SampleConsenusModelCross2D<pcl::PointXYZ> corner(pcl.makeShared());
@@ -113,40 +158,14 @@ int main(int ac, char **av) {
   ros::Rate rate(10.0);
   ROS_INFO("Done initialization");
 
-  Eigen::MatrixXd transition(4, 4);
-  transition << 1.0, 0.0, 0.1, 0.0,
-      0.0, 1.0, 0.0, 0.1,
-      0.0, 0.0, 1.0, 0.0,
-      0.0, 0.0, 0.0, 1.0;
-
-  Eigen::MatrixXd measurement(2, 4);
-  measurement << 1.0, 0.0, 0.0, 0.0,
-                 0.0, 1.0, 0.0, 0.0;
-
-  Eigen::MatrixXd process_noise_covariance(4, 4);
-  process_noise_covariance << 0.1, 0.0, 0.0, 0.0,
-      0.0, 0.1, 0.0, 0.0,
-      0.0, 0.0, 0.1, 0.0,
-      0.0, 0.0, 0.0, 0.1;
-
-  Eigen::MatrixXd measurement_noise_covariance(2, 2);
-  measurement_noise_covariance << 0.1, 0.0,
-      0.0, 0.1;
-
-  Eigen::MatrixXd initial_state_covariance(4, 4);
-  initial_state_covariance << 1.0, 1.0, 1.0, 1.0,
-      1.0, 1.0, 1.0, 1.0,
-      1.0, 1.0, 1.0, 1.0,
-      1.0, 1.0, 1.0, 1.0;
-  laser_object_tracker::tracking::KalmanFilter tracker(4, 2,
-                                                       transition,
-                                                       measurement,
-                                                       measurement_noise_covariance,
-                                                       initial_state_covariance,
-                                                       process_noise_covariance);
+  laser_object_tracker::tracking::MultiTracker multi_tracker(
+      getDistanceFunctor(),
+      getDataASsociation(),
+      getTracker());
 
   while (ros::ok()) {
     ros::spinOnce();
+    multi_tracker.predict();
 
     if (!fragment.empty()) {
       visualization.clearMarkers();
@@ -156,34 +175,26 @@ int main(int ac, char **av) {
       visualization.publishPointClouds(segments);
       laser_object_tracker::feature_extraction::features::Corners2D corners_2_d;
       Eigen::VectorXd feature;
+      std::vector<Eigen::VectorXd> features;
       for (const auto& segment : segments) {
         if (segment.isValid()) {
           if (detection.extractFeature(segment, feature)) {
-            std::cout << "Feature vector:\n" << feature.head(2) << std::endl;
+            features.emplace_back(feature.head<2>());
+//            std::cout << "Feature vector:\n" << feature.head(2) << std::endl;
             corners_2_d.push_back(laser_object_tracker::feature_extraction::features::Corner2D(feature));
-            tracker.update(feature.head(2));
           }
         }
       }
 
-      Eigen::VectorXd state_vector;
-      state_vector = tracker.getStateVector();
-      std::cout << "State vector:\n" << state_vector << std::endl;
-      laser_object_tracker::feature_extraction::features::Point2D point(state_vector.head(2));
-
-      std_msgs::ColorRGBA color;
-      color.r = 1.0f;
-      color.b = 1.0f;
-      color.a = 1.0f;
-      visualization.publishPoint(point, color);
+      multi_tracker.update(features);
       visualization.publishCorners(corners_2_d);
+      visualization.publishMultiTracker(multi_tracker);
 
       visualization.trigger();
     } else {
       ROS_WARN("Received laser scan is empty");
     }
 
-    tracker.predict();
     rate.sleep();
   }
   return 0;

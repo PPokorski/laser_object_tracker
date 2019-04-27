@@ -31,52 +31,20 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_TRACKING_KALMAN_FILTER_HPP
-#define LASER_OBJECT_TRACKER_TRACKING_KALMAN_FILTER_HPP
+#ifndef TEST_TEST_DATA_ASSOCIATION_MOCKS_HPP
+#define TEST_TEST_DATA_ASSOCIATION_MOCKS_HPP
 
-#include <opencv2/video/tracking.hpp>
+#include <gmock/gmock.h>
 
-#include "laser_object_tracker/tracking/base_tracking.hpp"
+#include "laser_object_tracker/data_association/base_data_association.hpp"
 
-namespace laser_object_tracker {
-namespace tracking {
-class KalmanFilter : public BaseTracking {
- public:
-  KalmanFilter(int state_dimensions,
-               int measurement_dimensions,
-               const Eigen::MatrixXd& transition_matrix,
-               const Eigen::MatrixXd& measurement_matrix,
-               const Eigen::MatrixXd& measurement_noise_covariance,
-               const Eigen::MatrixXd& initial_state_covariance,
-               const Eigen::MatrixXd& process_noise_covariance);
-
-  KalmanFilter(const KalmanFilter& other) noexcept;
-
-  KalmanFilter(KalmanFilter&& other) noexcept = default;
-
-  KalmanFilter& operator=(const KalmanFilter& other) noexcept;
-
-  KalmanFilter& operator=(KalmanFilter&& other) noexcept = default;
-
-  void initFromState(const Eigen::VectorXd& init_state) override;
-
-  void initFromMeasurement(const Eigen::VectorXd& measurement) override;
-
-  void predict() override;
-
-  void update(const Eigen::VectorXd& measurement) override;
-
-  Eigen::VectorXd getStateVector() const override;
-
-  std::unique_ptr<BaseTracking> clone() const override;
-
-private:
-  void copyMats(const KalmanFilter& other);
-
-  cv::KalmanFilter kalman_filter_;
-  cv::Mat inverse_measurement_matrix_;
+namespace test {
+class MockDataAssociation : public laser_object_tracker::data_association::BaseDataAssociation {
+  MOCK_METHOD3(solve, double(const Eigen::MatrixXd& cost_matrix,
+      const Eigen::MatrixXd& covariance_matrix,
+      Eigen::VectorXi& assignment_vector));
 };
-}  // namespace tracking
-}  // namespace laser_object_tracker
 
-#endif //LASER_OBJECT_TRACKER_TRACKING_KALMAN_FILTER_HPP
+}  // namespace test
+
+#endif //TEST_TEST_DATA_ASSOCIATION_MOCKS_HPP

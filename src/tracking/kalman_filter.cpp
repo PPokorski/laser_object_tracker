@@ -44,10 +44,10 @@ KalmanFilter::KalmanFilter(int state_dimensions,
                            const Eigen::MatrixXd& measurement_matrix,
                            const Eigen::MatrixXd& measurement_noise_covariance,
                            const Eigen::MatrixXd& initial_state_covariance,
-                           const Eigen::MatrixXd& process_noise_covariance) :
-    BaseTracking(state_dimensions, measurement_dimensions),
-    kalman_filter_(state_dimensions, measurement_dimensions, 0, CV_64F),
-    inverse_measurement_matrix_(measurement_matrix.cols(), measurement_matrix.rows(), CV_64F) {
+                           const Eigen::MatrixXd& process_noise_covariance)
+    : BaseTracking(state_dimensions, measurement_dimensions),
+      kalman_filter_(state_dimensions, measurement_dimensions, 0, CV_64F),
+      inverse_measurement_matrix_(measurement_matrix.cols(), measurement_matrix.rows(), CV_64F) {
   cv::eigen2cv(transition_matrix, kalman_filter_.transitionMatrix);
   cv::eigen2cv(measurement_matrix, kalman_filter_.measurementMatrix);
   cv::eigen2cv(process_noise_covariance, kalman_filter_.processNoiseCov);
@@ -55,6 +55,19 @@ KalmanFilter::KalmanFilter(int state_dimensions,
   cv::eigen2cv(initial_state_covariance, kalman_filter_.errorCovPost);
 
   cv::invert(kalman_filter_.measurementMatrix, inverse_measurement_matrix_, cv::DECOMP_SVD);
+}
+
+KalmanFilter::KalmanFilter(const KalmanFilter& other) noexcept
+    : BaseTracking(other),
+      kalman_filter_(other.state_dimensions_, other.measurement_dimensions_, 0, CV_64F) {
+  copyMats(other);
+}
+
+KalmanFilter& KalmanFilter::operator=(const KalmanFilter& other) noexcept {
+  BaseTracking::operator=(other);
+  kalman_filter_.init(other.state_dimensions_, other.measurement_dimensions_, 0, CV_64F);
+  copyMats(other);
+  return *this;
 }
 
 void KalmanFilter::predict() {
@@ -84,6 +97,25 @@ void KalmanFilter::initFromMeasurement(const Eigen::VectorXd& measurement) {
   cv::Mat measurement_cv;
   cv::eigen2cv(measurement, measurement_cv);
   kalman_filter_.statePost = inverse_measurement_matrix_ * measurement_cv;
+}
+
+void KalmanFilter::copyMats(const KalmanFilter& other) {
+  other.kalman_filter_.controlMatrix.copyTo(kalman_filter_.controlMatrix);
+  other.kalman_filter_.errorCovPost.copyTo(kalman_filter_.errorCovPost);
+  other.kalman_filter_.errorCovPre.copyTo(kalman_filter_.errorCovPre);
+  other.kalman_filter_.gain.copyTo(kalman_filter_.gain);
+  other.kalman_filter_.measurementMatrix.copyTo(kalman_filter_.measurementMatrix);
+  other.kalman_filter_.measurementNoiseCov.copyTo(kalman_filter_.measurementNoiseCov);
+  other.kalman_filter_.processNoiseCov.copyTo(kalman_filter_.processNoiseCov);
+  other.kalman_filter_.statePost.copyTo(kalman_filter_.statePost);
+  other.kalman_filter_.statePre.copyTo(kalman_filter_.statePre);
+  other.kalman_filter_.temp1.copyTo(kalman_filter_.temp1);
+  other.kalman_filter_.temp2.copyTo(kalman_filter_.temp2);
+  other.kalman_filter_.temp3.copyTo(kalman_filter_.temp3);
+  other.kalman_filter_.temp4.copyTo(kalman_filter_.temp4);
+  other.kalman_filter_.temp5.copyTo(kalman_filter_.temp5);
+  other.kalman_filter_.transitionMatrix.copyTo(kalman_filter_.transitionMatrix);
+  other.inverse_measurement_matrix_.copyTo(inverse_measurement_matrix_);
 }
 }  // namespace tracking
 }  // namespace laser_object_tracker

@@ -31,52 +31,49 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_TRACKING_KALMAN_FILTER_HPP
-#define LASER_OBJECT_TRACKER_TRACKING_KALMAN_FILTER_HPP
+#include <gtest/gtest.h>
 
-#include <opencv2/video/tracking.hpp>
+#include "laser_object_tracker/tracking/iteration_tracker_rejection.hpp"
 
-#include "laser_object_tracker/tracking/base_tracking.hpp"
+#include "test/utils.hpp"
+#include "test/tracking/mocks.hpp"
 
-namespace laser_object_tracker {
-namespace tracking {
-class KalmanFilter : public BaseTracking {
- public:
-  KalmanFilter(int state_dimensions,
-               int measurement_dimensions,
-               const Eigen::MatrixXd& transition_matrix,
-               const Eigen::MatrixXd& measurement_matrix,
-               const Eigen::MatrixXd& measurement_noise_covariance,
-               const Eigen::MatrixXd& initial_state_covariance,
-               const Eigen::MatrixXd& process_noise_covariance);
+TEST(IterationTrackerRejectionTest, AccessorsTest) {
+  laser_object_tracker::tracking::IterationTrackerRejection rejection(1);
+  EXPECT_EQ(1, rejection.getMaxIterationsWithoutUpdate());
 
-  KalmanFilter(const KalmanFilter& other) noexcept;
+  rejection.setMaxIterationsWithoutUpdate(5);
+  EXPECT_EQ(5, rejection.getMaxIterationsWithoutUpdate());
+}
 
-  KalmanFilter(KalmanFilter&& other) noexcept = default;
+TEST(IterationTrackerRejectionTest, InvalidationTest) {
+  laser_object_tracker::tracking::IterationTrackerRejection rejection(3);
 
-  KalmanFilter& operator=(const KalmanFilter& other) noexcept;
+  test::MockTracking tracking;
 
-  KalmanFilter& operator=(KalmanFilter&& other) noexcept = default;
+  EXPECT_FALSE(rejection.invalidate(tracking));
 
-  void initFromState(const Eigen::VectorXd& init_state) override;
+  rejection.updated(tracking);
+  EXPECT_FALSE(rejection.invalidate(tracking));
 
-  void initFromMeasurement(const Eigen::VectorXd& measurement) override;
+  rejection.notUpdated(tracking);
+  EXPECT_FALSE(rejection.invalidate(tracking));
+  rejection.notUpdated(tracking);
+  EXPECT_FALSE(rejection.invalidate(tracking));
+  rejection.notUpdated(tracking);
+  EXPECT_FALSE(rejection.invalidate(tracking));
 
-  void predict() override;
+  rejection.updated(tracking);
+  EXPECT_FALSE(rejection.invalidate(tracking));
+  rejection.notUpdated(tracking);
+  EXPECT_FALSE(rejection.invalidate(tracking));
 
-  void update(const Eigen::VectorXd& measurement) override;
-
-  Eigen::VectorXd getStateVector() const override;
-
-  std::unique_ptr<BaseTracking> clone() const override;
-
-private:
-  void copyMats(const KalmanFilter& other);
-
-  cv::KalmanFilter kalman_filter_;
-  cv::Mat inverse_measurement_matrix_;
-};
-}  // namespace tracking
-}  // namespace laser_object_tracker
-
-#endif //LASER_OBJECT_TRACKER_TRACKING_KALMAN_FILTER_HPP
+  rejection.notUpdated(tracking);
+  EXPECT_FALSE(rejection.invalidate(tracking));
+  rejection.notUpdated(tracking);
+  EXPECT_FALSE(rejection.invalidate(tracking));
+  rejection.notUpdated(tracking);
+  EXPECT_TRUE(rejection.invalidate(tracking));
+  rejection.notUpdated(tracking);
+  EXPECT_TRUE(rejection.invalidate(tracking));
+}

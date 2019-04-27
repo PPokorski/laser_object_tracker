@@ -69,6 +69,7 @@ target_link_libraries(${PROJECT_NAME}_feature_extraction
 
 add_library(${PROJECT_NAME}_tracking
         src/tracking/base_tracking.cpp
+        src/tracking/iteration_tracker_rejection.cpp
         src/tracking/kalman_filter.cpp
         src/tracking/multi_tracker.cpp)
 
@@ -96,6 +97,14 @@ target_link_libraries(${PROJECT_NAME}_node
         ${PROJECT_NAME}_feature_extraction
         ${PROJECT_NAME}_tracking)
 
+add_executable(${PROJECT_NAME}_multi_tracker
+        src/multi_tracker_test.cpp)
+
+target_link_libraries(${PROJECT_NAME}_multi_tracker
+        ${catkin_LIBRARIES}
+        ${PROJECT_NAME}_data_association
+        ${PROJECT_NAME}_tracking)
+
 
 ## Tests ##
 include_directories(
@@ -113,9 +122,12 @@ catkin_add_gtest(${PROJECT_NAME}_test
         test/src/segmentation/adaptive_breakpoint_detection_test.cpp
         test/src/segmentation/breakpoint_detection_test.cpp
         test/src/segmentation/distance_calculation_test.cpp
-        test/src/tracking/kalman_filter_test.cpp)
+        test/src/tracking/iteration_tracker_rejection_test.cpp
+        test/src/tracking/kalman_filter_test.cpp
+        test/src/tracking/multi_tracker_test.cpp)
 
 target_link_libraries(${PROJECT_NAME}_test
+        gmock_main
         ${PROJECT_NAME}_data_types
         ${PROJECT_NAME}_segmentation
         ${PROJECT_NAME}_feature_extraction

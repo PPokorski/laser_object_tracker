@@ -37,10 +37,12 @@ namespace laser_object_tracker {
 namespace tracking {
 MultiTracker::MultiTracker(DistanceFunctor distance_calculator,
                            std::unique_ptr<data_association::BaseDataAssociation> data_association,
-                           std::unique_ptr<BaseTracking> tracker_prototype)
+                           std::unique_ptr<BaseTracking> tracker_prototype,
+                           std::unique_ptr<BaseTrackerRejection> tracker_rejector_prototype)
     : distance_calculator_(std::move(distance_calculator)),
       data_association_(std::move(data_association)),
-      tracker_prototype_(std::move(tracker_prototype)) {}
+      tracker_prototype_(std::move(tracker_prototype)),
+      tracker_rejector_prototype_(std::move(tracker_rejector_prototype)) {}
 
 void MultiTracker::predict() {
   for (auto& tracker : trackers_) {
@@ -49,6 +51,42 @@ void MultiTracker::predict() {
 }
 
 void MultiTracker::update(const std::vector<Eigen::VectorXd>& measurements) {
+  Eigen::MatrixXd cost_matrix = buildCostMatrix(measurements);
+
+  Eigen::VectorXi assignment_vector = buildAssignmentVector(cost_matrix);
+
+  updateAndInitializeTracks(measurements, assignment_vector);
+
+  handleNotUpdatedTracks(assignment_vector);
+
+  handleRejectedTracks();
+}
+
+std::vector<std::unique_ptr<BaseTracking>>::const_iterator MultiTracker::begin() const {
+  return trackers_.begin();
+}
+
+std::vector<std::unique_ptr<BaseTracking>>::const_iterator MultiTracker::end() const {
+  return trackers_.end();
+}
+
+std::vector<std::unique_ptr<BaseTracking>>::const_iterator MultiTracker::cbegin() const {
+  return trackers_.cbegin();
+}
+
+std::vector<std::unique_ptr<BaseTracking>>::const_iterator MultiTracker::cend() const {
+  return trackers_.cend();
+}
+
+const BaseTracking& MultiTracker::at(int index) const {
+  return *trackers_.at(index);
+}
+
+int MultiTracker::size() const {
+  return trackers_.size();
+}
+
+Eigen::MatrixXd MultiTracker::buildCostMatrix(const std::vector<Eigen::VectorXd>& measurements) {
   Eigen::MatrixXd cost_matrix(trackers_.size(), measurements.size());
   for (int row = 0; row < cost_matrix.rows(); ++row) {
     for (int col = 0; col < cost_matrix.cols(); ++col) {
@@ -56,15 +94,60 @@ void MultiTracker::update(const std::vector<Eigen::VectorXd>& measurements) {
     }
   }
 
+  return cost_matrix;
+}
+
+Eigen::VectorXi MultiTracker::buildAssignmentVector(const Eigen::MatrixXd& cost_matrix) {
   Eigen::VectorXi assignment_vector;
   data_association_->solve(cost_matrix, data_association_->NOT_NEEDED, assignment_vector);
 
+  return assignment_vector;
+}
+
+void MultiTracker::updateAndInitializeTracks(const std::vector<Eigen::VectorXd>& measurements,
+                                             const Eigen::VectorXi& assignment_vector) {
   for (int i = 0; i < measurements.size(); ++i) {
     if (assignment_vector(i) != data_association_->NO_ASSIGNMENT) {
-      trackers_.at(assignment_vector(i))->update(measurements.at(i));
+      int tracker_index = assignment_vector(i);
+      trackers_.at(tracker_index)->update(measurements.at(i));
+      trackers_rejections_.at(tracker_index)->updated(*trackers_.at(tracker_index));
     } else {
       trackers_.push_back(std::move(tracker_prototype_->clone()));
       trackers_.back()->initFromMeasurement(measurements.at(i));
+      trackers_rejections_.push_back(std::move(tracker_rejector_prototype_->clone()));
+    }
+  }
+}
+
+void MultiTracker::handleNotUpdatedTracks(const Eigen::VectorXi& assignment_vector) {
+  std::vector<int> trackers_indices(trackers_.size());
+  std::iota(trackers_indices.begin(), trackers_indices.end(), 0);
+
+  std::vector<int> updated_trackers(assignment_vector.data(), assignment_vector.data() + assignment_vector.size());
+  std::sort(updated_trackers.begin(), updated_trackers.end());
+
+  std::vector<int> not_updated_trackers;
+  not_updated_trackers.reserve(trackers_indices.size());
+  std::set_difference(trackers_indices.begin(),
+                      trackers_indices.end(),
+                      updated_trackers.begin(),
+                      updated_trackers.end(),
+                      std::back_inserter(not_updated_trackers));
+
+  for (int index : not_updated_trackers) {
+    trackers_rejections_.at(index)->notUpdated(*trackers_.at(index));
+  }
+}
+
+void MultiTracker::handleRejectedTracks() {
+  auto trackers_it = trackers_.cbegin();
+  auto rejectors_it = trackers_rejections_.cbegin();
+  for(; trackers_it != trackers_.end(); ++trackers_it, ++rejectors_it) {
+    const auto& tracker = **trackers_it;
+    const auto& rejector = **rejectors_it;
+    if (rejector.invalidate(tracker)) {
+      trackers_it = trackers_.erase(trackers_it);
+      rejectors_it = trackers_rejections_.erase(rejectors_it);
     }
   }
 }

@@ -37,6 +37,7 @@
 #include <vector>
 
 #include "laser_object_tracker/data_association/base_data_association.hpp"
+#include "laser_object_tracker/tracking/base_tracker_rejection.hpp"
 #include "laser_object_tracker/tracking/base_tracking.hpp"
 
 namespace laser_object_tracker {
@@ -47,11 +48,35 @@ class MultiTracker {
 
   MultiTracker(DistanceFunctor distance_calculator,
                std::unique_ptr<data_association::BaseDataAssociation> data_association,
-               std::unique_ptr<BaseTracking> tracker_prototype);
+               std::unique_ptr<BaseTracking> tracker_prototype,
+               std::unique_ptr<BaseTrackerRejection> tracker_rejector_prototype);
 
   void predict();
 
   void update(const std::vector<Eigen::VectorXd>& measurements);
+
+  Eigen::MatrixXd buildCostMatrix(const std::vector<Eigen::VectorXd>& measurements);
+
+  Eigen::VectorXi buildAssignmentVector(const Eigen::MatrixXd& cost_matrix);
+
+  void updateAndInitializeTracks(const std::vector<Eigen::VectorXd>& measurements,
+                                 const Eigen::VectorXi& assignment_vector);
+
+  void handleNotUpdatedTracks(const Eigen::VectorXi& assignment_vector);
+
+  void handleRejectedTracks();
+
+  std::vector<std::unique_ptr<BaseTracking>>::const_iterator begin() const;
+
+  std::vector<std::unique_ptr<BaseTracking>>::const_iterator end() const;
+
+  std::vector<std::unique_ptr<BaseTracking>>::const_iterator cbegin() const;
+
+  std::vector<std::unique_ptr<BaseTracking>>::const_iterator cend() const;
+
+  const BaseTracking& at(int index) const;
+
+  int size() const;
 
  private:
   DistanceFunctor distance_calculator_;
@@ -59,6 +84,9 @@ class MultiTracker {
 
   std::unique_ptr<BaseTracking> tracker_prototype_;
   std::vector<std::unique_ptr<BaseTracking>> trackers_;
+
+  std::unique_ptr<BaseTrackerRejection> tracker_rejector_prototype_;
+  std::vector<std::unique_ptr<BaseTrackerRejection>> trackers_rejections_;
 };
 }  // namespace tracking
 }  // namespace laser_object_tracker
