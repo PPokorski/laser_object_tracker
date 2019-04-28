@@ -35,6 +35,8 @@
 
 #include <random>
 
+#include <opencv2/imgproc/imgproc.hpp>
+
 namespace laser_object_tracker {
 namespace visualization {
 
@@ -133,20 +135,15 @@ void LaserObjectTrackerVisualization::publishCorners(const feature_extraction::f
 
 void LaserObjectTrackerVisualization::publishTracker(const tracking::BaseTracking& tracker,
                                                      const std_msgs::ColorRGBA& color) {
-  Eigen::Affine3d position(Eigen::Affine3d::Identity());
-  Eigen::Vector3d pos;
   Eigen::VectorXd state = tracker.getStateVector();
-  pos.head<2>() = state.head<2>();
-  pos(2) = 0.0;
-  position.translation() = pos;
-  position.rotate(Eigen::AngleAxisd(state.tail<2>().isZero()? 0.0 : std::atan2(state(3), state(2)),
-                  Eigen::Vector3d::UnitZ()));
+  double yaw = state.tail<2>().isZero()? 0.0 : std::atan2(state(3), state(2));
+  Eigen::Affine3d pose = rviz_visual_tools::RvizVisualTools::convertFromXYZRPY(state(0), state(1), 0.0, 0.0, 0.0, yaw,
+      rviz_visual_tools::EulerConvention::XYZ);
 
-  rviz_visual_tools_->publishArrow(position, rviz_visual_tools::BLUE, rviz_visual_tools::XLARGE);
-  rviz_visual_tools_->publishSphere(pos, color, rviz_visual_tools_->getScale(rviz_visual_tools::scales::XXLARGE));
+  rviz_visual_tools_->publishArrow(pose, rviz_visual_tools::BLUE, rviz_visual_tools::XXXLARGE);
+  rviz_visual_tools_->publishSphere(pose, color, rviz_visual_tools_->getScale(rviz_visual_tools::scales::XXLARGE));
   using namespace std::string_literals;
-  position.translation()(0) += 0.2;
-  rviz_visual_tools_->publishText(position, std::to_string(state.tail<2>().norm()) + " m/s"s,
+  rviz_visual_tools_->publishText(pose, std::to_string(state.tail<2>().norm()) + " m/s"s,
           rviz_visual_tools::WHITE, rviz_visual_tools::XXXXLARGE, false);
 }
 
@@ -154,6 +151,58 @@ void LaserObjectTrackerVisualization::publishMultiTracker(const tracking::MultiT
   expandToNColors(multi_tracker.size());
   for (int i = 0; i < multi_tracker.size(); ++i) {
     publishTracker(multi_tracker.at(i), rgb_colors_.at(i));
+  }
+}
+void LaserObjectTrackerVisualization::publishAssignments(const tracking::MultiTracker& multi_tracker,
+                                                         const std::vector<Eigen::VectorXd>& measurements,
+                                                         const Eigen::MatrixXd& cost_matrix,
+                                                         const Eigen::VectorXi& assignment_vector) {
+  for (int i = 0; i < assignment_vector.size(); ++i) {
+    if (assignment_vector(i) != data_association::BaseDataAssociation::NO_ASSIGNMENT) {
+      Eigen::VectorXd state = multi_tracker.at(assignment_vector(i)).getStateVector();
+      Eigen::Vector3d start, end;
+      start << measurements.at(i)(0), measurements.at(i)(1), 0.0;
+      end << state(0), state(1), 0.0;
+
+
+      Eigen::Affine3d pose = rviz_visual_tools_->getVectorBetweenPoints(start, end);
+      if (!(end - start).isZero()) {
+        rviz_visual_tools_->publishArrow(pose, rviz_visual_tools::RED, rviz_visual_tools::XXXLARGE, (end - start).norm());
+      }
+
+      using namespace std::string_literals;
+      std::string text = "Cost: " + std::to_string(cost_matrix(assignment_vector(i), i));
+      rviz_visual_tools_->publishText(rviz_visual_tools::RvizVisualTools::convertPose(
+          rviz_visual_tools::RvizVisualTools::convertPointToPose(
+              rviz_visual_tools_->getCenterPoint(start, end))),
+                                      text, rviz_visual_tools::WHITE, rviz_visual_tools::XXXXLARGE, false);
+    }
+  }
+}
+
+void LaserObjectTrackerVisualization::publishFeatures(const std::vector<data_types::LaserScanFragment>& fragments) {
+  for (const auto& fragment : fragments) {
+    std::vector<cv::Point2f> points(fragment.size());
+    for (int i = 0; i < fragment.size(); ++i) {
+      points.at(i).x = fragment.at(i).point().x;
+      points.at(i).y = fragment.at(i).point().y;
+    }
+    auto rectangle = cv::minAreaRect(points);
+
+    using namespace std::string_literals;
+    std::string info = "Points: "s + std::to_string(fragment.size()) +
+                       " Area: "s + std::to_string(rectangle.size.area()) + " m^2"s;
+
+    geometry_msgs::Point point;
+    point.x = fragment.at(0).point().x;
+    point.y = fragment.at(0).point().y;
+    point.z = 0.0;
+
+    rviz_visual_tools_->publishText(rviz_visual_tools::RvizVisualTools::convertPointToPose(point),
+                                    info,
+                                    rviz_visual_tools::WHITE,
+                                    rviz_visual_tools::XXXXLARGE,
+                                    false);
   }
 }
 }  // namespace visualization

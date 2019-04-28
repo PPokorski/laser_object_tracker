@@ -33,6 +33,8 @@
 
 #include "laser_object_tracker/tracking/multi_tracker.hpp"
 
+#include <numeric>
+
 namespace laser_object_tracker {
 namespace tracking {
 MultiTracker::MultiTracker(DistanceFunctor distance_calculator,
@@ -142,12 +144,15 @@ void MultiTracker::handleNotUpdatedTracks(const Eigen::VectorXi& assignment_vect
 void MultiTracker::handleRejectedTracks() {
   auto trackers_it = trackers_.cbegin();
   auto rejectors_it = trackers_rejections_.cbegin();
-  for(; trackers_it != trackers_.end(); ++trackers_it, ++rejectors_it) {
+  for(; trackers_it != trackers_.cend(); ) {
     const auto& tracker = **trackers_it;
     const auto& rejector = **rejectors_it;
     if (rejector.invalidate(tracker)) {
       trackers_it = trackers_.erase(trackers_it);
       rejectors_it = trackers_rejections_.erase(rejectors_it);
+    } else {
+      ++trackers_it;
+      ++rejectors_it;
     }
   }
 }
