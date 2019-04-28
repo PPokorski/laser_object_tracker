@@ -122,6 +122,10 @@ laser_object_tracker::tracking::MultiTracker::DistanceFunctor getDistanceFunctor
   };
 }
 
+std::unique_ptr<laser_object_tracker::tracking::BaseTrackerRejection> getTrackerRejection() {
+  return std::make_unique<laser_object_tracker::tracking::IterationTrackerRejection>(5);
+}
+
 int main(int ac, char **av) {
   pcl::PointCloud<pcl::PointXYZ> pcl;
   pcl::SampleConsenusModelCross2D<pcl::PointXYZ> corner(pcl.makeShared());
@@ -161,7 +165,8 @@ int main(int ac, char **av) {
   laser_object_tracker::tracking::MultiTracker multi_tracker(
       getDistanceFunctor(),
       getDataASsociation(),
-      getTracker());
+      getTracker(),
+      getTrackerRejection());
 
   while (ros::ok()) {
     ros::spinOnce();
@@ -172,6 +177,8 @@ int main(int ac, char **av) {
       visualization.publishPointCloud(fragment);
       auto segments = segmentation->segment(fragment);
       ROS_INFO("Detected %lu segments", segments.size());
+      visualization.publishFeatures(segments);
+
       visualization.publishPointClouds(segments);
       laser_object_tracker::feature_extraction::features::Corners2D corners_2_d;
       Eigen::VectorXd feature;
@@ -186,9 +193,13 @@ int main(int ac, char **av) {
         }
       }
 
+//      Eigen::MatrixXd cost_matrix = multi_tracker.buildCostMatrix(features);
+//      Eigen::VectorXi assignment_vector = multi_tracker.buildAssignmentVector(cost_matrix);
+//      visualization.publishAssignments(multi_tracker, features, cost_matrix, assignment_vector);
+
       multi_tracker.update(features);
-      visualization.publishCorners(corners_2_d);
-      visualization.publishMultiTracker(multi_tracker);
+//      visualization.publishCorners(corners_2_d);
+//      visualization.publishMultiTracker(multi_tracker);
 
       visualization.trigger();
     } else {

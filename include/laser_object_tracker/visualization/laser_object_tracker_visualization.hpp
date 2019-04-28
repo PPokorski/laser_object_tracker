@@ -69,6 +69,8 @@ class LaserObjectTrackerVisualization {
 
   void publishPointClouds(const std::vector<data_types::LaserScanFragment>& fragments);
 
+  void publishFeatures(const std::vector<data_types::LaserScanFragment>& fragments);
+
   void publishSegment(const feature_extraction::features::Segment2D& segment, const std_msgs::ColorRGBA& color);
 
   void publishSegments(const feature_extraction::features::Segments2D& segments);
@@ -82,6 +84,11 @@ class LaserObjectTrackerVisualization {
   void publishTracker(const tracking::BaseTracking& tracker, const std_msgs::ColorRGBA& color);
 
   void publishMultiTracker(const tracking::MultiTracker& multi_tracker);
+
+  void publishAssignments(const tracking::MultiTracker& multi_tracker,
+                          const std::vector<Eigen::VectorXd>& measurements,
+                          const Eigen::MatrixXd& cost_matrix,
+                          const Eigen::VectorXi& assignment_vector);
 
  private:
   void expandToNColors(int colors);

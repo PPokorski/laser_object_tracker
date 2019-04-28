@@ -1,4 +1,5 @@
-base_frame: "/base_laser_front_link"
+#base_frame: "/base_laser_front_link"
+base_frame: "/robot_0/base_laser_link"
 segmentation:
 #  type: "BreakpointDetection"
 #  threshold: 0.2
