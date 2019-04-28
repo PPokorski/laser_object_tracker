@@ -1,11 +1,11 @@
-base_frame: "base_laser_link"
+base_frame: "/base_laser_front_link"
 segmentation:
-  type: "BreakpointDetection"
-  threshold: 0.2
+#  type: "BreakpointDetection"
+#  threshold: 0.2
 
-#    type: "AdaptiveThresholdDetection"
-#    angle: 0.1
-#    sigma: 0.1
+    type: "AdaptiveThresholdDetection"
+    angle: 0.1
+    sigma: 0.1
 feature_extraction:
   type: "SearchBasedCornerDetection"
   angle_resolution: 0.01
