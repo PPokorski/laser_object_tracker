@@ -9,7 +9,7 @@ project(laser_object_tracker)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_CPPLINT /usr/local/bin/cpplint;--linelength=120 --root=include)
+#set(CMAKE_CXX_CPPLINT /usr/local/bin/cpplint;--linelength=120 --root=include)
 
 ## Dependancies ##
 find_package(OpenCV REQUIRED COMPONENTS
@@ -67,6 +67,21 @@ add_library(${PROJECT_NAME}_feature_extraction
 target_link_libraries(${PROJECT_NAME}_feature_extraction
         ${PROJECT_NAME}_data_types)
 
+add_library(${PROJECT_NAME}_tracking
+        src/tracking/base_tracking.cpp
+        src/tracking/iteration_tracker_rejection.cpp
+        src/tracking/kalman_filter.cpp
+        src/tracking/multi_tracker.cpp)
+
+target_link_libraries(${PROJECT_NAME}_tracking
+        ${OpenCV_LIBS}
+        ${PROJECT_NAME}_data_association)
+
+add_library(${PROJECT_NAME}_data_association
+        src/data_association/base_data_association.cpp
+        src/data_association/hungarian_algorithm.cpp
+        src/data_association/naive_linear_assignment.cpp)
+
 
 
 ## Executables ##
@@ -76,9 +91,19 @@ add_executable(${PROJECT_NAME}_node
 
 target_link_libraries(${PROJECT_NAME}_node
         ${catkin_LIBRARIES}
+        ${PROJECT_NAME}_data_association
         ${PROJECT_NAME}_data_types
         ${PROJECT_NAME}_segmentation
-        ${PROJECT_NAME}_feature_extraction)
+        ${PROJECT_NAME}_feature_extraction
+        ${PROJECT_NAME}_tracking)
+
+add_executable(${PROJECT_NAME}_multi_tracker
+        src/multi_tracker_test.cpp)
+
+target_link_libraries(${PROJECT_NAME}_multi_tracker
+        ${catkin_LIBRARIES}
+        ${PROJECT_NAME}_data_association
+        ${PROJECT_NAME}_tracking)
 
 
 ## Tests ##
@@ -87,6 +112,8 @@ include_directories(
 
 catkin_add_gtest(${PROJECT_NAME}_test
         test/src/test_motion_tracking.cpp
+        test/src/data_association/hungarian_algorithm_test.cpp
+        test/src/data_association/naive_linear_assignment_test.cpp
         test/src/data_types/definitions_test.cpp
         test/src/data_types/laser_scan_fragment_test.cpp
         test/src/feautre_extraction/random_sample_consensus_segment_detection_test.cpp
@@ -94,9 +121,15 @@ catkin_add_gtest(${PROJECT_NAME}_test
         test/src/feautre_extraction/search_based_corner_detection_test.cpp
         test/src/segmentation/adaptive_breakpoint_detection_test.cpp
         test/src/segmentation/breakpoint_detection_test.cpp
-        test/src/segmentation/distance_calculation_test.cpp)
+        test/src/segmentation/distance_calculation_test.cpp
+        test/src/tracking/iteration_tracker_rejection_test.cpp
+        test/src/tracking/kalman_filter_test.cpp
+        test/src/tracking/multi_tracker_test.cpp)
 
 target_link_libraries(${PROJECT_NAME}_test
+        gmock_main
         ${PROJECT_NAME}_data_types
         ${PROJECT_NAME}_segmentation
-        ${PROJECT_NAME}_feature_extraction)
+        ${PROJECT_NAME}_feature_extraction
+        ${PROJECT_NAME}_data_association
+        ${PROJECT_NAME}_tracking)

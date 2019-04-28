@@ -114,11 +114,46 @@ void LaserObjectTrackerVisualization::publishCorner(const feature_extraction::fe
   publishSegment({corner.corner_, corner.point_2_}, color);
 }
 
+void LaserObjectTrackerVisualization::publishPoint(const feature_extraction::features::Point2D& point,
+                                                   const std_msgs::ColorRGBA& color) {
+    Eigen::Vector3d publish_point;
+    publish_point.head<2>() = point.point_;
+
+    rviz_visual_tools_->publishSphere(publish_point, color,
+            rviz_visual_tools_->getScale(rviz_visual_tools::scales::XLARGE));
+}
+
 void LaserObjectTrackerVisualization::publishCorners(const feature_extraction::features::Corners2D& corners) {
   expandToNColors(corners.size());
 
   for (int i = 0; i < corners.size(); ++i) {
     publishCorner(corners.at(i), rgb_colors_.at(i));
+  }
+}
+
+void LaserObjectTrackerVisualization::publishTracker(const tracking::BaseTracking& tracker,
+                                                     const std_msgs::ColorRGBA& color) {
+  Eigen::Affine3d position(Eigen::Affine3d::Identity());
+  Eigen::Vector3d pos;
+  Eigen::VectorXd state = tracker.getStateVector();
+  pos.head<2>() = state.head<2>();
+  pos(2) = 0.0;
+  position.translation() = pos;
+  position.rotate(Eigen::AngleAxisd(state.tail<2>().isZero()? 0.0 : std::atan2(state(3), state(2)),
+                  Eigen::Vector3d::UnitZ()));
+
+  rviz_visual_tools_->publishArrow(position, rviz_visual_tools::BLUE, rviz_visual_tools::XLARGE);
+  rviz_visual_tools_->publishSphere(pos, color, rviz_visual_tools_->getScale(rviz_visual_tools::scales::XXLARGE));
+  using namespace std::string_literals;
+  position.translation()(0) += 0.2;
+  rviz_visual_tools_->publishText(position, std::to_string(state.tail<2>().norm()) + " m/s"s,
+          rviz_visual_tools::WHITE, rviz_visual_tools::XXXXLARGE, false);
+}
+
+void LaserObjectTrackerVisualization::publishMultiTracker(const tracking::MultiTracker& multi_tracker) {
+  expandToNColors(multi_tracker.size());
+  for (int i = 0; i < multi_tracker.size(); ++i) {
+    publishTracker(multi_tracker.at(i), rgb_colors_.at(i));
   }
 }
 }  // namespace visualization
