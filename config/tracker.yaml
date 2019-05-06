@@ -1,5 +1,5 @@
-#base_frame: "/base_laser_front_link"
-base_frame: "/robot_0/base_laser_link"
+base_frame: "/base_laser_front_link"
+#base_frame: "/robot_0/base_laser_link"
 segmentation:
 #  type: "BreakpointDetection"
 #  threshold: 0.2
@@ -14,3 +14,11 @@ feature_extraction:
 #  distance_threshold: 0.01
 #  max_iterations: 100
 #  probability: 0.99
+filtering:
+  min_points: 10
+  max_points: 150
+  min_area: 0.005
+  max_area: 2.0
+  min_dimension: 0.05
+data_association:
+  max_cost: 1.0

@@ -144,7 +144,7 @@ void MultiTracker::handleNotUpdatedTracks(const Eigen::VectorXi& assignment_vect
 void MultiTracker::handleRejectedTracks() {
   auto trackers_it = trackers_.cbegin();
   auto rejectors_it = trackers_rejections_.cbegin();
-  for(; trackers_it != trackers_.cend(); ) {
+  for (; trackers_it != trackers_.cend(); ) {
     const auto& tracker = **trackers_it;
     const auto& rejector = **rejectors_it;
     if (rejector.invalidate(tracker)) {

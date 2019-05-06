@@ -207,6 +207,14 @@ class LaserScanFragment {
 
   ConstReference operator[](size_t index) const;
 
+  Reference front();
+
+  ConstReference front() const;
+
+  Reference back();
+
+  ConstReference back() const;
+
   /**
    *
    * @return True if the container is empty, false otherwise
