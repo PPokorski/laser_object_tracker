@@ -48,7 +48,7 @@ RandomSampleConsensusSegmentDetection::RandomSampleConsensusSegmentDetection(dou
 }
 
 bool RandomSampleConsensusSegmentDetection::extractFeature(const data_types::LaserScanFragment& fragment,
-                                                           Eigen::VectorXd& feature) {
+                                                           features::Feature& feature) {
   if (fragment.empty()) {
     throw std::invalid_argument("Passed fragment is empty.");
   }
@@ -78,9 +78,9 @@ bool RandomSampleConsensusSegmentDetection::extractFeature(const data_types::Las
   PointType min, max;
   pcl::getMinMax3D(*point_cloud_ptr, min, max);
 
-  feature.resize(4);
-  feature.template head<2>() = line.projection(Eigen::Vector2d(min.x, min.y));
-  feature.template tail<2>() = line.projection(Eigen::Vector2d(max.x, max.y));
+  feature.observation_.resize(4);
+  feature.observation_.template head<2>() = line.projection(Eigen::Vector2d(min.x, min.y));
+  feature.observation_.template tail<2>() = line.projection(Eigen::Vector2d(max.x, max.y));
 
   return true;
 }

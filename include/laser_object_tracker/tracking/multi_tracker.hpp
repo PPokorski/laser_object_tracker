@@ -44,7 +44,7 @@ namespace laser_object_tracker {
 namespace tracking {
 class MultiTracker {
  public:
-  using DistanceFunctor = std::function<double(const Eigen::VectorXd&, const BaseTracking&)>;
+  using DistanceFunctor = std::function<double(const feature_extraction::features::Feature&, const BaseTracking&)>;
 
   MultiTracker(DistanceFunctor distance_calculator,
                std::unique_ptr<data_association::BaseDataAssociation> data_association,
@@ -53,13 +53,13 @@ class MultiTracker {
 
   void predict();
 
-  void update(const std::vector<Eigen::VectorXd>& measurements);
+  void update(const std::vector<feature_extraction::features::Feature>& measurements);
 
-  Eigen::MatrixXd buildCostMatrix(const std::vector<Eigen::VectorXd>& measurements);
+  Eigen::MatrixXd buildCostMatrix(const std::vector<feature_extraction::features::Feature>& measurements);
 
   Eigen::VectorXi buildAssignmentVector(const Eigen::MatrixXd& cost_matrix);
 
-  void updateAndInitializeTracks(const std::vector<Eigen::VectorXd>& measurements,
+  void updateAndInitializeTracks(const std::vector<feature_extraction::features::Feature>& measurements,
                                  const Eigen::VectorXi& assignment_vector);
 
   void handleNotUpdatedTracks(const Eigen::VectorXi& assignment_vector);

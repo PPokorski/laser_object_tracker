@@ -52,7 +52,7 @@ void MultiTracker::predict() {
   }
 }
 
-void MultiTracker::update(const std::vector<Eigen::VectorXd>& measurements) {
+void MultiTracker::update(const std::vector<feature_extraction::features::Feature>& measurements) {
   Eigen::MatrixXd cost_matrix = buildCostMatrix(measurements);
 
   Eigen::VectorXi assignment_vector = buildAssignmentVector(cost_matrix);
@@ -88,7 +88,7 @@ int MultiTracker::size() const {
   return trackers_.size();
 }
 
-Eigen::MatrixXd MultiTracker::buildCostMatrix(const std::vector<Eigen::VectorXd>& measurements) {
+Eigen::MatrixXd MultiTracker::buildCostMatrix(const std::vector<feature_extraction::features::Feature>& measurements) {
   Eigen::MatrixXd cost_matrix(trackers_.size(), measurements.size());
   for (int row = 0; row < cost_matrix.rows(); ++row) {
     for (int col = 0; col < cost_matrix.cols(); ++col) {
@@ -106,7 +106,7 @@ Eigen::VectorXi MultiTracker::buildAssignmentVector(const Eigen::MatrixXd& cost_
   return assignment_vector;
 }
 
-void MultiTracker::updateAndInitializeTracks(const std::vector<Eigen::VectorXd>& measurements,
+void MultiTracker::updateAndInitializeTracks(const std::vector<feature_extraction::features::Feature>& measurements,
                                              const Eigen::VectorXi& assignment_vector) {
   for (int i = 0; i < measurements.size(); ++i) {
     if (assignment_vector(i) != data_association_->NO_ASSIGNMENT) {

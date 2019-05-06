@@ -38,6 +38,8 @@
 
 #include <Eigen/Core>
 
+#include "laser_object_tracker/feature_extraction/features/features.hpp"
+
 namespace laser_object_tracker {
 namespace tracking {
 
@@ -45,17 +47,17 @@ class BaseTracking {
  public:
   BaseTracking(int state_dimensions, int measurement_dimensions);
 
-  virtual void initFromState(const Eigen::VectorXd& init_state) = 0;
+  virtual void initFromState(const feature_extraction::features::Feature& init_state) = 0;
 
   virtual void initFromState();
 
-  virtual void initFromMeasurement(const Eigen::VectorXd& measurement) = 0;
+  virtual void initFromMeasurement(const feature_extraction::features::Feature& measurement) = 0;
 
   virtual void initFromMeasurement();
 
   virtual void predict() = 0;
 
-  virtual void update(const Eigen::VectorXd& measurement) = 0;
+  virtual void update(const feature_extraction::features::Feature& measurement) = 0;
 
   virtual Eigen::VectorXd getStateVector() const = 0;
 

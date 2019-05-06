@@ -74,9 +74,9 @@ void KalmanFilter::predict() {
   kalman_filter_.predict();
 }
 
-void KalmanFilter::update(const Eigen::VectorXd& measurement) {
+void KalmanFilter::update(const feature_extraction::features::Feature& measurement) {
   cv::Mat measurement_cv;
-  cv::eigen2cv(measurement, measurement_cv);
+  cv::eigen2cv(measurement.observation_, measurement_cv);
   kalman_filter_.correct(measurement_cv);
 }
 
@@ -90,12 +90,13 @@ std::unique_ptr<BaseTracking> KalmanFilter::clone() const {
   return std::unique_ptr<BaseTracking>(new KalmanFilter(*this));
 }
 
-void KalmanFilter::initFromState(const Eigen::VectorXd& init_state) {
-  cv::eigen2cv(init_state, kalman_filter_.statePost);
+void KalmanFilter::initFromState(const feature_extraction::features::Feature& init_state) {
+  cv::eigen2cv(init_state.observation_, kalman_filter_.statePost);
 }
-void KalmanFilter::initFromMeasurement(const Eigen::VectorXd& measurement) {
+
+void KalmanFilter::initFromMeasurement(const feature_extraction::features::Feature& measurement) {
   cv::Mat measurement_cv;
-  cv::eigen2cv(measurement, measurement_cv);
+  cv::eigen2cv(measurement.observation_, measurement_cv);
   kalman_filter_.statePost = inverse_measurement_matrix_ * measurement_cv;
 }
 

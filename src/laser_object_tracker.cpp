@@ -139,8 +139,9 @@ std::unique_ptr<laser_object_tracker::data_association::BaseDataAssociation> get
 }
 
 laser_object_tracker::tracking::MultiTracker::DistanceFunctor getDistanceFunctor() {
-  return [](const Eigen::VectorXd& observation, const laser_object_tracker::tracking::BaseTracking& tracker) {
-    return (observation - tracker.getStateVector().head<2>()).squaredNorm();
+  return [](const laser_object_tracker::feature_extraction::features::Feature& observation,
+           const laser_object_tracker::tracking::BaseTracking& tracker) {
+    return (observation.observation_ - tracker.getStateVector().head<2>()).squaredNorm();
   };
 }
 
@@ -205,14 +206,14 @@ int main(int ac, char **av) {
 
       visualization.publishPointClouds(segments);
       laser_object_tracker::feature_extraction::features::Corners2D corners_2_d;
-      Eigen::VectorXd feature;
-      std::vector<Eigen::VectorXd> features;
+      laser_object_tracker::feature_extraction::features::Feature feature;
+      std::vector<laser_object_tracker::feature_extraction::features::Feature> features;
       for (const auto& segment : segments) {
         if (segment.isValid()) {
           if (detection.extractFeature(segment, feature)) {
-            features.emplace_back(feature.head<2>());
+            features.push_back({feature.observation_.head<2>(), std::vector<int>(), std::vector<bool>()});
 //            std::cout << "Feature vector:\n" << feature.head(2) << std::endl;
-            corners_2_d.push_back(laser_object_tracker::feature_extraction::features::Corner2D(feature));
+            corners_2_d.push_back(laser_object_tracker::feature_extraction::features::Corner2D(feature.observation_));
           }
         }
       }

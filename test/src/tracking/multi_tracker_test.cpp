@@ -51,7 +51,7 @@ TEST(MultiTrackerTest, UpdateAndInitializeTracksTest) {
 
   static constexpr int NO_ASSIGNMENT = laser_object_tracker::data_association::BaseDataAssociation::NO_ASSIGNMENT;
 
-  std::vector<Eigen::VectorXd> measurements;
+  std::vector<laser_object_tracker::feature_extraction::features::Feature> measurements;
   Eigen::VectorXi assignment_vector;
 
   measurements.resize(5);

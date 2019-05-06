@@ -55,10 +55,11 @@ TEST(KalmanFilterTest, InitFromStateTest) {
       << "Expected state vector is:\n" << expected_state << std::endl
       << "but actual is:\n" << state_vector;
 
-  Eigen::VectorXd example_state(4);
-  example_state << 10.0, 32.0, 53.0, 21.0;
+  laser_object_tracker::feature_extraction::features::Feature example_state;
+  example_state.observation_.resize(4);
+  example_state.observation_ << 10.0, 32.0, 53.0, 21.0;
   filter.initFromState(example_state);
-  expected_state = example_state;
+  expected_state = example_state.observation_;
   state_vector = filter.getStateVector();
   EXPECT_TRUE(expected_state.isApprox(state_vector, test::PRECISION<double>))
             << "Expected state vector is:\n" << expected_state << std::endl
@@ -77,11 +78,12 @@ TEST(KalmanFilterTest, InitFromMeasurementTest) {
                                                       empty_matrix,
                                                       empty_matrix);
 
-  Eigen::VectorXd measurement(2);
-  measurement << 21.0, 32.0;
+  laser_object_tracker::feature_extraction::features::Feature measurement;
+  measurement.observation_.resize(2);
+  measurement.observation_ << 21.0, 32.0;
   filter.initFromMeasurement(measurement);
   Eigen::VectorXd expected_state = Eigen::VectorXd::Zero(4);
-  expected_state.head<2>() = measurement;
+  expected_state.head<2>() = measurement.observation_;
   Eigen::VectorXd state_vector = filter.getStateVector();
   EXPECT_TRUE(expected_state.isApprox(state_vector, test::PRECISION<double>))
             << "Expected state vector is:\n" << expected_state << std::endl
@@ -96,7 +98,7 @@ TEST(KalmanFilterTest, InitFromMeasurementTest) {
                                                        empty_matrix,
                                                        empty_matrix);
 
-  measurement << 21.0, 32.0;
+  measurement.observation_ << 21.0, 32.0;
   filter2.initFromMeasurement(measurement);
   expected_state << 10.5, 8.0, 10.5, 8.0;
   state_vector = filter2.getStateVector();

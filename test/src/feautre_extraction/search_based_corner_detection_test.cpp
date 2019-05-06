@@ -115,16 +115,17 @@ TEST(SearchBasedCornerDetectionTest, DetectionSimpleCriterionTest) {
   auto fragment = factory.fromLaserScan(test::generateLaserScan({std::sqrt(2.0f), 1.0, std::sqrt(2.0f), 1.0},
                                                                 -M_PI_4, M_PI_2));
 
-  Eigen::VectorXd feature;
+  features::Feature feature;
   ASSERT_TRUE(detection.extractFeature(fragment, feature));
 
-  Eigen::VectorXd expected_feature(6);
-  expected_feature << 1.0, 1.0,
-      1.0, -1.0,
-      0.0, 1.0;
-  EXPECT_TRUE(expected_feature.isApprox(feature, test::PRECISION<double>))
-            << "Expected feature is\n" << expected_feature.transpose()
-            << "\n but actual is\n" << feature.transpose();
+  features::Feature expected_feature;
+  expected_feature.observation_.resize(6);
+  expected_feature.observation_ << 1.0, 1.0,
+                                   1.0, -1.0,
+                                   0.0, 1.0;
+  EXPECT_TRUE(expected_feature.observation_.isApprox(feature.observation_, test::PRECISION<double>))
+            << "Expected feature is\n" << expected_feature.observation_.transpose()
+            << "\n but actual is\n" << feature.observation_.transpose();
 }
 
 TEST(SearchBasedCornerDetectionTest, DetectionClosenesssCriterionTest) {
@@ -136,16 +137,18 @@ TEST(SearchBasedCornerDetectionTest, DetectionClosenesssCriterionTest) {
   auto fragment = factory.fromLaserScan(test::generateLaserScan({1.0, 0.73205080756, 0.73205080756, 1.0},
                                                                 -M_PI_2, M_PI_2));
 
-  Eigen::VectorXd feature;
+  features::Feature feature;
   ASSERT_TRUE(detection.extractFeature(fragment, feature));
 
-  Eigen::VectorXd expected_feature(6);
-  expected_feature << 1.0, 0.0,
-      0.0, -1.0,
-      0.0, 1.0;
-  EXPECT_TRUE(expected_feature.isApprox(feature, 0.02))
-            << "Expected feature is\n" << expected_feature.transpose()
-            << "\n but actual is\n" << feature.transpose();
+
+  features::Feature expected_feature;
+  expected_feature.observation_.resize(6);
+  expected_feature.observation_ << 1.0, 0.0,
+                                   0.0, -1.0,
+                                   0.0, 1.0;
+  EXPECT_TRUE(expected_feature.observation_.isApprox(feature.observation_, 0.02))
+            << "Expected feature is\n" << expected_feature.observation_.transpose()
+            << "\n but actual is\n" << feature.observation_.transpose();
 }
 
 TEST(SearchBasedCornerDetectionTest, ExceptionThrowTest) {
@@ -153,6 +156,6 @@ TEST(SearchBasedCornerDetectionTest, ExceptionThrowTest) {
   using namespace laser_object_tracker::feature_extraction;
   SearchBasedCornerDetection detection(0.0, areaCriterion);
 
-  Eigen::VectorXd feature;
+  features::Feature feature;
   EXPECT_THROW(detection.extractFeature(LaserScanFragment(), feature), std::invalid_argument);
 }

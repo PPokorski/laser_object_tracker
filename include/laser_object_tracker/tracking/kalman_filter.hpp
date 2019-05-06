@@ -58,13 +58,13 @@ class KalmanFilter : public BaseTracking {
 
   KalmanFilter& operator=(KalmanFilter&& other) noexcept = default;
 
-  void initFromState(const Eigen::VectorXd& init_state) override;
+  void initFromState(const feature_extraction::features::Feature& init_state) override;
 
-  void initFromMeasurement(const Eigen::VectorXd& measurement) override;
+  void initFromMeasurement(const feature_extraction::features::Feature& measurement) override;
 
   void predict() override;
 
-  void update(const Eigen::VectorXd& measurement) override;
+  void update(const feature_extraction::features::Feature& measurement) override;
 
   Eigen::VectorXd getStateVector() const override;
 

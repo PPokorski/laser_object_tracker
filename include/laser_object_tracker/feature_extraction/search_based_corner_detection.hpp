@@ -46,7 +46,7 @@ class SearchBasedCornerDetection : public BaseFeatureExtraction {
 
   SearchBasedCornerDetection(double theta_resolution, CriterionFunctor criterion);
 
-  bool extractFeature(const data_types::LaserScanFragment& fragment, Eigen::VectorXd& feature) override;
+  bool extractFeature(const data_types::LaserScanFragment& fragment, features::Feature& feature) override;
 
   double getThetaResolution() const;
 

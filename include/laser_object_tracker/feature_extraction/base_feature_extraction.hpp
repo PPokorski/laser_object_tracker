@@ -35,13 +35,14 @@
 #define LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_BASE_FEATURE_EXTRACTION_HPP
 
 #include "laser_object_tracker/data_types/laser_scan_fragment.hpp"
+#include "laser_object_tracker/feature_extraction/features/features.hpp"
 
 namespace laser_object_tracker {
 namespace feature_extraction {
 
 class BaseFeatureExtraction {
  public:
-  virtual bool extractFeature(const data_types::LaserScanFragment& fragment, Eigen::VectorXd& feature) = 0;
+  virtual bool extractFeature(const data_types::LaserScanFragment& fragment, features::Feature& feature) = 0;
 
   virtual ~BaseFeatureExtraction() = default;
 

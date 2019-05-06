@@ -48,7 +48,7 @@ RandomSampleConsensusCornerDetection::RandomSampleConsensusCornerDetection(doubl
 }
 
 bool RandomSampleConsensusCornerDetection::extractFeature(const data_types::LaserScanFragment& fragment,
-                                                          Eigen::VectorXd& feature) {
+                                                          features::Feature& feature) {
   if (fragment.empty()) {
     throw std::invalid_argument("Passed fragment is empty.");
   }
@@ -83,10 +83,10 @@ bool RandomSampleConsensusCornerDetection::extractFeature(const data_types::Lase
   PointType min, max;
   pcl::getMinMax3D(*point_cloud_ptr, min, max);
 
-  feature.resize(6);
-  feature.template head<2>() = coefficients.template head<2>().cast<double>();
-  feature.template segment<2>(2) = line_1.projection(Eigen::Vector2d(min.x, min.y));
-  feature.template tail<2>() = line_2.projection(Eigen::Vector2d(max.x, max.y));
+  feature.observation_.resize(6);
+  feature.observation_.template head<2>() = coefficients.template head<2>().cast<double>();
+  feature.observation_.template segment<2>(2) = line_1.projection(Eigen::Vector2d(min.x, min.y));
+  feature.observation_.template tail<2>() = line_2.projection(Eigen::Vector2d(max.x, max.y));
 
   return true;
 }

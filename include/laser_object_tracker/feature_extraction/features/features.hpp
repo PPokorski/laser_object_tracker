@@ -34,9 +34,20 @@
 #ifndef LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_FEATURES_FEATURES_HPP
 #define LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_FEATURES_FEATURES_HPP
 
+#include <vector>
+
+#include <Eigen/Core>
+
 namespace laser_object_tracker {
 namespace feature_extraction {
 namespace features {
+
+struct Feature {
+  Eigen::VectorXd observation_;
+
+  std::vector<int> vector_int_;
+  std::vector<bool> vector_bool_;
+};
 
 struct Point2D {
   Point2D() = default;

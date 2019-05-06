@@ -62,25 +62,26 @@ TEST(RandomSampleConsensusSegmentDetectionTest, SimpleLineTest) {
 
   LaserScanFragment::LaserScanFragmentFactory factory;
   auto fragment = factory.fromLaserScan(test::generateLaserScan({1.0, 1.0}, -M_PI_2, M_PI_2));
-  Eigen::VectorXd feature;
+  features::Feature feature;
   ASSERT_TRUE(detection.extractFeature(fragment, feature));
 
   features::Point2D expected_point;
-  Eigen::VectorXd expected_feature(4);
-  expected_feature << 0.0, -1.0,
-      0.0, 1.0;
-  EXPECT_TRUE(expected_feature.isApprox(feature, test::PRECISION<double>))
-            << "Expected feature is\n" << expected_feature.transpose()
-            << "\n but actual is\n" << feature.transpose();
+  features::Feature expected_feature;
+  expected_feature.observation_.resize(4);
+  expected_feature.observation_ << 0.0, -1.0,
+                                   0.0, 1.0;
+  EXPECT_TRUE(expected_feature.observation_.isApprox(feature.observation_, test::PRECISION<double>))
+            << "Expected feature is\n" << expected_feature.observation_.transpose()
+            << "\n but actual is\n" << feature.observation_.transpose();
 
   fragment = factory.fromLaserScan(test::generateLaserScan({M_SQRT2, 1.0, M_SQRT2}, -M_PI_4, M_PI_4));
   ASSERT_TRUE(detection.extractFeature(fragment, feature));
 
-  expected_feature << 1.0, -1.0,
-      1.0, 1.0;
-  EXPECT_TRUE(expected_feature.isApprox(feature, test::PRECISION<double>))
-            << "Expected feature is\n" << expected_feature.transpose()
-            << "\n but actual is\n" << feature.transpose();
+  expected_feature.observation_ << 1.0, -1.0,
+                                   1.0, 1.0;
+  EXPECT_TRUE(expected_feature.observation_.isApprox(feature.observation_, test::PRECISION<double>))
+            << "Expected feature is\n" << expected_feature.observation_.transpose()
+            << "\n but actual is\n" << feature.observation_.transpose();
 }
 
 TEST(RandomSampleConsensusSegmentDetectionTest, ExceptionThrowTest) {
@@ -88,6 +89,6 @@ TEST(RandomSampleConsensusSegmentDetectionTest, ExceptionThrowTest) {
   using namespace laser_object_tracker::feature_extraction;
   RandomSampleConsensusSegmentDetection detection(0.0, 0, 0);
 
-  Eigen::VectorXd feature;
+  features::Feature feature;
   EXPECT_THROW(detection.extractFeature(LaserScanFragment(), feature), std::invalid_argument);
 }

@@ -43,7 +43,7 @@ SearchBasedCornerDetection::SearchBasedCornerDetection(double theta_resolution,
     theta_resolution_(theta_resolution), criterion_(std::move(criterion)) {}
 
 bool
-SearchBasedCornerDetection::extractFeature(const data_types::LaserScanFragment& fragment, Eigen::VectorXd& feature) {
+SearchBasedCornerDetection::extractFeature(const data_types::LaserScanFragment& fragment, features::Feature& feature) {
   if (fragment.empty()) {
     throw std::invalid_argument("Passed fragment is empty.");
   }
@@ -81,7 +81,7 @@ SearchBasedCornerDetection::extractFeature(const data_types::LaserScanFragment& 
   edge_3.coeffs() << std::cos(best_angle), std::sin(best_angle), -projected_points_x.maxCoeff();
   edge_4.coeffs() << -std::sin(best_angle), std::cos(best_angle), -projected_points_y.maxCoeff();
 
-  feature = findMatchingCorner(points.col(0), points.col(1),
+  feature.observation_ = findMatchingCorner(points.col(0), points.col(1),
                                edge_1,
                                edge_2,
                                edge_3,

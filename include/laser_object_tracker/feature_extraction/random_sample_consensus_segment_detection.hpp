@@ -49,7 +49,7 @@ class RandomSampleConsensusSegmentDetection : public BaseFeatureExtraction {
                                         int max_iterations,
                                         double probability);
 
-  bool extractFeature(const data_types::LaserScanFragment& fragment, Eigen::VectorXd& feature) override;
+  bool extractFeature(const data_types::LaserScanFragment& fragment, features::Feature& feature) override;
 
   double getDistanceThreshold();
 

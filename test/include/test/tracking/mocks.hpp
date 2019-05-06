@@ -45,13 +45,13 @@ class MockTracking : public laser_object_tracker::tracking::BaseTracking {
 
   MockTracking(int s, int m) : BaseTracking(0, 0) {}
 
-  MOCK_METHOD1(initFromState, void(const Eigen::VectorXd&));
+  MOCK_METHOD1(initFromState, void(const laser_object_tracker::feature_extraction::features::Feature&));
 
-  MOCK_METHOD1(initFromMeasurement, void(const Eigen::VectorXd&));
+  MOCK_METHOD1(initFromMeasurement, void(const laser_object_tracker::feature_extraction::features::Feature&));
 
   MOCK_METHOD0(predict, void());
 
-  MOCK_METHOD1(update, void(const Eigen::VectorXd&));
+  MOCK_METHOD1(update, void(const laser_object_tracker::feature_extraction::features::Feature&));
 
   MOCK_CONST_METHOD0(getStateVector, Eigen::VectorXd());
 
