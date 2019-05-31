@@ -1,8 +1,7 @@
 <launch>
-    <remap from="/laser_object_tracker/in_scan" to="/scan/front/filtered" />
-<!--    <remap from="/laser_object_tracker/in_scan" to="/robot_0/base_scan" />-->
+<!--    <remap from="/laser_object_tracker/in_scan" to="/scan/front/filtered" />-->
+    <remap from="/laser_object_tracker/in_scan" to="/robot_0/base_scan" />
     <node pkg="laser_object_tracker" type="laser_object_tracker_node" name="laser_object_tracker" output="screen" launch-prefix="">
-<!--        <remap from="in_scan" to="/base_scan"/>-->
         <rosparam command="load" file="$(find laser_object_tracker)/config/tracker.yaml"/>
     </node>
 </launch>

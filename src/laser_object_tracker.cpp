@@ -98,41 +98,44 @@ std::shared_ptr<laser_object_tracker::filtering::BaseSegmentedFiltering> getFilt
 }
 
 std::unique_ptr<laser_object_tracker::tracking::BaseTracking> getTracker() {
-  Eigen::MatrixXd transition(4, 4);
-  transition << 1.0, 0.0, 0.1, 0.0,
-                0.0, 1.0, 0.0, 0.1,
-                0.0, 0.0, 1.0, 0.0,
-                0.0, 0.0, 0.0, 1.0;
+//  Eigen::MatrixXd transition(4, 4);
+//  transition << 1.0, 0.0, 0.1, 0.0,
+//                0.0, 1.0, 0.0, 0.1,
+//                0.0, 0.0, 1.0, 0.0,
+//                0.0, 0.0, 0.0, 1.0;
 
-  Eigen::MatrixXd measurement(2, 4);
-  measurement << 1.0, 0.0, 0.0, 0.0,
-                 0.0, 1.0, 0.0, 0.0;
+//  Eigen::MatrixXd measurement(2, 4);
+//  measurement << 1.0, 0.0, 0.0, 0.0,
+//                 0.0, 1.0, 0.0, 0.0;
 
-  Eigen::MatrixXd process_noise_covariance(4, 4);
-  process_noise_covariance << 0.1, 0.0, 0.0, 0.0,
-                              0.0, 0.1, 0.0, 0.0,
-                              0.0, 0.0, 0.1, 0.0,
-                              0.0, 0.0, 0.0, 0.1;
+  Eigen::MatrixXd process_noise_covariance(6, 6);
+  process_noise_covariance << 0.1, 0.0, 0.0, 0.0, 0.0, 0.0,
+                              0.0, 0.1, 0.0, 0.0, 0.0, 0.0,
+                              0.0, 0.0, 0.1, 0.0, 0.0, 0.0,
+                              0.0, 0.0, 0.0, 0.1, 0.0, 0.0,
+                              0.0, 0.0, 0.0, 0.0, 0.1, 0.0,
+                              0.0, 0.0, 0.0, 0.0, 0.0, 0.1;
 
-  Eigen::MatrixXd measurement_noise_covariance(2, 2);
-  measurement_noise_covariance << 0.01, 0.00,
-                                  0.00, 0.01;
+  Eigen::MatrixXd measurement_noise_covariance(3, 3);
+  measurement_noise_covariance << 0.01, 0.00, 0.00,
+                                  0.00, 0.01, 0.00,
+                                  0.00, 0.00, 0.01;
 
-  Eigen::MatrixXd initial_state_covariance(4, 4);
-  initial_state_covariance << 0.3, 0.0, 0.0, 0.0,
-                              0.0, 0.3, 0.0, 0.0,
-                              0.0, 0.0, 1.0, 0.0,
-                              0.0, 0.0, 0.0, 1.0;
+  Eigen::MatrixXd initial_state_covariance(6, 6);
+  initial_state_covariance << 0.3, 0.0, 0.0, 0.0, 0.0, 0.0,
+                              0.0, 0.3, 0.0, 0.0, 0.0, 0.0,
+                              0.0, 0.0, 0.3, 0.0, 0.0, 0.0,
+                              0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+                              0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
+                              0.0, 0.0, 0.0, 0.0, 0.0, 1.0;
 
-  return std::make_unique<laser_object_tracker::tracking::KalmanFilter>(4, 2,
-                          transition,
-                          measurement,
+  return std::make_unique<laser_object_tracker::tracking::CornerTracker>(0.1, 0.1,
                           measurement_noise_covariance,
                           initial_state_covariance,
                           process_noise_covariance);
 }
 
-std::unique_ptr<laser_object_tracker::data_association::BaseDataAssociation> getDataASsociation(ros::NodeHandle& nh) {
+std::unique_ptr<laser_object_tracker::data_association::BaseDataAssociation> getDataAssociation(ros::NodeHandle& nh) {
   double max_cost;
   nh.getParam("data_association/max_cost", max_cost);
   return std::make_unique<laser_object_tracker::data_association::HungarianAlgorithm>(max_cost);
@@ -141,12 +144,12 @@ std::unique_ptr<laser_object_tracker::data_association::BaseDataAssociation> get
 laser_object_tracker::tracking::MultiTracker::DistanceFunctor getDistanceFunctor() {
   return [](const laser_object_tracker::feature_extraction::features::Feature& observation,
            const laser_object_tracker::tracking::BaseTracking& tracker) {
-    return (observation.observation_ - tracker.getStateVector().head<2>()).squaredNorm();
+    return (observation.observation_.head<2>() - tracker.getStateVector().head<2>()).squaredNorm();
   };
 }
 
 std::unique_ptr<laser_object_tracker::tracking::BaseTrackerRejection> getTrackerRejection() {
-  return std::make_unique<laser_object_tracker::tracking::IterationTrackerRejection>(5);
+  return std::make_unique<laser_object_tracker::tracking::IterationTrackerRejection>(40);
 }
 
 int main(int ac, char **av) {
@@ -188,7 +191,7 @@ int main(int ac, char **av) {
 
   laser_object_tracker::tracking::MultiTracker multi_tracker(
       getDistanceFunctor(),
-      getDataASsociation(pnh),
+      getDataAssociation(pnh),
       getTracker(),
       getTrackerRejection());
 
@@ -202,7 +205,7 @@ int main(int ac, char **av) {
       auto segments = segmentation->segment(fragment);
       filtering->filter(segments);
       ROS_INFO("Detected %lu segments", segments.size());
-      visualization.publishFeatures(segments);
+//      visualization.publishFeatures(segments);
 
       visualization.publishPointClouds(segments);
       laser_object_tracker::feature_extraction::features::Corners2D corners_2_d;
@@ -211,7 +214,8 @@ int main(int ac, char **av) {
       for (const auto& segment : segments) {
         if (segment.isValid()) {
           if (detection.extractFeature(segment, feature)) {
-            features.push_back({feature.observation_.head<2>(), std::vector<int>(), std::vector<bool>()});
+            features.push_back(feature);
+//            features.push_back({feature.observation_.head<2>(), std::vector<int>(), std::vector<bool>()});
 //            std::cout << "Feature vector:\n" << feature.head(2) << std::endl;
             corners_2_d.push_back(laser_object_tracker::feature_extraction::features::Corner2D(feature.observation_));
           }

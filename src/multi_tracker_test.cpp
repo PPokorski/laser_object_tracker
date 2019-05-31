@@ -31,89 +31,87 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include "laser_object_tracker/data_association/data_association.hpp"
+#include "laser_object_tracker/feature_extraction/features/features.hpp"
 #include "laser_object_tracker/tracking/tracking.hpp"
 
 std::unique_ptr<laser_object_tracker::tracking::BaseTracking> getTracker() {
-  Eigen::MatrixXd transition(4, 4);
-  transition << 1.0, 0.0, 0.1, 0.0,
-      0.0, 1.0, 0.0, 0.1,
-      0.0, 0.0, 1.0, 0.0,
-      0.0, 0.0, 0.0, 1.0;
+  Eigen::MatrixXd process_noise_covariance(6, 6);
+  process_noise_covariance << 0.1, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.1, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.1, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.0, 0.1, 0.0, 0.0,
+      0.0, 0.0, 0.0, 0.0, 0.1, 0.0,
+      0.0, 0.0, 0.0, 0.0, 0.0, 0.1;
 
-  Eigen::MatrixXd measurement(2, 4);
-  measurement << 1.0, 0.0, 0.0, 0.0,
-      0.0, 1.0, 0.0, 0.0;
+  Eigen::MatrixXd measurement_noise_covariance(3, 3);
+  measurement_noise_covariance << 0.01, 0.00, 0.00,
+      0.00, 0.01, 0.00,
+      0.00, 0.00, 0.01;
 
-  Eigen::MatrixXd process_noise_covariance(4, 4);
-  process_noise_covariance << 0.1, 0.0, 0.0, 0.0,
-      0.0, 0.1, 0.0, 0.0,
-      0.0, 0.0, 0.1, 0.0,
-      0.0, 0.0, 0.0, 0.1;
+  Eigen::MatrixXd initial_state_covariance(6, 6);
+  initial_state_covariance << 0.3, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.3, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.3, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+      0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
+      0.0, 0.0, 0.0, 0.0, 0.0, 1.0;
 
-  Eigen::MatrixXd measurement_noise_covariance(2, 2);
-  measurement_noise_covariance << 0.1, 0.0,
-      0.0, 0.1;
-
-  Eigen::MatrixXd initial_state_covariance(4, 4);
-  initial_state_covariance << 1.0, 1.0, 1.0, 1.0,
-      1.0, 1.0, 1.0, 1.0,
-      1.0, 1.0, 1.0, 1.0,
-      1.0, 1.0, 1.0, 1.0;
-
-  return std::make_unique<laser_object_tracker::tracking::KalmanFilter>(4, 2,
-                                                                        transition,
-                                                                        measurement,
-                                                                        measurement_noise_covariance,
-                                                                        initial_state_covariance,
-                                                                        process_noise_covariance);
-}
-
-std::unique_ptr<laser_object_tracker::data_association::BaseDataAssociation> getDataASsociation() {
-  return std::make_unique<laser_object_tracker::data_association::HungarianAlgorithm>();
-}
-
-laser_object_tracker::tracking::MultiTracker::DistanceFunctor getDistanceFunctor() {
-  return [](const Eigen::VectorXd& observation, const laser_object_tracker::tracking::BaseTracking& tracker) {
-    return (observation - tracker.getStateVector().head<2>()).squaredNorm();
-  };
+  return std::make_unique<laser_object_tracker::tracking::CornerTracker>(0.1, 0.1,
+                                                                         measurement_noise_covariance,
+                                                                         initial_state_covariance,
+                                                                         process_noise_covariance);
 }
 
 #include <iostream>
 
-void printTracker(const laser_object_tracker::tracking::MultiTracker& multi_tracker) {
+void printTracker(const laser_object_tracker::tracking::BaseTracking& tracker) {
   std::cout << "~~!! TRACKERS !!~~" << std::endl;
-  for (const auto& tracker : multi_tracker) {
-    std::cout << " TRACKER " << std::endl;
-    std::cout << tracker->getStateVector() << std::endl;
-  }
+  std::cout << tracker.getStateVector() << std::endl;
 }
 
 static constexpr int STEPS = 5;
 
 int main(int ac, char **av) {
-  laser_object_tracker::tracking::MultiTracker multi_tracker(
-      getDistanceFunctor(),
-      getDataASsociation(),
-      getTracker());
+  auto tracker = getTracker();
 
-  std::vector<Eigen::VectorXd> features;
-  Eigen::VectorXd feature(2);
-  feature << 1.0, 1.0;
-  features.push_back(feature);
-  feature << 2.0, 2.0;
-  features.push_back(feature);
+  laser_object_tracker::feature_extraction::features::Feature feature;
+  feature.observation_.resize(6);
+  feature.observation_ << 1.0, 1.0,
+                          2.0, 2.0,
+                          1.0, 1.0;
+  feature.vector_bool_ = {false, false, false};
+  std::cout << "~~~~!!!! INITIALIZATION STEP !!!!~~~~" << std::endl;
+  tracker->initFromMeasurement(feature);
+  printTracker(*tracker);
 
-  for(int i = 0; i < STEPS; ++i) {
-    std::cout << "~~~~!!!! PREDICTION STEP !!!!~~~~" << std::endl;
-    multi_tracker.predict();
-    printTracker(multi_tracker);
-    std::cout << "~~~~!!!! UPDATE STEP !!!!~~~~" << std::endl;
-    multi_tracker.update(features);
-    printTracker(multi_tracker);
+  feature.observation_ << 1.5, 1.0,
+                          2.5, 2.0,
+                          1.5, 1.0;
+  std::cout << "~~~~!!!! PREDICTION STEP !!!!~~~~" << std::endl;
+  tracker->predict();
+  printTracker(*tracker);
+  std::cout << "~~~~!!!! UPDATE STEP !!!!~~~~" << std::endl;
+  tracker->update(feature);
+  printTracker(*tracker);
 
-    feature << 3.0, 3.0;
-    features.push_back(feature);
-  }
+  feature.observation_ << 2.0, 1.0,
+                          3.0, 2.0,
+                          2.0, 1.0;
+  feature.vector_bool_= {false, true, false};
+  std::cout << "~~~~!!!! PREDICTION STEP !!!!~~~~" << std::endl;
+  tracker->predict();
+  printTracker(*tracker);
+  std::cout << "~~~~!!!! UPDATE STEP !!!!~~~~" << std::endl;
+  tracker->update(feature);
+  printTracker(*tracker);
 
+
+//  for(int i = 0; i < STEPS; ++i) {
+//    std::cout << "~~~~!!!! PREDICTION STEP !!!!~~~~" << std::endl;
+//    tracker->predict();
+//    printTracker(*tracker);
+//    std::cout << "~~~~!!!! UPDATE STEP !!!!~~~~" << std::endl;
+//    tracker->update(feature);
+//    printTracker(*tracker);
+//  }
 }

@@ -97,7 +97,9 @@ void LaserObjectTrackerVisualization::publishSegment(const feature_extraction::f
                                                      const std_msgs::ColorRGBA& color) {
   Eigen::Vector3d point_1, point_2;
   point_1.head<2>() = segment.start_;
+  point_1(2) = 0.1;
   point_2.head<2>() = segment.end_;
+  point_2(2) = 0.1;
 
   rviz_visual_tools_->publishLine(point_1, point_2, color);
 }
@@ -136,34 +138,39 @@ void LaserObjectTrackerVisualization::publishCorners(const feature_extraction::f
 void LaserObjectTrackerVisualization::publishTracker(const tracking::BaseTracking& tracker,
                                                      const std_msgs::ColorRGBA& color) {
   Eigen::VectorXd state = tracker.getStateVector();
-  double yaw = state.tail<2>().isZero()? 0.0 : std::atan2(state(3), state(2));
+//  std::cout << "Tracker state:" << std::endl << state << std::endl;
+  double yaw = state(2);
+//  double yaw = state.tail<2>().isZero()? 0.0 : std::atan2(state(3), state(2));
   Eigen::Affine3d pose = rviz_visual_tools::RvizVisualTools::convertFromXYZRPY(state(0), state(1), 0.0, 0.0, 0.0, yaw,
       rviz_visual_tools::EulerConvention::XYZ);
 
+  pose.translation()(2) += 0.2;
   rviz_visual_tools_->publishArrow(pose, rviz_visual_tools::BLUE, rviz_visual_tools::XXXLARGE);
   rviz_visual_tools_->publishSphere(pose, color, rviz_visual_tools_->getScale(rviz_visual_tools::scales::XXLARGE));
   using namespace std::string_literals;
-  rviz_visual_tools_->publishText(pose, std::to_string(state.tail<2>().norm()) + " m/s"s,
+  pose.translation()(2) += 0.3;
+  rviz_visual_tools_->publishText(pose, "ID: " + std::to_string(tracker.getId()) + " " + std::to_string(state.segment<2>(3).norm()) + " m/s"s,
           rviz_visual_tools::WHITE, rviz_visual_tools::XXXXLARGE, false);
 }
 
 void LaserObjectTrackerVisualization::publishMultiTracker(const tracking::MultiTracker& multi_tracker) {
   expandToNColors(multi_tracker.size());
   for (int i = 0; i < multi_tracker.size(); ++i) {
-    if (multi_tracker.at(i).getStateVector().tail<2>().norm() > 0.1) {
+    if (multi_tracker.at(i).getStateVector().segment<2>(3).norm() >= 0.1) {
       publishTracker(multi_tracker.at(i), rgb_colors_.at(i));
     }
   }
 }
+
 void LaserObjectTrackerVisualization::publishAssignments(const tracking::MultiTracker& multi_tracker,
-                                                         const std::vector<Eigen::VectorXd>& measurements,
+                                                         const std::vector<feature_extraction::features::Feature>& measurements,
                                                          const Eigen::MatrixXd& cost_matrix,
                                                          const Eigen::VectorXi& assignment_vector) {
   for (int i = 0; i < assignment_vector.size(); ++i) {
     if (assignment_vector(i) != data_association::BaseDataAssociation::NO_ASSIGNMENT) {
       Eigen::VectorXd state = multi_tracker.at(assignment_vector(i)).getStateVector();
       Eigen::Vector3d start, end;
-      start << measurements.at(i)(0), measurements.at(i)(1), 0.0;
+      start << measurements.at(i).observation_(0), measurements.at(i).observation_(1), 0.0;
       end << state(0), state(1), 0.0;
 
 

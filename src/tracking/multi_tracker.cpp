@@ -116,6 +116,7 @@ void MultiTracker::updateAndInitializeTracks(const std::vector<feature_extractio
     } else {
       trackers_.push_back(std::move(tracker_prototype_->clone()));
       trackers_.back()->initFromMeasurement(measurements.at(i));
+      trackers_.back()->assignId();
       trackers_rejections_.push_back(std::move(tracker_rejector_prototype_->clone()));
     }
   }

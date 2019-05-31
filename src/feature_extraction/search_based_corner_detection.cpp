@@ -87,6 +87,8 @@ SearchBasedCornerDetection::extractFeature(const data_types::LaserScanFragment& 
                                edge_3,
                                edge_4);
 
+  feature.vector_bool_ = {false, fragment.front().isOccluded(), fragment.back().isOccluded()};
+
   return true;
 }
 

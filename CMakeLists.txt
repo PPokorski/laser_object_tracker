@@ -79,6 +79,7 @@ target_link_libraries(${PROJECT_NAME}_feature_extraction
 
 add_library(${PROJECT_NAME}_tracking
         src/tracking/base_tracking.cpp
+        src/tracking/corner_tracker.cpp
         src/tracking/iteration_tracker_rejection.cpp
         src/tracking/kalman_filter.cpp
         src/tracking/multi_tracker.cpp)
@@ -108,13 +109,18 @@ target_link_libraries(${PROJECT_NAME}_node
         ${PROJECT_NAME}_segmentation
         ${PROJECT_NAME}_tracking)
 
-#add_executable(${PROJECT_NAME}_multi_tracker
-#        src/multi_tracker_test.cpp)
-#
-#target_link_libraries(${PROJECT_NAME}_multi_tracker
-#        ${catkin_LIBRARIES}
-#        ${PROJECT_NAME}_data_association
-#        ${PROJECT_NAME}_tracking)
+add_executable(${PROJECT_NAME}_multi_tracker
+        src/multi_tracker_test.cpp)
+
+target_link_libraries(${PROJECT_NAME}_multi_tracker
+        ${catkin_LIBRARIES}
+        ${PROJECT_NAME}_tracking)
+
+add_executable(${PROJECT_NAME}_hungarian_test
+        src/hungarian_algorithm_test.cpp)
+
+target_link_libraries(${PROJECT_NAME}_hungarian_test
+        ${PROJECT_NAME}_data_association)
 
 
 ## Tests ##

@@ -70,7 +70,9 @@ class KalmanFilter : public BaseTracking {
 
   std::unique_ptr<BaseTracking> clone() const override;
 
-private:
+  virtual ~KalmanFilter() = default;
+
+ protected:
   void copyMats(const KalmanFilter& other);
 
   cv::KalmanFilter kalman_filter_;

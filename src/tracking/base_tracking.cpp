@@ -41,8 +41,18 @@ void laser_object_tracker::tracking::BaseTracking::initFromState() {
   default_state.observation_ = Eigen::VectorXd::Zero(state_dimensions_);
   initFromState(default_state);
 }
+
 void laser_object_tracker::tracking::BaseTracking::initFromMeasurement() {
   feature_extraction::features::Feature measurement;
   measurement.observation_ = Eigen::VectorXd::Zero(measurement_dimensions_);
   initFromMeasurement(measurement);
+}
+
+void laser_object_tracker::tracking::BaseTracking::assignId() {
+  static long current_id = 0;
+  id_ = current_id++;
+}
+
+long laser_object_tracker::tracking::BaseTracking::getId() const {
+  return id_;
 }

@@ -1,6 +1,7 @@
 <launch>
     <rosparam param="use_sim_time">true</rosparam>
 
-    <node pkg="stage_ros" type="stageros" name="world" output="screen" args="$(find laser_object_tracker)/world/willow-erratic.world">
-    </node>
+    <node pkg="stage_ros" type="stageros" name="world" output="screen" args="$(find laser_object_tracker)/world/willow-erratic.world" />
+
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find laser_object_tracker)/rviz/simulation.rviz" />
 </launch>

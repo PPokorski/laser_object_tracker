@@ -88,6 +88,8 @@ bool RandomSampleConsensusCornerDetection::extractFeature(const data_types::Lase
   feature.observation_.template segment<2>(2) = line_1.projection(Eigen::Vector2d(min.x, min.y));
   feature.observation_.template tail<2>() = line_2.projection(Eigen::Vector2d(max.x, max.y));
 
+  feature.vector_bool_ = {false, fragment.front().isOccluded(), fragment.back().isOccluded()};
+
   return true;
 }
 

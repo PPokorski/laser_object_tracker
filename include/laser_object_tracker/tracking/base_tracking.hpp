@@ -63,9 +63,15 @@ class BaseTracking {
 
   virtual std::unique_ptr<BaseTracking> clone() const = 0;
 
+  void assignId();
+
+  long getId() const;
+
   virtual ~BaseTracking() = default;
 
  protected:
+  long id_;
+
   int state_dimensions_, measurement_dimensions_;
 };
 }  // namespace tracking

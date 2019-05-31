@@ -87,7 +87,7 @@ class LaserObjectTrackerVisualization {
   void publishMultiTracker(const tracking::MultiTracker& multi_tracker);
 
   void publishAssignments(const tracking::MultiTracker& multi_tracker,
-                          const std::vector<Eigen::VectorXd>& measurements,
+                          const std::vector<feature_extraction::features::Feature>& measurements,
                           const Eigen::MatrixXd& cost_matrix,
                           const Eigen::VectorXi& assignment_vector);
 

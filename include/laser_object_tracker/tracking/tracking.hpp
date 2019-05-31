@@ -36,6 +36,7 @@
 
 #include "laser_object_tracker/tracking/base_tracker_rejection.hpp"
 #include "laser_object_tracker/tracking/base_tracking.hpp"
+#include "laser_object_tracker/tracking/corner_tracker.hpp"
 #include "laser_object_tracker/tracking/iteration_tracker_rejection.hpp"
 #include "laser_object_tracker/tracking/kalman_filter.hpp"
 #include "laser_object_tracker/tracking/multi_tracker.hpp"

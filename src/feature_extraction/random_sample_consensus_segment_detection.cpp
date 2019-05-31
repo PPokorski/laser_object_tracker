@@ -82,6 +82,8 @@ bool RandomSampleConsensusSegmentDetection::extractFeature(const data_types::Las
   feature.observation_.template head<2>() = line.projection(Eigen::Vector2d(min.x, min.y));
   feature.observation_.template tail<2>() = line.projection(Eigen::Vector2d(max.x, max.y));
 
+  feature.vector_bool_ = {fragment.front().isOccluded(), fragment.back().isOccluded()};
+
   return true;
 }
 
