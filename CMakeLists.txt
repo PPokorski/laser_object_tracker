@@ -12,8 +12,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 #set(CMAKE_CXX_CPPLINT /usr/local/bin/cpplint;--linelength=120 --root=include)
 
 ## Dependancies ##
-find_package(OpenCV REQUIRED COMPONENTS
-        tracking)
+find_package(OpenCV 3.4.1 REQUIRED)
 
 find_package(catkin REQUIRED COMPONENTS
         roscpp
@@ -70,6 +69,7 @@ target_link_libraries(${PROJECT_NAME}_filtering
         ${PROJECT_NAME}_data_types)
 
 add_library(${PROJECT_NAME}_feature_extraction
+        src/feature_extraction/multi_line_detection.cpp
         src/feature_extraction/random_sample_consensus_corner_detection.cpp
         src/feature_extraction/random_sample_consensus_segment_detection.cpp
         src/feature_extraction/search_based_corner_detection.cpp)
@@ -116,11 +116,24 @@ target_link_libraries(${PROJECT_NAME}_multi_tracker
         ${catkin_LIBRARIES}
         ${PROJECT_NAME}_tracking)
 
-add_executable(${PROJECT_NAME}_hungarian_test
+add_executable(hungarian_test
         src/hungarian_algorithm_test.cpp)
 
-target_link_libraries(${PROJECT_NAME}_hungarian_test
+target_link_libraries(hungarian_test
         ${PROJECT_NAME}_data_association)
+
+add_executable(multi_line_detection_test
+        src/multi_line_detection_test.cpp
+        src/visualization/laser_object_tracker_visualization.cpp)
+
+target_link_libraries(multi_line_detection_test
+        ${catkin_LIBRARIES}
+        ${PROJECT_NAME}_data_association
+        ${PROJECT_NAME}_data_types
+        ${PROJECT_NAME}_feature_extraction
+        ${PROJECT_NAME}_filtering
+        ${PROJECT_NAME}_segmentation
+        ${PROJECT_NAME}_tracking)
 
 
 ## Tests ##

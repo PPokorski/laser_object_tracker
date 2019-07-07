@@ -112,6 +112,20 @@ void LaserObjectTrackerVisualization::publishSegments(const feature_extraction::
   }
 }
 
+void LaserObjectTrackerVisualization::publishMultiSegments(const feature_extraction::features::MultiSegments2D& multi_segments) {
+  expandToNColors(multi_segments.size());
+
+  for (int i = 0; i < multi_segments.size(); ++i) {
+    if (multi_segments.at(i).segments_.size() == 0) {
+      continue;
+    }
+
+    for (const auto& segment : multi_segments.at(i).segments_) {
+      publishSegment(segment, rgb_colors_.at(i));
+    }
+  }
+}
+
 void LaserObjectTrackerVisualization::publishCorner(const feature_extraction::features::Corner2D& corner,
                                                     const std_msgs::ColorRGBA& color) {
   publishSegment({corner.corner_, corner.point_1_}, color);
@@ -215,6 +229,15 @@ void LaserObjectTrackerVisualization::publishFeatures(const std::vector<data_typ
                                     rviz_visual_tools::WHITE,
                                     rviz_visual_tools::XXXXLARGE,
                                     false);
+
+    Eigen::Vector3d p1, p2, p3, p4;
+    cv::Point2f vertices[4];
+    rectangle.points(vertices);
+    p1 << vertices[0].x, vertices[0].y, 0.0;
+    p2 << vertices[1].x, vertices[1].y, 0.0;
+    p3 << vertices[2].x, vertices[2].y, 0.0;
+    p4 << vertices[3].x, vertices[3].y, 0.0;
+    rviz_visual_tools_->publishWireframeRectangle(Eigen::Affine3d::Identity(), p1, p2, p3, p4, rviz_visual_tools::BLUE, rviz_visual_tools::LARGE);
   }
 }
 }  // namespace visualization

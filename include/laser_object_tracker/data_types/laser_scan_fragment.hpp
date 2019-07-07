@@ -182,6 +182,8 @@ class LaserScanFragment {
    * @return Iterator pointing to the first measurement (counting from min to max angle)
    */
   Iterator begin();
+
+  ConstIterator begin() const;
   /**
    *
    * @return Const iterator pointing to the first measurement (counting from min to max angle)
@@ -193,6 +195,8 @@ class LaserScanFragment {
    * @return Iterator pointing to the one measurement beyond last (counting from min to max angle)
    */
   Iterator end();
+
+  ConstIterator end() const;
   /**
    *
    * @return Const iterator pointing to the one measurement beyond last (counting from min to max angle)

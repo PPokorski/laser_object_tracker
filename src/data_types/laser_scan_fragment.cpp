@@ -160,11 +160,19 @@ LaserScanFragment::Iterator LaserScanFragment::begin() {
   return elements_.begin();
 }
 
+LaserScanFragment::ConstIterator LaserScanFragment::begin() const {
+  return elements_.begin();
+}
+
 LaserScanFragment::ConstIterator LaserScanFragment::cbegin() const {
   return elements_.cbegin();
 }
 
 LaserScanFragment::Iterator LaserScanFragment::end() {
+  return elements_.end();
+}
+
+LaserScanFragment::ConstIterator LaserScanFragment::end() const {
   return elements_.end();
 }
 

@@ -33,8 +33,6 @@
 
 #include "laser_object_tracker/tracking/corner_tracker.hpp"
 
-#include <iostream>
-
 namespace laser_object_tracker {
 namespace tracking {
 constexpr int CornerTracker::STATE_DIMENSIONS_;
@@ -48,11 +46,11 @@ CornerTracker::CornerTracker(double time_step,
     : KalmanFilter(STATE_DIMENSIONS_,
                    MEASUREMENT_DIMENSIONS_,
                    (Eigen::MatrixXd(STATE_DIMENSIONS_, STATE_DIMENSIONS_) << 1.0, 0.0, 0.0, time_step, 0.0, 0.0,
-                                                                            0.0, 1.0, 0.0, 0.0, time_step, 0.0,
-                                                                            0.0, 0.0, 1.0, 0.0, 0.0, time_step,
-                                                                            0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-                                                                            0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
-                                                                            0.0, 0.0, 0.0, 0.0, 0.0, 1.0).finished(),
+                                                                             0.0, 1.0, 0.0, 0.0, time_step, 0.0,
+                                                                             0.0, 0.0, 1.0, 0.0, 0.0, time_step,
+                                                                             0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+                                                                             0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
+                                                                             0.0, 0.0, 0.0, 0.0, 0.0, 1.0).finished(),
                    (Eigen::MatrixXd(MEASUREMENT_DIMENSIONS_, STATE_DIMENSIONS_) << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                                                                    0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
                                                                                    0.0, 0.0, 1.0, 0.0, 0.0, 0.0).finished(),
@@ -67,11 +65,9 @@ void CornerTracker::initFromMeasurement(const feature_extraction::features::Feat
   if (isLine(measurement.observation_)) {
     internal_measurement.observation_ = getMeasurementFromLine(measurement);
     was_line_ = true;
-//    std::cout << "Initializing as line" << std::endl;
   } else {
     internal_measurement.observation_ = getMeasurementFromCorner(measurement.observation_);
     was_line_ = false;
-//    std::cout << "Initializing as corner" << std::endl;
   }
   KalmanFilter::initFromMeasurement(internal_measurement);
 
@@ -79,27 +75,18 @@ void CornerTracker::initFromMeasurement(const feature_extraction::features::Feat
 }
 
 void CornerTracker::update(const feature_extraction::features::Feature& measurement) {
-//  if (measurement.observation_(0) > 4.6 && measurement.observation_(0) < 4.7 &&
-//      measurement.observation_(1) > 0.2 && measurement.observation_(1) < 0.3) {
-//    std::cout << "sth" << std::endl;
-//  }
-
   feature_extraction::features::Feature feature = measurement;
   bool is_line = isLine(measurement.observation_);
   if (is_line) {
-//    std::cout << "Updating as a line" << std::endl;
     feature.observation_ = getMeasurementFromLine(measurement);
     handleAsCorner(measurement, feature);
     if (!was_line_) {
-//      std::cout << "Changing orientation" << std::endl;
       kalman_filter_.statePre.at<double>(2) = feature.observation_(2);
     }
   } else {
-//    std::cout << "Updating as a corner" << std::endl;
     feature.observation_ = getMeasurementFromCorner(measurement.observation_);
     handleAsCorner(measurement, feature);
     if (was_line_) {
-//      std::cout << "Changing orientation" << std::endl;
       kalman_filter_.statePre.at<double>(2) = feature.observation_(2);
     }
   }
@@ -149,7 +136,6 @@ Eigen::VectorXd CornerTracker::getMeasurementFromLine(const feature_extraction::
 void CornerTracker::handleAsCorner(const feature_extraction::features::Feature& measurement,
                                    const feature_extraction::features::Feature& processed_measurement) {
   if(moveStatePoint(measurement)) {
-//    std::cout << "Moving point" << std::endl;
     kalman_filter_.statePre.at<double>(0) = processed_measurement.observation_(0);
     kalman_filter_.statePre.at<double>(1) = processed_measurement.observation_(1);
     kalman_filter_.statePre.at<double>(2) = processed_measurement.observation_(2);
@@ -162,7 +148,6 @@ void CornerTracker::handleAsLine(const feature_extraction::features::Feature& me
 
   if (line.vector_bool_.at(0) ||
       line.vector_bool_.at(1)) {
-//    std::cout << "Canceling some velocity" << std::endl;
     double velocity_x = kalman_filter_.statePost.at<double>(3),
            velocity_y = kalman_filter_.statePost.at<double>(4),
            orientation = kalman_filter_.statePost.at<double>(2);
@@ -175,13 +160,11 @@ void CornerTracker::handleAsLine(const feature_extraction::features::Feature& me
 
     if (measurement.vector_bool_.at(0) &&
         local_velocity_x < 0.0) {
-//      std::cout << "Canceling negative velocity" << std::endl;
       local_velocity_x = 0.0;
     }
 
     if (measurement.vector_bool_.at(1) &&
         local_velocity_x > 0.0) {
-//      std::cout << "Canceling positive velocity" << std::endl;
       local_velocity_x = 0.0;
     }
 

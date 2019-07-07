@@ -31,15 +31,47 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_FEATURE_EXTRACTION_HPP
-#define LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_FEATURE_EXTRACTION_HPP
+#ifndef LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_MULTI_LINE_DETECTION_HPP
+#define LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_MULTI_LINE_DETECTION_HPP
 
-#include "laser_object_tracker/feature_extraction/features/features.hpp"
-#include "laser_object_tracker/feature_extraction/pcl/sac_model_cross2d.hpp"
+#include <opencv2/imgproc.hpp>
+
 #include "laser_object_tracker/feature_extraction/base_feature_extraction.hpp"
-#include "laser_object_tracker/feature_extraction/multi_line_detection.hpp"
-#include "laser_object_tracker/feature_extraction/random_sample_consensus_corner_detection.hpp"
-#include "laser_object_tracker/feature_extraction/random_sample_consensus_segment_detection.hpp"
-#include "laser_object_tracker/feature_extraction/search_based_corner_detection.hpp"
 
-#endif  // LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_FEATURE_EXTRACTION_HPP
+namespace laser_object_tracker {
+namespace feature_extraction {
+class MultiLineDetection : public BaseFeatureExtraction {
+ public:
+  MultiLineDetection(double max_distance,
+                     double rho_resolution,
+                     double theta_resolution,
+                     int voting_threshold,
+                     double rho_min = -std::numeric_limits<double>::infinity(),
+                     double rho_max = std::numeric_limits<double>::infinity(),
+                     double theta_min = 0.0,
+                     double theta_max = M_PI);
+
+  bool extractFeature(const data_types::LaserScanFragment& fragment, features::Feature& feature) override;
+
+ protected:
+  using Line = Eigen::Hyperplane<double, 2>;
+  using Lines = std::vector<Line, Eigen::aligned_allocator<Line>>;
+
+  std::vector<cv::Point2f> pointsFromFragment(const data_types::LaserScanFragment& fragment) const;
+  void initializeRhoLimits(const std::vector<cv::Point2f>& points);
+  bool isInlier(const Line& line, const Eigen::Vector2d& point) const;
+  void buildObservationVector(const data_types::LaserScanFragment& fragment,
+                              const Lines& lines,
+                              Eigen::VectorXd& observation) const;
+
+  double max_distance_;
+  double rho_resolution_, theta_resolution_;
+  int voting_threshold_;
+  double rho_min_, rho_max_;
+  double theta_min_, theta_max_;
+  bool rho_min_defined_, rho_max_defined_;
+};
+}  // namespace feature_extraction
+}  // namespace laser_object_tracker
+
+#endif //LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_MULTI_LINE_DETECTION_HPP

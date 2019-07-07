@@ -5,8 +5,8 @@ segmentation:
 #  threshold: 0.2
 
     type: "AdaptiveThresholdDetection"
-    angle: 0.1
-    sigma: 0.1
+    angle: 0.2
+    sigma: 0.2
 feature_extraction:
   type: "SearchBasedCornerDetection"
   angle_resolution: 0.01
@@ -15,10 +15,13 @@ feature_extraction:
 #  max_iterations: 100
 #  probability: 0.99
 filtering:
-  min_points: 10
-  max_points: 150
+  min_points: 5
+  max_points: 100
   min_area: 0.005
-  max_area: 2.0
+  max_area: 1.0
   min_dimension: 0.05
 data_association:
-  max_cost: 0.2
+  max_cost: 0.5
+tracking:
+  rejection:
+    max_iterations_without_update: 10

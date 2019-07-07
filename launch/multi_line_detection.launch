@@ -1,0 +1,7 @@
+<launch>
+    <remap from="/multi_line_detection/in_scan" to="/scan/front/filtered" />
+<!--    <remap from="/multi_line_detection/in_scan" to="/robot_0/base_scan" />-->
+    <node pkg="laser_object_tracker" type="multi_line_detection_test" name="multi_line_detection" output="screen" launch-prefix="">
+        <rosparam command="load" file="$(find laser_object_tracker)/config/multi_line_detection.yaml"/>
+    </node>
+</launch>

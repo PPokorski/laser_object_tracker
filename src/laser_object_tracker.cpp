@@ -31,6 +31,8 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
+#include <chrono>
+
 #include "laser_object_tracker/data_association/data_association.hpp"
 #include "laser_object_tracker/data_types/data_types.hpp"
 #include "laser_object_tracker/feature_extraction/feature_extraction.hpp"
@@ -43,10 +45,10 @@ laser_object_tracker::data_types::LaserScanFragment::LaserScanFragmentFactory fa
 laser_object_tracker::data_types::LaserScanFragment fragment;
 
 void laserScanCallback(const sensor_msgs::LaserScan::Ptr& laser_scan) {
-  ROS_INFO("Received laser scan");
+//  ROS_INFO("Received laser scan");
   fragment = factory.fromLaserScan(std::move(*laser_scan));
 
-  ROS_INFO("Fragment has %d elements.", fragment.size());
+//  ROS_INFO("Fragment has %d elements.", fragment.size());
 }
 
 using namespace laser_object_tracker;
@@ -148,8 +150,10 @@ laser_object_tracker::tracking::MultiTracker::DistanceFunctor getDistanceFunctor
   };
 }
 
-std::unique_ptr<laser_object_tracker::tracking::BaseTrackerRejection> getTrackerRejection() {
-  return std::make_unique<laser_object_tracker::tracking::IterationTrackerRejection>(40);
+std::unique_ptr<laser_object_tracker::tracking::BaseTrackerRejection> getTrackerRejection(ros::NodeHandle& nh) {
+  int max_iterations_without_update;
+  nh.getParam("tracking/rejection/max_iterations_without_update", max_iterations_without_update);
+  return std::make_unique<laser_object_tracker::tracking::IterationTrackerRejection>(max_iterations_without_update);
 }
 
 int main(int ac, char **av) {
@@ -193,10 +197,12 @@ int main(int ac, char **av) {
       getDistanceFunctor(),
       getDataAssociation(pnh),
       getTracker(),
-      getTrackerRejection());
+      getTrackerRejection(pnh));
 
+  std::chrono::high_resolution_clock::time_point begin, end;
   while (ros::ok()) {
     ros::spinOnce();
+    begin = std::chrono::high_resolution_clock::now();
     multi_tracker.predict();
 
     if (!fragment.empty()) {
@@ -227,6 +233,9 @@ int main(int ac, char **av) {
 //      visualization.publishAssignments(multi_tracker, features, cost_matrix, assignment_vector);
 
       multi_tracker.update(features);
+      end = std::chrono::high_resolution_clock::now();
+      std::chrono::duration<double, std::milli> duration = end - begin;
+      ROS_INFO("Iteration took: %.2f ms", (duration.count()));
       visualization.publishCorners(corners_2_d);
       visualization.publishMultiTracker(multi_tracker);
 

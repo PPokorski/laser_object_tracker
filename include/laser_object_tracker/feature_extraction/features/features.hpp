@@ -106,6 +106,26 @@ struct Segment2D {
 };
 
 using Segments2D = std::vector<Segment2D, Eigen::aligned_allocator<Segment2D>>;
+
+struct MultiSegment2D {
+  MultiSegment2D() = default;
+
+  explicit MultiSegment2D(const Eigen::VectorXd& coefficients) {
+    if (coefficients.size() % 4 != 0) {
+      throw std::invalid_argument("MultiSegment2D needs multiple of 4 coefficients. " +
+          std::to_string(coefficients.size()) + " provided.");
+    }
+
+    segments_.resize(coefficients.size() / 4);
+    for (int i = 0; i < segments_.size(); ++i) {
+      segments_.at(i) = Segment2D(coefficients.segment<4>(4 * i));
+    }
+  }
+
+  Segments2D segments_;
+};
+
+using MultiSegments2D = std::vector<MultiSegment2D>;
 }  // namespace features
 }  // namespace feature_extraction
 }  // namespace laser_object_tracker

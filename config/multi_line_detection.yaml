@@ -1,0 +1,14 @@
+base_frame: "/base_laser_front_link"
+#base_frame: "/robot_0/base_laser_link"
+segmentation:
+#  type: "BreakpointDetection"
+#  threshold: 0.2
+
+    type: "AdaptiveThresholdDetection"
+    angle: 0.2
+    sigma: 0.2
+feature_extraction:
+  max_distance: 0.1
+  rho_resolution: 0.1
+  theta_resolution: 0.04
+  voting_threshold: 7
