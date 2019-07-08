@@ -58,6 +58,7 @@ class MultiLineDetection : public BaseFeatureExtraction {
   using Lines = std::vector<Line, Eigen::aligned_allocator<Line>>;
 
   std::vector<cv::Point2f> pointsFromFragment(const data_types::LaserScanFragment& fragment) const;
+  cv::Point2f demeanPoints(std::vector<cv::Point2f>& points) const;
   void initializeRhoLimits(const std::vector<cv::Point2f>& points);
   bool isInlier(const Line& line, const Eigen::Vector2d& point) const;
   void buildObservationVector(const data_types::LaserScanFragment& fragment,

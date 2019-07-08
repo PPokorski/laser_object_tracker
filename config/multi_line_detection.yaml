@@ -1,5 +1,5 @@
-base_frame: "/base_laser_front_link"
-#base_frame: "/robot_0/base_laser_link"
+#base_frame: "/base_laser_front_link"
+base_frame: "/robot_0/base_laser_link"
 segmentation:
 #  type: "BreakpointDetection"
 #  threshold: 0.2
@@ -8,7 +8,7 @@ segmentation:
     angle: 0.2
     sigma: 0.2
 feature_extraction:
-  max_distance: 0.1
-  rho_resolution: 0.1
+  max_distance: 0.05
+  rho_resolution: 0.05
   theta_resolution: 0.04
-  voting_threshold: 7
+  voting_threshold: 10

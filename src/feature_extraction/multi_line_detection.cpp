@@ -61,9 +61,16 @@ MultiLineDetection::MultiLineDetection(double max_distance,
 bool MultiLineDetection::extractFeature(const data_types::LaserScanFragment& fragment, features::Feature& feature) {
   std::vector<cv::Point2f> cv_points = pointsFromFragment(fragment);
 
+  // Find mean and demean points for quicker Hough computation
+  cv::Point2f mean_point = demeanPoints(cv_points);
+
   Lines lines;
   bool finished = false;
   while (!finished) {
+    if (cv_points.size() < 2) {
+      break;
+    }
+
     initializeRhoLimits(cv_points);
 
     std::vector<cv::Vec3d> cv_lines;
@@ -74,16 +81,29 @@ bool MultiLineDetection::extractFeature(const data_types::LaserScanFragment& fra
     if (!cv_lines.empty()) {
       Line line;
       line.coeffs() << std::cos(cv_lines.at(0)(2)), std::sin(cv_lines.at(0)(2)), -cv_lines.at(0)(1);
-      lines.push_back(line);
 
-      // Remove inliers
+      // Partition points
+      // Outliers will be at the beginning, inliers at the end
       Eigen::Vector2d eigen_point;
-      cv_points.erase(std::remove_if(cv_points.begin(),
-                                     cv_points.end(),
-                                     [this, &line, &eigen_point](const auto& point) {
-                                       eigen_point << point.x, point.y;
-                                       return this->isInlier(line, eigen_point);}),
-                      cv_points.end());
+      auto it = std::stable_partition(cv_points.begin(),
+                                      cv_points.end(),
+                                      [this, &line, &eigen_point](const auto& point) {
+                                        eigen_point << point.x, point.y;
+                                        return !this->isInlier(line, eigen_point);});
+      // Copy and remove inliers
+      std::vector<cv::Point2f> inliers(it, cv_points.end());
+      cv_points.erase(it, cv_points.end());
+
+      // Fit total least squared line from inliers
+      cv::Vec4f cv_line;
+      cv::fitLine(inliers, cv_line, CV_DIST_L2, 0.0, 0.0, 0.0);
+      // cv_line contains [v_x, v_y, x_0, y_0] of the line, so a parallel vector and a point on the line
+      cv_line[2] += mean_point.x;
+      cv_line[3] += mean_point.y;
+
+      line = Line::Through(Eigen::Vector2d(cv_line[2], cv_line[3]),
+                           Eigen::Vector2d(cv_line[2] + cv_line[0], cv_line[3] + cv_line[1]));
+      lines.push_back(line);
 
       if (!rho_min_defined_) {
         rho_min_ = -std::numeric_limits<double>::infinity();
@@ -111,6 +131,17 @@ std::vector<cv::Point2f> MultiLineDetection::pointsFromFragment(const data_types
   }
 
   return cv_points;
+}
+
+cv::Point2f MultiLineDetection::demeanPoints(std::vector<cv::Point2f>& points) const {
+  cv::Mat mean_mat;
+  cv::reduce(points, mean_mat, 1, CV_REDUCE_AVG);
+  cv::Point2f mean_point(mean_mat.at<float>(0, 0), mean_mat.at<float>(0, 1));
+
+  std::vector<cv::Point2f> mean_points(points.size(), -mean_point);
+  cv::add(points, mean_points, points);
+
+  return mean_point;
 }
 
 void MultiLineDetection::initializeRhoLimits(const std::vector<cv::Point2f>& points) {
@@ -148,7 +179,7 @@ void MultiLineDetection::buildObservationVector(const data_types::LaserScanFragm
   int i = 0;
   for (const auto& line : lines) {
     Eigen::Vector2d min_point = Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity()),
-        max_point = Eigen::Vector2d::Constant(-std::numeric_limits<double>::infinity());
+                    max_point = Eigen::Vector2d::Constant(-std::numeric_limits<double>::infinity());
 
     // The coefficient (x or y) by which we will be comparing points, is the one with the smallest
     // absolute value in the normal vector of the line
