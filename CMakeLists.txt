@@ -11,6 +11,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 #set(CMAKE_CXX_CPPLINT /usr/local/bin/cpplint;--linelength=120 --root=include)
 
+include(cmake/ConfigureExternalProject.cmake)
+configureExternalProject(MHT cmake/MHT.cmake)
+
 ## Dependancies ##
 find_package(OpenCV 3.4.1 REQUIRED)
 
@@ -82,10 +85,12 @@ add_library(${PROJECT_NAME}_tracking
         src/tracking/corner_tracker.cpp
         src/tracking/iteration_tracker_rejection.cpp
         src/tracking/kalman_filter.cpp
+        src/tracking/mht/motion_model.cpp
         src/tracking/multi_tracker.cpp)
 
 target_link_libraries(${PROJECT_NAME}_tracking
         ${OpenCV_LIBS}
+        multi_hypothesis_tracker
         ${PROJECT_NAME}_data_association)
 
 add_library(${PROJECT_NAME}_data_association
