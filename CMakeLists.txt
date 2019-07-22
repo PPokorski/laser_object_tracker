@@ -12,7 +12,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 #set(CMAKE_CXX_CPPLINT /usr/local/bin/cpplint;--linelength=120 --root=include)
 
 include(cmake/ConfigureExternalProject.cmake)
-configureExternalProject(MHT cmake/MHT.cmake)
+configureExternalProject(mht cmake/mht.cmake)
 
 ## Dependancies ##
 find_package(OpenCV 3.4.1 REQUIRED)
