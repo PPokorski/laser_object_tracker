@@ -35,16 +35,52 @@
 #define LASER_OBJECT_TRACKER_TRACKING_MHT_MOTION_MODEL_HPP
 
 #include <mht/except.h>
-#include <except.h>
-#include <matrix.h>
-#include <mdlmht.h>
-#include <param.h>
-#include <corner.h>
+#include <mht/matrix.h>
+#include <mht/mdlmht.h>
+#include <mht/corner.h>
 #include <math.h>
 #include <cstdio>		// for  sprintf
 #include <list>			// for std::list<>
 
+#define MAX_COLORS 17
+typedef struct
+{
+  double positionVarianceX;
+  double positionVarianceY;
+  double gradientVariance;
+  double intensityVariance;
+  double processVariance ;
+  double stateVariance ;
+
+  double probDetect ;
+  double probEnd ;
+  double meanNew ;
+  double meanFalarms ;
+
+  int maxGHypos ;
+  int maxDepth ;
+  double minGHypoRatio ;
+  double maxDistance ;
+
+  double pos2velLikelihood;
+  double vel2curvLikelihood;
+
+  int endScan ;
+  int startA ;
+  int startB ;
+  int startC ;
+
+} Parameter;
+
+typedef unsigned short* USHORT_PTR;
+
 static int g_numTracks;
+
+namespace mht {
+namespace internal {
+int g_time;
+}  // namespace internal
+}  // namespace mht
 
 class CONSTPOS_REPORT;
 class CORNER_TRACK_MDL;

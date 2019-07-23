@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(mht NONE)
+project(mht C CXX)
 
 include(ExternalProject)
 ExternalProject_Add(mht

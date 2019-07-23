@@ -41,10 +41,6 @@
 
 double EPSILON = 0.00000000000001;
 
-//extern CORNERLIST *g_currentCornerList;
-//extern int g_isFirstScan;
-extern int g_time;
-
 /*------------------------------------------------------*
  * findTrack():  look for the track with given id in the
  * cornerTrackList and return a ptr to it.  If
@@ -93,7 +89,7 @@ void CORNER_TRACK_MHT::verify( int trackId, double r_x, double r_y, double s_x, 
 //  printf("Verifying trackId=%d r_x=%lf r_y=%lf s_x=%lf s_y=%lf frame=%d\n",
 //			trackId,r_x,r_y,s_x,s_y,frame);
   track = findTrack( trackId );
-  track->list.push_back( CORNER_TRACK_ELEMENT( s_x,s_y,r_x,r_y,logLikelihood,modelType,g_time,frame,id));
+  track->list.push_back( CORNER_TRACK_ELEMENT( s_x,s_y,r_x,r_y,logLikelihood,modelType,mht::internal::g_time,frame,id));
 }
 
 /**-------------------------------------------------------------------

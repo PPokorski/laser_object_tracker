@@ -12,7 +12,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 #set(CMAKE_CXX_CPPLINT /usr/local/bin/cpplint;--linelength=120 --root=include)
 
 include(cmake/ConfigureExternalProject.cmake)
-configureExternalProject(mht cmake/mht.cmake)
+configureExternalProject(mht cmake/mht.cmake mht/include)
 
 ## Dependancies ##
 find_package(OpenCV 3.4.1 REQUIRED)
@@ -40,10 +40,10 @@ catkin_package(
 ###########
 
 ## Includes ##
-
 include_directories(
         ${OpenCV_INCLUDE_DIRS}
         ${catkin_INCLUDE_DIRS}
+        ${mht_INCLUDE_DIRS}
         include/)
 
 ## Libraries ##
@@ -90,7 +90,7 @@ add_library(${PROJECT_NAME}_tracking
 
 target_link_libraries(${PROJECT_NAME}_tracking
         ${OpenCV_LIBS}
-        multi_hypothesis_tracker
+        mht
         ${PROJECT_NAME}_data_association)
 
 add_library(${PROJECT_NAME}_data_association
