@@ -42,7 +42,7 @@
 #include "laser_object_tracker/data_types/definitions.hpp"
 #include "laser_object_tracker/data_types/laser_scan_fragment.hpp"
 #include "laser_object_tracker/feature_extraction/features/features.hpp"
-#include "laser_object_tracker/tracking/multi_tracker.hpp"
+#include "laser_object_tracker/tracking/multi_tracking.hpp"
 
 namespace laser_object_tracker {
 namespace visualization {
@@ -86,9 +86,9 @@ class LaserObjectTrackerVisualization {
 
   void publishTracker(const tracking::BaseTracking& tracker, const std_msgs::ColorRGBA& color);
 
-  void publishMultiTracker(const tracking::MultiTracker& multi_tracker);
+  void publishMultiTracker(const tracking::MultiTracking& multi_tracker);
 
-  void publishAssignments(const tracking::MultiTracker& multi_tracker,
+  void publishAssignments(const tracking::MultiTracking& multi_tracker,
                           const std::vector<feature_extraction::features::Feature>& measurements,
                           const Eigen::MatrixXd& cost_matrix,
                           const Eigen::VectorXi& assignment_vector);

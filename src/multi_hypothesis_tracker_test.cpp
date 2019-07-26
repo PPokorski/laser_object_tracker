@@ -31,16 +31,39 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_TRACKING_TRACKING_HPP
-#define LASER_OBJECT_TRACKER_TRACKING_TRACKING_HPP
+#include "laser_object_tracker/feature_extraction/features/features.hpp"
+#include "laser_object_tracker/tracking/tracking.hpp"
 
-#include "laser_object_tracker/tracking/base_multi_tracking.hpp"
-#include "laser_object_tracker/tracking/base_tracker_rejection.hpp"
-#include "laser_object_tracker/tracking/base_tracking.hpp"
-#include "laser_object_tracker/tracking/corner_tracker.hpp"
-#include "laser_object_tracker/tracking/iteration_tracker_rejection.hpp"
-#include "laser_object_tracker/tracking/kalman_filter.hpp"
-#include "laser_object_tracker/tracking/multi_hypothesis_tracking.hpp"
-#include "laser_object_tracker/tracking/multi_tracking.hpp"
+int main(int ac, char** av) {
+  laser_object_tracker::tracking::MultiHypothesisTracking mht(
+      1.0,
+      1.0,
+      0.01,
+      100.0,
+      0.5,
+      0.004,
+      20.0,
+      0.999,
+      200.0,
+      5.9,
+      0.00002,
+      3,
+      0.001,
+      300);
 
-#endif  // LASER_OBJECT_TRACKER_TRACKING_TRACKING_HPP
+  std::vector<laser_object_tracker::feature_extraction::features::Feature> measurements;
+  laser_object_tracker::feature_extraction::features::Feature feature;
+  feature.observation_.resize(2);
+  feature.observation_ << 1.0, 1.0;
+
+  measurements.push_back(feature);
+
+  mht.update(measurements);
+
+//  for (int i = 0; i < 10; ++i) {
+//    mht.update(measurements);
+
+//    measurements.back().observation_ << 1.0 + i * 0.1, 1.0 + i * 0.1;
+//  }
+  return 0;
+}

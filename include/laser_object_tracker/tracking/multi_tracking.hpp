@@ -31,29 +31,30 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_TRACKING_MULTI_TRACKER_H
-#define LASER_OBJECT_TRACKER_TRACKING_MULTI_TRACKER_H
+#ifndef LASER_OBJECT_TRACKER_TRACKING_MULTI_TRACKING_H
+#define LASER_OBJECT_TRACKER_TRACKING_MULTI_TRACKING_H
 
 #include <vector>
 
 #include "laser_object_tracker/data_association/base_data_association.hpp"
+#include "laser_object_tracker/tracking/base_multi_tracking.hpp"
 #include "laser_object_tracker/tracking/base_tracker_rejection.hpp"
 #include "laser_object_tracker/tracking/base_tracking.hpp"
 
 namespace laser_object_tracker {
 namespace tracking {
-class MultiTracker {
+class MultiTracking : public BaseMultiTracking {
  public:
   using DistanceFunctor = std::function<double(const feature_extraction::features::Feature&, const BaseTracking&)>;
 
-  MultiTracker(DistanceFunctor distance_calculator,
+  MultiTracking(DistanceFunctor distance_calculator,
                std::unique_ptr<data_association::BaseDataAssociation> data_association,
                std::unique_ptr<BaseTracking> tracker_prototype,
                std::unique_ptr<BaseTrackerRejection> tracker_rejector_prototype);
 
-  void predict();
+  void predict() override;
 
-  void update(const std::vector<feature_extraction::features::Feature>& measurements);
+  void update(const std::vector<feature_extraction::features::Feature>& measurements) override;
 
   Eigen::MatrixXd buildCostMatrix(const std::vector<feature_extraction::features::Feature>& measurements);
 
@@ -91,4 +92,4 @@ class MultiTracker {
 }  // namespace tracking
 }  // namespace laser_object_tracker
 
-#endif //LASER_OBJECT_TRACKER_TRACKING_MULTI_TRACKER_H
+#endif //LASER_OBJECT_TRACKER_TRACKING_MULTI_TRACKING_H

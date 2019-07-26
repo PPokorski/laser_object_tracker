@@ -86,7 +86,8 @@ add_library(${PROJECT_NAME}_tracking
         src/tracking/iteration_tracker_rejection.cpp
         src/tracking/kalman_filter.cpp
         src/tracking/mht/motion_model.cpp
-        src/tracking/multi_tracker.cpp)
+        src/tracking/multi_hypothesis_tracking.cpp
+        src/tracking/multi_tracking.cpp)
 
 target_link_libraries(${PROJECT_NAME}_tracking
         ${OpenCV_LIBS}
@@ -140,6 +141,12 @@ target_link_libraries(multi_line_detection_test
         ${PROJECT_NAME}_segmentation
         ${PROJECT_NAME}_tracking)
 
+add_executable(multi_hypothesis_tracker_test
+        src/multi_hypothesis_tracker_test.cpp)
+
+target_link_libraries(multi_hypothesis_tracker_test
+        ${PROJECT_NAME}_tracking)
+
 
 ## Tests ##
 include_directories(
@@ -162,7 +169,7 @@ catkin_add_gtest(${PROJECT_NAME}_test
         test/src/segmentation/distance_calculation_test.cpp
         test/src/tracking/iteration_tracker_rejection_test.cpp
         test/src/tracking/kalman_filter_test.cpp
-        test/src/tracking/multi_tracker_test.cpp)
+        test/src/tracking/multi_tracking_test.cpp)
 
 target_link_libraries(${PROJECT_NAME}_test
         gmock_main

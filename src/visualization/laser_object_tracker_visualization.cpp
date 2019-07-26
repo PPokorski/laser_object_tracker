@@ -167,7 +167,7 @@ void LaserObjectTrackerVisualization::publishTracker(const tracking::BaseTrackin
           rviz_visual_tools::WHITE, rviz_visual_tools::XXXXLARGE, false);
 }
 
-void LaserObjectTrackerVisualization::publishMultiTracker(const tracking::MultiTracker& multi_tracker) {
+void LaserObjectTrackerVisualization::publishMultiTracker(const tracking::MultiTracking& multi_tracker) {
   expandToNColors(multi_tracker.size());
   for (int i = 0; i < multi_tracker.size(); ++i) {
     if (multi_tracker.at(i).getStateVector().segment<2>(3).norm() >= 0.1) {
@@ -176,7 +176,7 @@ void LaserObjectTrackerVisualization::publishMultiTracker(const tracking::MultiT
   }
 }
 
-void LaserObjectTrackerVisualization::publishAssignments(const tracking::MultiTracker& multi_tracker,
+void LaserObjectTrackerVisualization::publishAssignments(const tracking::MultiTracking& multi_tracker,
                                                          const std::vector<feature_extraction::features::Feature>& measurements,
                                                          const Eigen::MatrixXd& cost_matrix,
                                                          const Eigen::VectorXi& assignment_vector) {

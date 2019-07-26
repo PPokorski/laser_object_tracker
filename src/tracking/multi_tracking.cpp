@@ -31,13 +31,13 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include "laser_object_tracker/tracking/multi_tracker.hpp"
+#include "laser_object_tracker/tracking/multi_tracking.hpp"
 
 #include <numeric>
 
 namespace laser_object_tracker {
 namespace tracking {
-MultiTracker::MultiTracker(DistanceFunctor distance_calculator,
+MultiTracking::MultiTracking(DistanceFunctor distance_calculator,
                            std::unique_ptr<data_association::BaseDataAssociation> data_association,
                            std::unique_ptr<BaseTracking> tracker_prototype,
                            std::unique_ptr<BaseTrackerRejection> tracker_rejector_prototype)
@@ -46,13 +46,13 @@ MultiTracker::MultiTracker(DistanceFunctor distance_calculator,
       tracker_prototype_(std::move(tracker_prototype)),
       tracker_rejector_prototype_(std::move(tracker_rejector_prototype)) {}
 
-void MultiTracker::predict() {
+void MultiTracking::predict() {
   for (auto& tracker : trackers_) {
     tracker->predict();
   }
 }
 
-void MultiTracker::update(const std::vector<feature_extraction::features::Feature>& measurements) {
+void MultiTracking::update(const std::vector<feature_extraction::features::Feature>& measurements) {
   Eigen::MatrixXd cost_matrix = buildCostMatrix(measurements);
 
   Eigen::VectorXi assignment_vector = buildAssignmentVector(cost_matrix);
@@ -64,31 +64,31 @@ void MultiTracker::update(const std::vector<feature_extraction::features::Featur
   handleRejectedTracks();
 }
 
-std::vector<std::unique_ptr<BaseTracking>>::const_iterator MultiTracker::begin() const {
+std::vector<std::unique_ptr<BaseTracking>>::const_iterator MultiTracking::begin() const {
   return trackers_.begin();
 }
 
-std::vector<std::unique_ptr<BaseTracking>>::const_iterator MultiTracker::end() const {
+std::vector<std::unique_ptr<BaseTracking>>::const_iterator MultiTracking::end() const {
   return trackers_.end();
 }
 
-std::vector<std::unique_ptr<BaseTracking>>::const_iterator MultiTracker::cbegin() const {
+std::vector<std::unique_ptr<BaseTracking>>::const_iterator MultiTracking::cbegin() const {
   return trackers_.cbegin();
 }
 
-std::vector<std::unique_ptr<BaseTracking>>::const_iterator MultiTracker::cend() const {
+std::vector<std::unique_ptr<BaseTracking>>::const_iterator MultiTracking::cend() const {
   return trackers_.cend();
 }
 
-const BaseTracking& MultiTracker::at(int index) const {
+const BaseTracking& MultiTracking::at(int index) const {
   return *trackers_.at(index);
 }
 
-int MultiTracker::size() const {
+int MultiTracking::size() const {
   return trackers_.size();
 }
 
-Eigen::MatrixXd MultiTracker::buildCostMatrix(const std::vector<feature_extraction::features::Feature>& measurements) {
+Eigen::MatrixXd MultiTracking::buildCostMatrix(const std::vector<feature_extraction::features::Feature>& measurements) {
   Eigen::MatrixXd cost_matrix(trackers_.size(), measurements.size());
   for (int row = 0; row < cost_matrix.rows(); ++row) {
     for (int col = 0; col < cost_matrix.cols(); ++col) {
@@ -99,14 +99,14 @@ Eigen::MatrixXd MultiTracker::buildCostMatrix(const std::vector<feature_extracti
   return cost_matrix;
 }
 
-Eigen::VectorXi MultiTracker::buildAssignmentVector(const Eigen::MatrixXd& cost_matrix) {
+Eigen::VectorXi MultiTracking::buildAssignmentVector(const Eigen::MatrixXd& cost_matrix) {
   Eigen::VectorXi assignment_vector;
   data_association_->solve(cost_matrix, data_association_->NOT_NEEDED, assignment_vector);
 
   return assignment_vector;
 }
 
-void MultiTracker::updateAndInitializeTracks(const std::vector<feature_extraction::features::Feature>& measurements,
+void MultiTracking::updateAndInitializeTracks(const std::vector<feature_extraction::features::Feature>& measurements,
                                              const Eigen::VectorXi& assignment_vector) {
   for (int i = 0; i < measurements.size(); ++i) {
     if (assignment_vector(i) != data_association_->NO_ASSIGNMENT) {
@@ -122,7 +122,7 @@ void MultiTracker::updateAndInitializeTracks(const std::vector<feature_extractio
   }
 }
 
-void MultiTracker::handleNotUpdatedTracks(const Eigen::VectorXi& assignment_vector) {
+void MultiTracking::handleNotUpdatedTracks(const Eigen::VectorXi& assignment_vector) {
   std::vector<int> trackers_indices(trackers_.size());
   std::iota(trackers_indices.begin(), trackers_indices.end(), 0);
 
@@ -142,7 +142,7 @@ void MultiTracker::handleNotUpdatedTracks(const Eigen::VectorXi& assignment_vect
   }
 }
 
-void MultiTracker::handleRejectedTracks() {
+void MultiTracking::handleRejectedTracks() {
   auto trackers_it = trackers_.cbegin();
   auto rejectors_it = trackers_rejections_.cbegin();
   for (; trackers_it != trackers_.cend(); ) {

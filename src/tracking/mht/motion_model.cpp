@@ -40,6 +40,7 @@
 #define CORR_COEFF
 
 double EPSILON = 0.00000000000001;
+int mht::internal::g_time = 0;
 
 /*------------------------------------------------------*
  * findTrack():  look for the track with given id in the

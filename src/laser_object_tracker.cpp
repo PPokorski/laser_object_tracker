@@ -143,7 +143,7 @@ std::unique_ptr<laser_object_tracker::data_association::BaseDataAssociation> get
   return std::make_unique<laser_object_tracker::data_association::HungarianAlgorithm>(max_cost);
 }
 
-laser_object_tracker::tracking::MultiTracker::DistanceFunctor getDistanceFunctor() {
+laser_object_tracker::tracking::MultiTracking::DistanceFunctor getDistanceFunctor() {
   return [](const laser_object_tracker::feature_extraction::features::Feature& observation,
            const laser_object_tracker::tracking::BaseTracking& tracker) {
     return (observation.observation_.head<2>() - tracker.getStateVector().head<2>()).squaredNorm();
@@ -193,7 +193,7 @@ int main(int ac, char **av) {
   ros::Rate rate(10.0);
   ROS_INFO("Done initialization");
 
-  laser_object_tracker::tracking::MultiTracker multi_tracker(
+  laser_object_tracker::tracking::MultiTracking multi_tracker(
       getDistanceFunctor(),
       getDataAssociation(pnh),
       getTracker(),

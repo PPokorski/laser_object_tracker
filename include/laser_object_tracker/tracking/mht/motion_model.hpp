@@ -78,7 +78,7 @@ static int g_numTracks;
 
 namespace mht {
 namespace internal {
-int g_time;
+extern int g_time;
 }  // namespace internal
 }  // namespace mht
 

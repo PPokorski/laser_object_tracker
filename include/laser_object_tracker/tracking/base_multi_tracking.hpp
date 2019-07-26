@@ -31,16 +31,22 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_TRACKING_TRACKING_HPP
-#define LASER_OBJECT_TRACKER_TRACKING_TRACKING_HPP
+#ifndef LASER_OBJECT_TRACKER_TRACKING_BASE_MULTI_TRACKING_HPP
+#define LASER_OBJECT_TRACKER_TRACKING_BASE_MULTI_TRACKING_HPP
 
-#include "laser_object_tracker/tracking/base_multi_tracking.hpp"
-#include "laser_object_tracker/tracking/base_tracker_rejection.hpp"
-#include "laser_object_tracker/tracking/base_tracking.hpp"
-#include "laser_object_tracker/tracking/corner_tracker.hpp"
-#include "laser_object_tracker/tracking/iteration_tracker_rejection.hpp"
-#include "laser_object_tracker/tracking/kalman_filter.hpp"
-#include "laser_object_tracker/tracking/multi_hypothesis_tracking.hpp"
-#include "laser_object_tracker/tracking/multi_tracking.hpp"
+#include "laser_object_tracker/feature_extraction/features/features.hpp"
 
-#endif  // LASER_OBJECT_TRACKER_TRACKING_TRACKING_HPP
+namespace laser_object_tracker {
+namespace tracking {
+class BaseMultiTracking {
+ public:
+  virtual void predict() = 0;
+
+  virtual void update(const std::vector<feature_extraction::features::Feature>& measurements) = 0;
+
+  virtual ~BaseMultiTracking() = default;
+};
+}  // namespace tracking
+}  // namespace laser_object_tracker
+
+#endif //LASER_OBJECT_TRACKER_TRACKING_BASE_MULTI_TRACKING_HPP

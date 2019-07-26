@@ -33,7 +33,7 @@
 
 #include <gtest/gtest.h>
 
-#include "laser_object_tracker/tracking/multi_tracker.hpp"
+#include "laser_object_tracker/tracking/multi_tracking.hpp"
 
 #include "test/utils.hpp"
 #include "test/data_association/mocks.hpp"
@@ -43,7 +43,7 @@ TEST(MultiTrackerTest, UpdateAndInitializeTracksTest) {
   auto data_association = std::make_unique<test::MockDataAssociation>();
   auto tracking = std::make_unique<test::MockTracking>();
   auto tracker_rejection = std::make_unique<test::MockTrackerRejection>();
-  laser_object_tracker::tracking::MultiTracker multi_tracker(
+  laser_object_tracker::tracking::MultiTracking multi_tracker(
       [](const auto& lhs, const auto& rhs) {return 0.0;},
       std::move(data_association),
       std::move(tracking),
