@@ -62,12 +62,7 @@ MultiHypothesisTracking::MultiHypothesisTracking(double position_variance_x,
       mean_false_alarms_(mean_false_alarms),
       max_depth_(max_depth),
       min_g_hypothesis_ratio_(min_g_hypothesis_ratio),
-      max_g_hypothesis_(max_g_hypothesis),
-      multi_hypothesis_tracking_(mean_false_alarms_,
-                                 max_depth_,
-                                 min_g_hypothesis_ratio_,
-                                 max_g_hypothesis_,
-                                 models_) {
+      max_g_hypothesis_(max_g_hypothesis) {
   auto* const_velocity_model = new CONSTVEL_MDL(
       position_variance_x_,
       position_variance_y_,
@@ -81,17 +76,18 @@ MultiHypothesisTracking::MultiHypothesisTracking(double position_variance_x,
       max_distance_);
   models_.append(*const_velocity_model);
 
-  multi_hypothesis_tracking_ = CORNER_TRACK_MHT(mean_false_alarms_,
-                                                max_depth_,
-                                                min_g_hypothesis_ratio_,
-                                                max_g_hypothesis_,
-                                                models_);
+  multi_hypothesis_tracking_ = std::make_unique<CORNER_TRACK_MHT>(mean_false_alarms_,
+                                                                  max_depth_,
+                                                                  min_g_hypothesis_ratio_,
+                                                                  max_g_hypothesis_,
+                                                                  models_);
 }
 
 void MultiHypothesisTracking::predict() {
 }
 
 void MultiHypothesisTracking::update(const std::vector<feature_extraction::features::Feature>& measurements) {
+  std::cout << "******************CURRENT_TIME=" << multi_hypothesis_tracking_->getCurrentTime() << std::endl;
   CORNERLIST reports(measurements.size(), 0.1);
 
   for (const auto& measurement : measurements) {
@@ -101,16 +97,24 @@ void MultiHypothesisTracking::update(const std::vector<feature_extraction::featu
                               corner_id_++);
   }
 
-  multi_hypothesis_tracking_.addReports(reports);
-  multi_hypothesis_tracking_.scan();
-  mht::internal::g_time = multi_hypothesis_tracking_.getCurrentTime();
-  multi_hypothesis_tracking_.printStats(2);
+  multi_hypothesis_tracking_->addReports(reports);
+  multi_hypothesis_tracking_->scan();
+  mht::internal::g_time = multi_hypothesis_tracking_->getCurrentTime();
+  multi_hypothesis_tracking_->printStats(2);
 
   ++frame_number_;
+
+  for (const auto& track : multi_hypothesis_tracking_->GetTracks()) {
+    std::cout << "ID: " << track.id << std::endl;
+    for (const auto& point : track.list) {
+      std::cout << "r: [" << point.rx << ", " << point.ry << "] " <<
+                   "s: [" << point.sx << ", " << point.sy << "]" << std::endl;
+    }
+  }
 }
 
 MultiHypothesisTracking::~MultiHypothesisTracking() {
-  multi_hypothesis_tracking_.clear();
+  multi_hypothesis_tracking_->clear();
 }
 }  // namespace tracking
 }  // namespace laser_object_tracker

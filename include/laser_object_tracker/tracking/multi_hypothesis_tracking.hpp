@@ -34,6 +34,8 @@
 #ifndef LASER_OBJECT_TRACKER_TRACKING_MULTI_HYPOTHESIS_TRACKING_HPP
 #define LASER_OBJECT_TRACKER_TRACKING_MULTI_HYPOTHESIS_TRACKING_HPP
 
+#include <memory>
+
 #include "laser_object_tracker/tracking/base_multi_tracking.hpp"
 
 #include "laser_object_tracker/tracking/mht/motion_model.hpp"
@@ -86,7 +88,7 @@ class MultiHypothesisTracking : public BaseMultiTracking {
   int max_g_hypothesis_;
 
   ptrDLIST_OF<MODEL> models_;
-  CORNER_TRACK_MHT multi_hypothesis_tracking_;
+  std::unique_ptr<CORNER_TRACK_MHT> multi_hypothesis_tracking_;
 };
 }  // namespace tracking
 }  // namespace laser_object_tracker

@@ -58,12 +58,10 @@ int main(int ac, char** av) {
 
   measurements.push_back(feature);
 
-  mht.update(measurements);
+  for (int i = 0; i < 10; ++i) {
+    mht.update(measurements);
 
-//  for (int i = 0; i < 10; ++i) {
-//    mht.update(measurements);
-
-//    measurements.back().observation_ << 1.0 + i * 0.1, 1.0 + i * 0.1;
-//  }
+    measurements.back().observation_ << 1.0 + i * 0.1, 1.0 + i * 0.1;
+  }
   return 0;
 }
