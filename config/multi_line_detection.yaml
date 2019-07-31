@@ -8,6 +8,7 @@ segmentation:
     angle: 0.2
     sigma: 0.2
 feature_extraction:
+  min_angle_between_lines: 0.2
   max_distance: 0.05
   rho_resolution: 0.05
   theta_resolution: 0.04

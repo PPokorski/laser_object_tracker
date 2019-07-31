@@ -31,36 +31,104 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_BASE_FEATURE_EXTRACTION_HPP
-#define LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_BASE_FEATURE_EXTRACTION_HPP
+#ifndef LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_FEATURES_OBJECT_HPP
+#define LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_FEATURES_OBJECT_HPP
 
 #include "laser_object_tracker/data_types/laser_scan_fragment.hpp"
-#include "laser_object_tracker/feature_extraction/features/features.hpp"
+#include "laser_object_tracker/feature_extraction/features/corner_2d.hpp"
+#include "laser_object_tracker/feature_extraction/features/point_2d.hpp"
+#include "laser_object_tracker/feature_extraction/features/segment_2d.hpp"
 
 namespace laser_object_tracker {
 namespace feature_extraction {
+namespace features {
 
-template<class Feature>
-class BaseFeatureExtraction {
+class Object {
  public:
-  using FeatureT = Feature;
+  Object() = default;
 
-  virtual bool extractFeature(const data_types::LaserScanFragment& fragment, FeatureT& feature) = 0;
+  Object(const data_types::LaserScanFragment& fragment,
+         const Segments2D& segments,
+         const Corners2D& corners);
 
-  virtual ~BaseFeatureExtraction() = default;
-
- protected:
-  void fragmentToEigenMatrix(const data_types::LaserScanFragment& fragment,
-                             Eigen::MatrixX2d& matrix) {
-    matrix.resize(fragment.size(), 2);
-
-    for (int i = 0; i < fragment.size(); ++i) {
-      matrix(i, 0) = fragment.at(i).point().x;
-      matrix(i, 1) = fragment.at(i).point().y;
-    }
+  const Point2D& getReferencePoint() const {
+    return reference_point_;
   }
+
+  void setReferencePoint(const Point2D& reference_point) {
+    reference_point_ = reference_point;
+  }
+
+  double getOrientation() const {
+    return orientation_;
+  }
+
+  void setOrientation(double orientation) {
+    orientation_ = orientation;
+  }
+
+  const Segments2D& getSegments() const {
+    return segments_;
+  }
+
+  void setSegments(const Segments2D& segments) {
+    segments_ = segments;
+  }
+
+  const Corners2D& getCorners() const {
+    return corners_;
+  }
+
+  void setCorners(const Corners2D& corners) {
+    corners_ = corners;
+  }
+
+  double getWidth() const {
+    return width_;
+  }
+
+  double getHeight() const {
+    return height_;
+  }
+
+  double getPerimeter() const {
+    return perimeter_;
+  }
+
+  double getArea() const {
+    return area_;
+  }
+
+  int getPointsNumber() const {
+    return points_number_;
+  }
+
+  const Points2D& getPolyline() const {
+    return polyline_;
+  }
+
+ private:
+  void initializeOBBFromFragment(const data_types::LaserScanFragment& fragment);
+
+  Point2D reference_point_;
+  double orientation_;
+
+  Segments2D segments_;
+  Corners2D corners_;
+
+  double width_;
+  double height_;
+
+  double perimeter_;
+  double area_;
+
+  int points_number_;
+
+  Points2D polyline_;
 };
+
+}  // namespace features
 }  // namespace feature_extraction
 }  // namespace laser_object_tracker
 
-#endif  // LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_BASE_FEATURE_EXTRACTION_HPP
+#endif //LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_FEATURES_OBJECT_HPP

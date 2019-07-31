@@ -43,7 +43,7 @@ SearchBasedCornerDetection::SearchBasedCornerDetection(double theta_resolution,
     theta_resolution_(theta_resolution), criterion_(std::move(criterion)) {}
 
 bool
-SearchBasedCornerDetection::extractFeature(const data_types::LaserScanFragment& fragment, features::Feature& feature) {
+SearchBasedCornerDetection::extractFeature(const data_types::LaserScanFragment& fragment, FeatureT& feature) {
   if (fragment.empty()) {
     throw std::invalid_argument("Passed fragment is empty.");
   }
@@ -151,13 +151,13 @@ Eigen::VectorXd SearchBasedCornerDetection::findMatchingCorner(const Eigen::Vect
       *opposite_corner->first.second);
   corner.tail<2>() = actual_corner->first.second->intersection(
       *opposite_corner->first.first);
-  features::Corner2D corner_2_d;
-  corner_2_d.corner_ = actual_corner->first.first->intersection(
-      *actual_corner->first.second);
-  corner_2_d.point_1_ = actual_corner->first.first->intersection(
-      *opposite_corner->first.second);
-  corner_2_d.point_2_ = actual_corner->first.second->intersection(
-      *opposite_corner->first.first);
+//  features::Corner2D corner_2_d;
+//  corner_2_d.corner_ = actual_corner->first.first->intersection(
+//      *actual_corner->first.second);
+//  corner_2_d.point_1_ = actual_corner->first.first->intersection(
+//      *opposite_corner->first.second);
+//  corner_2_d.point_2_ = actual_corner->first.second->intersection(
+//      *opposite_corner->first.first);
 
   return corner;
 }

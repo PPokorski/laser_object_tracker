@@ -37,12 +37,15 @@
 #include <opencv2/imgproc.hpp>
 
 #include "laser_object_tracker/feature_extraction/base_feature_extraction.hpp"
+#include "laser_object_tracker/feature_extraction/features/object.hpp"
 
 namespace laser_object_tracker {
 namespace feature_extraction {
-class MultiLineDetection : public BaseFeatureExtraction {
+class MultiLineDetection : public BaseFeatureExtraction<features::Object> {
  public:
-  MultiLineDetection(double max_distance,
+
+  MultiLineDetection(double min_angle_between_lines,
+                     double max_distance,
                      double rho_resolution,
                      double theta_resolution,
                      int voting_threshold,
@@ -51,7 +54,7 @@ class MultiLineDetection : public BaseFeatureExtraction {
                      double theta_min = 0.0,
                      double theta_max = M_PI);
 
-  bool extractFeature(const data_types::LaserScanFragment& fragment, features::Feature& feature) override;
+  bool extractFeature(const data_types::LaserScanFragment& fragment, FeatureT& feature) override;
 
  protected:
   using Line = Eigen::Hyperplane<double, 2>;
@@ -61,10 +64,9 @@ class MultiLineDetection : public BaseFeatureExtraction {
   cv::Point2f demeanPoints(std::vector<cv::Point2f>& points) const;
   void initializeRhoLimits(const std::vector<cv::Point2f>& points);
   bool isInlier(const Line& line, const Eigen::Vector2d& point) const;
-  void buildObservationVector(const data_types::LaserScanFragment& fragment,
-                              const Lines& lines,
-                              Eigen::VectorXd& observation) const;
+  features::Segments2D segmentsFromLines(const data_types::LaserScanFragment& fragment, const Lines& lines) const;
 
+  double min_angle_between_lines_;
   double max_distance_;
   double rho_resolution_, theta_resolution_;
   int voting_threshold_;

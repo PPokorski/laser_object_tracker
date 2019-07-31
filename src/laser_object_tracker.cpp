@@ -193,11 +193,27 @@ int main(int ac, char **av) {
   ros::Rate rate(10.0);
   ROS_INFO("Done initialization");
 
-  laser_object_tracker::tracking::MultiTracking multi_tracker(
-      getDistanceFunctor(),
-      getDataAssociation(pnh),
-      getTracker(),
-      getTrackerRejection(pnh));
+//  laser_object_tracker::tracking::MultiTracking multi_tracker(
+//      getDistanceFunctor(),
+//      getDataAssociation(pnh),
+//      getTracker(),
+//      getTrackerRejection(pnh));
+
+  laser_object_tracker::tracking::MultiHypothesisTracking multi_tracker(
+      0.2,
+      0.2,
+      0.01,
+      100.0,
+      0.1,
+      0.004,
+      20.0,
+      0.999,
+      1.0,
+      1.0,
+      0.00002,
+      1,
+      0.001,
+      100);
 
   std::chrono::high_resolution_clock::time_point begin, end;
   while (ros::ok()) {
@@ -223,7 +239,7 @@ int main(int ac, char **av) {
             features.push_back(feature);
 //            features.push_back({feature.observation_.head<2>(), std::vector<int>(), std::vector<bool>()});
 //            std::cout << "Feature vector:\n" << feature.head(2) << std::endl;
-            corners_2_d.push_back(laser_object_tracker::feature_extraction::features::Corner2D(feature.observation_));
+//            corners_2_d.push_back(laser_object_tracker::feature_extraction::features::Corner2D(feature.observation_));
           }
         }
       }

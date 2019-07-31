@@ -100,17 +100,18 @@ void MultiHypothesisTracking::update(const std::vector<feature_extraction::featu
   multi_hypothesis_tracking_->addReports(reports);
   multi_hypothesis_tracking_->scan();
   mht::internal::g_time = multi_hypothesis_tracking_->getCurrentTime();
-  multi_hypothesis_tracking_->printStats(2);
+//  multi_hypothesis_tracking_->printStats(2);
 
   ++frame_number_;
 
-  for (const auto& track : multi_hypothesis_tracking_->GetTracks()) {
-    std::cout << "ID: " << track.id << std::endl;
-    for (const auto& point : track.list) {
-      std::cout << "r: [" << point.rx << ", " << point.ry << "] " <<
-                   "s: [" << point.sx << ", " << point.sy << "]" << std::endl;
-    }
-  }
+//  for (const auto& track : multi_hypothesis_tracking_->GetTracks()) {
+//    std::cout << "ID: " << track.id << std::endl;
+//    for (const auto& point : track.list) {
+//      std::cout << "r: [" << point.rx << ", " << point.ry << "] " <<
+//                   "s: [" << point.sx << ", " << point.sy << "]" << std::endl;
+//    }
+
+//  }
 }
 
 MultiHypothesisTracking::~MultiHypothesisTracking() {

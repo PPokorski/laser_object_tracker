@@ -39,7 +39,8 @@
 
 namespace laser_object_tracker {
 namespace feature_extraction {
-MultiLineDetection::MultiLineDetection(double max_distance,
+MultiLineDetection::MultiLineDetection(double min_angle_between_lines,
+                                       double max_distance,
                                        double rho_resolution,
                                        double theta_resolution,
                                        int voting_threshold,
@@ -47,7 +48,8 @@ MultiLineDetection::MultiLineDetection(double max_distance,
                                        double rho_max,
                                        double theta_min,
                                        double theta_max)
-    : max_distance_(max_distance),
+    : min_angle_between_lines_(min_angle_between_lines),
+      max_distance_(max_distance),
       rho_resolution_(rho_resolution),
       theta_resolution_(theta_resolution),
       voting_threshold_(voting_threshold),
@@ -58,7 +60,7 @@ MultiLineDetection::MultiLineDetection(double max_distance,
       rho_min_defined_(std::isfinite(rho_min_)),
       rho_max_defined_(std::isfinite(rho_max_)) {}
 
-bool MultiLineDetection::extractFeature(const data_types::LaserScanFragment& fragment, features::Feature& feature) {
+bool MultiLineDetection::extractFeature(const data_types::LaserScanFragment& fragment, FeatureT& feature) {
   std::vector<cv::Point2f> cv_points = pointsFromFragment(fragment);
 
   // Find mean and demean points for quicker Hough computation
@@ -118,9 +120,15 @@ bool MultiLineDetection::extractFeature(const data_types::LaserScanFragment& fra
     }
   }
 
-  buildObservationVector(fragment, lines, feature.observation_);
+  if (lines.empty()) {
+    return false;
+  }
 
-  return !lines.empty();
+  features::Segments2D segments = segmentsFromLines(fragment, lines);
+  features::Corners2D corners = features::findIntersections(segments, min_angle_between_lines_);
+  feature = FeatureT(fragment, segments, corners);
+
+  return true;
 }
 
 std::vector<cv::Point2f> MultiLineDetection::pointsFromFragment(const data_types::LaserScanFragment& fragment) const {
@@ -172,14 +180,16 @@ bool MultiLineDetection::isInlier(const Line& line, const Eigen::Vector2d& point
   return line.absDistance(point) <= this->max_distance_;
 }
 
-void MultiLineDetection::buildObservationVector(const data_types::LaserScanFragment& fragment,
-                                                const Lines& lines,
-                                                Eigen::VectorXd& observation) const {
-  observation.resize(4 * lines.size());
-  int i = 0;
+features::Segments2D MultiLineDetection::segmentsFromLines(const data_types::LaserScanFragment& fragment,
+                                                           const Lines& lines) const {
+  features::Segments2D segments(lines.size());
+  auto segments_it = segments.begin();
   for (const auto& line : lines) {
     Eigen::Vector2d min_point = Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity()),
                     max_point = Eigen::Vector2d::Constant(-std::numeric_limits<double>::infinity());
+
+    const data_types::FragmentElement* min_element = &fragment.front();
+    const data_types::FragmentElement* max_element = &fragment.front();
 
     // The coefficient (x or y) by which we will be comparing points, is the one with the smallest
     // absolute value in the normal vector of the line
@@ -193,17 +203,23 @@ void MultiLineDetection::buildObservationVector(const data_types::LaserScanFragm
         eigen_point = line.projection(eigen_point);
         if (eigen_point(relevant_coeff) < min_point(relevant_coeff)) {
           min_point = eigen_point;
+          min_element = &point;
         }
         if (eigen_point(relevant_coeff) > max_point(relevant_coeff)) {
           max_point = eigen_point;
+          max_element = &point;
         }
       }
     }
 
-    observation.segment<2>(4 * i) = min_point;
-    observation.segment<2>(4 * i + 2) = max_point;
-    ++i;
+    segments_it->setStart(min_point);
+    segments_it->setIsStartOccluded(min_element->isOccluded());
+    segments_it->setEnd(max_point);
+    segments_it->setIsEndOccluded(max_element->isOccluded());
+    ++segments_it;
   }
+
+  return segments;
 }
 }  // namespace feature_extraction
 }  // namespace laser_object_tracker

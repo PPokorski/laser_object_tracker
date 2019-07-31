@@ -31,36 +31,28 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_BASE_FEATURE_EXTRACTION_HPP
-#define LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_BASE_FEATURE_EXTRACTION_HPP
-
-#include "laser_object_tracker/data_types/laser_scan_fragment.hpp"
-#include "laser_object_tracker/feature_extraction/features/features.hpp"
+#include "laser_object_tracker/feature_extraction/features/corner_2d.hpp"
 
 namespace laser_object_tracker {
 namespace feature_extraction {
+namespace features {
 
-template<class Feature>
-class BaseFeatureExtraction {
- public:
-  using FeatureT = Feature;
-
-  virtual bool extractFeature(const data_types::LaserScanFragment& fragment, FeatureT& feature) = 0;
-
-  virtual ~BaseFeatureExtraction() = default;
-
- protected:
-  void fragmentToEigenMatrix(const data_types::LaserScanFragment& fragment,
-                             Eigen::MatrixX2d& matrix) {
-    matrix.resize(fragment.size(), 2);
-
-    for (int i = 0; i < fragment.size(); ++i) {
-      matrix(i, 0) = fragment.at(i).point().x;
-      matrix(i, 1) = fragment.at(i).point().y;
+Corners2D findIntersections(const Segments2D& segments, double min_angle) {
+  Corners2D corners;
+  // Worst case number is when all pairs of segments intersect, the number's given by
+  // binomial coefficient(segments.size(), 2)
+  int worst_case_number = segments.size() * (segments.size() - 1) / 2;
+  corners.reserve(worst_case_number);
+  for (auto it_1 = segments.begin(); it_1 != segments.end(); ++it_1) {
+    for (auto it_2 = std::next(it_1); it_2 != segments.end(); ++it_2) {
+      if (angleBetweenSegments(*it_1, *it_2) >= min_angle) {
+        corners.emplace_back(*it_1, *it_2);
+      }
     }
   }
-};
+
+  return corners;
+}
+}  // namespace features
 }  // namespace feature_extraction
 }  // namespace laser_object_tracker
-
-#endif  // LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_BASE_FEATURE_EXTRACTION_HPP

@@ -88,6 +88,7 @@ class MultiHypothesisTracking : public BaseMultiTracking {
   int max_g_hypothesis_;
 
   ptrDLIST_OF<MODEL> models_;
+ public:
   std::unique_ptr<CORNER_TRACK_MHT> multi_hypothesis_tracking_;
 };
 }  // namespace tracking

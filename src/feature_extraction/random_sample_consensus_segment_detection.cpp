@@ -48,7 +48,7 @@ RandomSampleConsensusSegmentDetection::RandomSampleConsensusSegmentDetection(dou
 }
 
 bool RandomSampleConsensusSegmentDetection::extractFeature(const data_types::LaserScanFragment& fragment,
-                                                           features::Feature& feature) {
+                                                           FeatureT& feature) {
   if (fragment.empty()) {
     throw std::invalid_argument("Passed fragment is empty.");
   }

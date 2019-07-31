@@ -38,18 +38,18 @@
 #include <pcl/sample_consensus/sac_model_line.h>
 
 #include "laser_object_tracker/feature_extraction/base_feature_extraction.hpp"
-#include "laser_object_tracker/feature_extraction/features/features.hpp"
+#include "laser_object_tracker/feature_extraction/features/segment_2d.hpp"
 
 namespace laser_object_tracker {
 namespace feature_extraction {
 
-class RandomSampleConsensusSegmentDetection : public BaseFeatureExtraction {
+class RandomSampleConsensusSegmentDetection : public BaseFeatureExtraction<features::Feature> {
  public:
   RandomSampleConsensusSegmentDetection(double distance_threshold,
                                         int max_iterations,
                                         double probability);
 
-  bool extractFeature(const data_types::LaserScanFragment& fragment, features::Feature& feature) override;
+  bool extractFeature(const data_types::LaserScanFragment& fragment, FeatureT& feature) override;
 
   double getDistanceThreshold();
 

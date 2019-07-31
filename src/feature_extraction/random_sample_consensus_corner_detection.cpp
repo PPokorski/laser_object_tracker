@@ -48,7 +48,7 @@ RandomSampleConsensusCornerDetection::RandomSampleConsensusCornerDetection(doubl
 }
 
 bool RandomSampleConsensusCornerDetection::extractFeature(const data_types::LaserScanFragment& fragment,
-                                                          features::Feature& feature) {
+                                                          FeatureT& feature) {
   if (fragment.empty()) {
     throw std::invalid_argument("Passed fragment is empty.");
   }

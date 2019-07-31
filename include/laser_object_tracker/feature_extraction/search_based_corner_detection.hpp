@@ -35,18 +35,18 @@
 #define LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_SEARCH_BASED_CORNER_DETECTION_HPP
 
 #include "laser_object_tracker/feature_extraction/base_feature_extraction.hpp"
-#include "laser_object_tracker/feature_extraction/features/features.hpp"
+#include "laser_object_tracker/feature_extraction/features/object.hpp"
 
 namespace laser_object_tracker {
 namespace feature_extraction {
 
-class SearchBasedCornerDetection : public BaseFeatureExtraction {
+class SearchBasedCornerDetection : public BaseFeatureExtraction<features::Feature> {
  public:
   using CriterionFunctor = std::function<double(const Eigen::VectorXd&, const Eigen::VectorXd&)>;
 
   SearchBasedCornerDetection(double theta_resolution, CriterionFunctor criterion);
 
-  bool extractFeature(const data_types::LaserScanFragment& fragment, features::Feature& feature) override;
+  bool extractFeature(const data_types::LaserScanFragment& fragment, FeatureT& feature) override;
 
   double getThetaResolution() const;
 

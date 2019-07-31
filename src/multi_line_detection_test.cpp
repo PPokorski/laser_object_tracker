@@ -37,6 +37,8 @@
 #include "laser_object_tracker/segmentation/segmentation.hpp"
 #include "laser_object_tracker/visualization/visualization.hpp"
 
+using Feature = laser_object_tracker::feature_extraction::features::Object;
+
 laser_object_tracker::data_types::LaserScanFragment::LaserScanFragmentFactory factory;
 laser_object_tracker::data_types::LaserScanFragment fragment;
 
@@ -67,17 +69,19 @@ std::shared_ptr<segmentation::BaseSegmentation> getSegmentation(ros::NodeHandle&
   return segmentation;
 }
 
-std::shared_ptr<feature_extraction::BaseFeatureExtraction> getFeatureExtraction(ros::NodeHandle& nh) {
-  std::shared_ptr<feature_extraction::BaseFeatureExtraction> feature_extraction;
+std::shared_ptr<feature_extraction::BaseFeatureExtraction<Feature>> getFeatureExtraction(ros::NodeHandle& nh) {
+  std::shared_ptr<feature_extraction::BaseFeatureExtraction<Feature>> feature_extraction;
 
-  double max_distance, rho_resolution, theta_resolution;
+  double min_angle_between_lines, max_distance, rho_resolution, theta_resolution;
   int voting_threshold;
+  nh.getParam("feature_extraction/min_angle_between_lines", min_angle_between_lines);
   nh.getParam("feature_extraction/max_distance", max_distance);
   nh.getParam("feature_extraction/rho_resolution", rho_resolution);
   nh.getParam("feature_extraction/theta_resolution", theta_resolution);
   nh.getParam("feature_extraction/voting_threshold", voting_threshold);
 
-  feature_extraction.reset(new feature_extraction::MultiLineDetection(max_distance,
+  feature_extraction.reset(new feature_extraction::MultiLineDetection(min_angle_between_lines,
+                                                                      max_distance,
                                                                       rho_resolution,
                                                                       theta_resolution,
                                                                       voting_threshold));
@@ -110,17 +114,14 @@ int main(int ac, char **av) {
 
       visualization.publishPointClouds(segments);
 
-      laser_object_tracker::feature_extraction::features::MultiSegments2D multi_segment_2_d;
-      laser_object_tracker::feature_extraction::features::Feature feature;
-      std::vector<laser_object_tracker::feature_extraction::features::Feature> features;
+      std::vector<Feature> features;
+      Feature feature;
       begin = std::chrono::high_resolution_clock::now();
       for (const auto& segment : segments) {
         if (segment.isValid()) {
           if (feature_extraction->extractFeature(segment, feature)) {
             features.push_back(feature);
-            multi_segment_2_d.push_back(laser_object_tracker::feature_extraction::features::MultiSegment2D(feature.observation_));
           } else {
-            multi_segment_2_d.emplace_back();
           }
         }
       }
@@ -128,7 +129,7 @@ int main(int ac, char **av) {
       std::chrono::duration<double, std::milli> duration = end - begin;
       ROS_INFO("Iteration took: %.2f ms", (duration.count()));
 
-      visualization.publishMultiSegments(multi_segment_2_d);
+      visualization.publishObjects(features);
       visualization.trigger();
     } else {
       ROS_WARN("Received laser scan is empty");

@@ -35,7 +35,7 @@
 
 #include <random>
 
-#include <opencv2/imgproc/imgproc.hpp>
+#include <Eigen/Geometry>
 
 namespace laser_object_tracker {
 namespace visualization {
@@ -96,9 +96,9 @@ void LaserObjectTrackerVisualization::expandToNColors(int colors) {
 void LaserObjectTrackerVisualization::publishSegment(const feature_extraction::features::Segment2D& segment,
                                                      const std_msgs::ColorRGBA& color) {
   Eigen::Vector3d point_1, point_2;
-  point_1.head<2>() = segment.start_;
+  point_1.head<2>() = segment.getStart();
   point_1(2) = 0.1;
-  point_2.head<2>() = segment.end_;
+  point_2.head<2>() = segment.getEnd();
   point_2(2) = 0.1;
 
   rviz_visual_tools_->publishLine(point_1, point_2, color);
@@ -112,30 +112,22 @@ void LaserObjectTrackerVisualization::publishSegments(const feature_extraction::
   }
 }
 
-void LaserObjectTrackerVisualization::publishMultiSegments(const feature_extraction::features::MultiSegments2D& multi_segments) {
-  expandToNColors(multi_segments.size());
-
-  for (int i = 0; i < multi_segments.size(); ++i) {
-    if (multi_segments.at(i).segments_.size() == 0) {
-      continue;
-    }
-
-    for (const auto& segment : multi_segments.at(i).segments_) {
-      publishSegment(segment, rgb_colors_.at(i));
-    }
-  }
-}
-
 void LaserObjectTrackerVisualization::publishCorner(const feature_extraction::features::Corner2D& corner,
                                                     const std_msgs::ColorRGBA& color) {
-  publishSegment({corner.corner_, corner.point_1_}, color);
-  publishSegment({corner.corner_, corner.point_2_}, color);
+  Eigen::Vector3d point;
+  point.x() = corner.getCorner().x();
+  point.y() = corner.getCorner().y();
+  point.z() = 0.0;
+  Eigen::Affine3d pose = rviz_visual_tools::RvizVisualTools::convertPointToPose(point);
+  pose.rotate(Eigen::AngleAxisd(corner.getOrientation(), Eigen::Vector3d::UnitZ()));
+
+  rviz_visual_tools_->publishArrow(pose, rviz_visual_tools::colors::LIME_GREEN, rviz_visual_tools::scales::XXLARGE);
 }
 
 void LaserObjectTrackerVisualization::publishPoint(const feature_extraction::features::Point2D& point,
                                                    const std_msgs::ColorRGBA& color) {
     Eigen::Vector3d publish_point;
-    publish_point.head<2>() = point.point_;
+    publish_point.head<2>() = point;
 
     rviz_visual_tools_->publishSphere(publish_point, color,
             rviz_visual_tools_->getScale(rviz_visual_tools::scales::XLARGE));
@@ -176,6 +168,24 @@ void LaserObjectTrackerVisualization::publishMultiTracker(const tracking::MultiT
   }
 }
 
+void LaserObjectTrackerVisualization::publishMultiTracker(const tracking::MultiHypothesisTracking& multi_tracking) {
+  auto tracks = multi_tracking.multi_hypothesis_tracking_->GetTracks();
+  expandToNColors(tracks.size());
+
+  auto track = tracks.begin();
+  for (int i = 0; i < tracks.size(); ++i) {
+    EigenSTL::vector_Vector3d path;
+    for (const auto& point : track->list) {
+      path.emplace_back(point.sx, point.sy, 0.0);
+    }
+
+    std::vector<std_msgs::ColorRGBA> colors(path.size(), rgb_colors_.at(i));
+    rviz_visual_tools_->publishPath(path, colors, 0.05);
+
+    ++track;
+  }
+}
+
 void LaserObjectTrackerVisualization::publishAssignments(const tracking::MultiTracking& multi_tracker,
                                                          const std::vector<feature_extraction::features::Feature>& measurements,
                                                          const Eigen::MatrixXd& cost_matrix,
@@ -206,38 +216,22 @@ void LaserObjectTrackerVisualization::publishAssignments(const tracking::MultiTr
   }
 }
 
-void LaserObjectTrackerVisualization::publishFeatures(const std::vector<data_types::LaserScanFragment>& fragments) {
-  for (const auto& fragment : fragments) {
-    std::vector<cv::Point2f> points(fragment.size());
-    for (int i = 0; i < fragment.size(); ++i) {
-      points.at(i).x = fragment.at(i).point().x;
-      points.at(i).y = fragment.at(i).point().y;
-    }
-    auto rectangle = cv::minAreaRect(points);
+void LaserObjectTrackerVisualization::publishObject(const feature_extraction::features::Object& object,
+                                                    const std_msgs::ColorRGBA& color) {
+  for (const auto& segment : object.getSegments()) {
+    publishSegment(segment, color);
+  }
 
-    using namespace std::string_literals;
-    std::string info = "Points: "s + std::to_string(fragment.size()) +
-                       " Area: "s + std::to_string(rectangle.size.area()) + " m^2"s;
+  for (const auto& corner : object.getCorners()) {
+    publishCorner(corner, color);
+  }
+}
 
-    geometry_msgs::Point point;
-    point.x = fragment.at(0).point().x;
-    point.y = fragment.at(0).point().y;
-    point.z = 0.0;
+void LaserObjectTrackerVisualization::publishObjects(const std::vector<feature_extraction::features::Object>& objects) {
+  expandToNColors(objects.size());
 
-    rviz_visual_tools_->publishText(rviz_visual_tools::RvizVisualTools::convertPointToPose(point),
-                                    info,
-                                    rviz_visual_tools::WHITE,
-                                    rviz_visual_tools::XXXXLARGE,
-                                    false);
-
-    Eigen::Vector3d p1, p2, p3, p4;
-    cv::Point2f vertices[4];
-    rectangle.points(vertices);
-    p1 << vertices[0].x, vertices[0].y, 0.0;
-    p2 << vertices[1].x, vertices[1].y, 0.0;
-    p3 << vertices[2].x, vertices[2].y, 0.0;
-    p4 << vertices[3].x, vertices[3].y, 0.0;
-    rviz_visual_tools_->publishWireframeRectangle(Eigen::Affine3d::Identity(), p1, p2, p3, p4, rviz_visual_tools::BLUE, rviz_visual_tools::LARGE);
+  for (int i = 0; i < objects.size(); ++i) {
+    publishObject(objects.at(i), rgb_colors_.at(i));
   }
 }
 }  // namespace visualization

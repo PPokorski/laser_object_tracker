@@ -38,11 +38,12 @@
 
 #include <pcl_ros/point_cloud.h>
 #include <rviz_visual_tools/rviz_visual_tools.h>
+#include <laser_object_tracker/feature_extraction/features/object.hpp>
 
 #include "laser_object_tracker/data_types/definitions.hpp"
 #include "laser_object_tracker/data_types/laser_scan_fragment.hpp"
 #include "laser_object_tracker/feature_extraction/features/features.hpp"
-#include "laser_object_tracker/tracking/multi_tracking.hpp"
+#include "laser_object_tracker/tracking/tracking.hpp"
 
 namespace laser_object_tracker {
 namespace visualization {
@@ -70,13 +71,9 @@ class LaserObjectTrackerVisualization {
 
   void publishPointClouds(const std::vector<data_types::LaserScanFragment>& fragments);
 
-  void publishFeatures(const std::vector<data_types::LaserScanFragment>& fragments);
-
   void publishSegment(const feature_extraction::features::Segment2D& segment, const std_msgs::ColorRGBA& color);
 
   void publishSegments(const feature_extraction::features::Segments2D& segments);
-
-  void publishMultiSegments(const feature_extraction::features::MultiSegments2D& multi_segments);
 
   void publishCorner(const feature_extraction::features::Corner2D& corner, const std_msgs::ColorRGBA& color);
 
@@ -88,10 +85,16 @@ class LaserObjectTrackerVisualization {
 
   void publishMultiTracker(const tracking::MultiTracking& multi_tracker);
 
+  void publishMultiTracker(const tracking::MultiHypothesisTracking& multi_tracking);
+
   void publishAssignments(const tracking::MultiTracking& multi_tracker,
                           const std::vector<feature_extraction::features::Feature>& measurements,
                           const Eigen::MatrixXd& cost_matrix,
                           const Eigen::VectorXi& assignment_vector);
+
+  void publishObject(const feature_extraction::features::Object& object, const std_msgs::ColorRGBA& color);
+
+  void publishObjects(const std::vector<feature_extraction::features::Object>& objects);
 
  private:
   void expandToNColors(int colors);

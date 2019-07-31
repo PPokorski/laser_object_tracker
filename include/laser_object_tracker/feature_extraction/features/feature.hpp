@@ -31,36 +31,25 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_BASE_FEATURE_EXTRACTION_HPP
-#define LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_BASE_FEATURE_EXTRACTION_HPP
+#ifndef LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_FEATURES_FEATURE_HPP
+#define LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_FEATURES_FEATURE_HPP
 
-#include "laser_object_tracker/data_types/laser_scan_fragment.hpp"
-#include "laser_object_tracker/feature_extraction/features/features.hpp"
+#include <vector>
+#include <Eigen/Core>
 
 namespace laser_object_tracker {
 namespace feature_extraction {
+namespace features {
 
-template<class Feature>
-class BaseFeatureExtraction {
- public:
-  using FeatureT = Feature;
+struct Feature {
+  Eigen::VectorXd observation_;
 
-  virtual bool extractFeature(const data_types::LaserScanFragment& fragment, FeatureT& feature) = 0;
-
-  virtual ~BaseFeatureExtraction() = default;
-
- protected:
-  void fragmentToEigenMatrix(const data_types::LaserScanFragment& fragment,
-                             Eigen::MatrixX2d& matrix) {
-    matrix.resize(fragment.size(), 2);
-
-    for (int i = 0; i < fragment.size(); ++i) {
-      matrix(i, 0) = fragment.at(i).point().x;
-      matrix(i, 1) = fragment.at(i).point().y;
-    }
-  }
+  std::vector<int> vector_int_;
+  std::vector<bool> vector_bool_;
 };
+
+}  // namespace features
 }  // namespace feature_extraction
 }  // namespace laser_object_tracker
 
-#endif  // LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_BASE_FEATURE_EXTRACTION_HPP
+#endif  // LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_FEATURES_FEATURE_HPP
