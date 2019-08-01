@@ -51,6 +51,14 @@ class Object {
          const Segments2D& segments,
          const Corners2D& corners);
 
+  const ros::Time& getTimestamp() const {
+    return timestamp_;
+  }
+
+  void setTimestamp(const ros::Time& timestamp) {
+    timestamp_ = timestamp;
+  }
+
   const Point2D& getReferencePoint() const {
     return reference_point_;
   }
@@ -109,6 +117,8 @@ class Object {
 
  private:
   void initializeOBBFromFragment(const data_types::LaserScanFragment& fragment);
+
+  ros::Time timestamp_;
 
   Point2D reference_point_;
   double orientation_;

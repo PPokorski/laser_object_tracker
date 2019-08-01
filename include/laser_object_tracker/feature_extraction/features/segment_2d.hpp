@@ -34,7 +34,8 @@
 #ifndef LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_FEATURES_SEGMENT_2D_HPP
 #define LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_FEATURES_SEGMENT_2D_HPP
 
-#include "point_2d.hpp"
+#include "laser_object_tracker/feature_extraction/features/line_2d.hpp"
+#include "laser_object_tracker/feature_extraction/features/point_2d.hpp"
 
 namespace laser_object_tracker {
 namespace feature_extraction {
@@ -44,8 +45,8 @@ class Segment2D {
  public:
   Segment2D() = default;
 
-  Segment2D(const Eigen::Vector2d& start,
-            const Eigen::Vector2d& end,
+  Segment2D(const Point2D& start,
+            const Point2D& end,
             bool is_start_occluded,
             bool is_end_occluded) :
       start_(start),
@@ -70,7 +71,7 @@ class Segment2D {
   }
 
   double length() const {
-    return (end_ - start_).squaredNorm();
+    return (end_ - start_).norm();
   }
 
   const Point2D& getStart() const {

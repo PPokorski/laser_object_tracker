@@ -37,6 +37,7 @@
 #include <memory>
 
 #include "laser_object_tracker/tracking/base_multi_tracking.hpp"
+#include "laser_object_tracker/tracking/object_matching/fast_object_matching.hpp"
 
 #include "laser_object_tracker/tracking/mht/motion_model.hpp"
 

@@ -99,7 +99,7 @@ void MultiHypothesisTracking::update(const std::vector<feature_extraction::featu
 
   multi_hypothesis_tracking_->addReports(reports);
   multi_hypothesis_tracking_->scan();
-  mht::internal::g_time = multi_hypothesis_tracking_->getCurrentTime();
+  ::mht::internal::g_time = multi_hypothesis_tracking_->getCurrentTime();
 //  multi_hypothesis_tracking_->printStats(2);
 
   ++frame_number_;

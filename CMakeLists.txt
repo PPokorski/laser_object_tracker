@@ -89,7 +89,8 @@ add_library(${PROJECT_NAME}_tracking
         src/tracking/kalman_filter.cpp
         src/tracking/mht/motion_model.cpp
         src/tracking/multi_hypothesis_tracking.cpp
-        src/tracking/multi_tracking.cpp)
+        src/tracking/multi_tracking.cpp
+        src/tracking/object_matching/fast_object_matching.cpp)
 
 target_link_libraries(${PROJECT_NAME}_tracking
         ${OpenCV_LIBS}
@@ -159,6 +160,8 @@ catkin_add_gtest(${PROJECT_NAME}_test
         test/src/data_association/naive_linear_assignment_test.cpp
         test/src/data_types/definitions_test.cpp
         test/src/data_types/laser_scan_fragment_test.cpp
+        test/src/feautre_extraction/features/line_2d_test.cpp
+        test/src/feautre_extraction/features/segment_2d_test.cpp
         test/src/feautre_extraction/random_sample_consensus_segment_detection_test.cpp
         test/src/feautre_extraction/sample_consensus_model_cross2d_test.cpp
         test/src/feautre_extraction/search_based_corner_detection_test.cpp

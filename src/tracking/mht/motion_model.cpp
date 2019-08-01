@@ -42,6 +42,98 @@
 double EPSILON = 0.00000000000001;
 int mht::internal::g_time = 0;
 
+namespace laser_object_tracker {
+namespace tracking {
+namespace mht {
+ConstVelocityModel::ConstVelocityModel(double position_measure_variance_x,
+                                       double position_measure_variance_y,
+                                       double gradient_measure_variance,
+                                       double lambda_x,
+                                       double start_probability,
+                                       double detection_probability,
+                                       double max_mahalanobis_distance,
+                                       double process_variance,
+                                       double state_variance)
+    : MODEL(),
+      lambda_x_(lambda_x),
+      start_log_likelihood_(std::log(start_probability)),
+      skip_log_likelihood_(std::log(1.0 - detection_probability)),
+      detect_log_likelihood_(std::log(detection_probability)),
+      max_mahalanobis_distance_(max_mahalanobis_distance),
+      process_variance_(process_variance),
+      state_variance_(state_variance),
+      measurement_covariance_(2, 2),
+      initial_covariance_(4, 4) {
+  MATRIX process_noise(4, 4);
+
+  measurement_covariance_.set(position_measure_variance_x, 0.0,
+                              0.0, position_measure_variance_y);
+
+  // TODO Why??
+  process_noise.set(1.0 / 3.0, 1.0 / 2.0, 0.0, 0.0,
+                    1.0 / 2.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0 / 3.0, 1.0 / 2.0,
+                    0.0, 0.0, 1.0 / 2.0, 1.0);
+
+  process_noise = process_noise * process_variance_;
+
+  initial_covariance_.set(position_measure_variance_x, 0.0, 0.0, 0.0,
+                          0.0, state_variance_, 0.0, 0.0,
+                          0.0, 0.0, position_measure_variance_y, 0.0,
+                          0.0, 0.0, 0.0, state_variance_);
+}
+
+int ConstVelocityModel::beginNewStates(MDL_STATE* state, MDL_REPORT* report) {
+  // TODO Track initiation
+  return 1;
+}
+
+MDL_STATE* ConstVelocityModel::getNewState(int i,
+                                           MDL_STATE* state,
+                                           MDL_REPORT* report) {
+  auto model_state = (ConstVelocityState*) state;
+  auto model_report = (PositionReport*) report;
+
+  double dx, dy;
+  if (model_state != nullptr &&
+      model_report != nullptr &&
+      model_state->getDx() == 0.0 &&
+      model_state->getDy() == 0.0) {
+    dx = model_report->getX() - model_state -> getX();
+    dy = model_report->getY() - model_state -> getY();
+
+    model_state->setDx(dx);
+    model_state->setDy(dy);
+  }
+
+  return getNextState(model_state, model_report);
+}
+
+void ConstVelocityModel::endNewStates() {
+  MODEL::endNewStates();
+}
+double ConstVelocityModel::getEndLogLikelihood(MDL_STATE* state) {
+  return MODEL::getEndLogLikelihood(state);
+}
+double ConstVelocityModel::getContinueLogLikelihood(MDL_STATE* state) {
+  return MODEL::getContinueLogLikelihood(state);
+}
+double ConstVelocityModel::getSkipLogLikelihood(MDL_STATE* state) {
+  return MODEL::getSkipLogLikelihood(state);
+}
+double ConstVelocityModel::getDetectLogLikelihood(MDL_STATE* state) {
+  return MODEL::getDetectLogLikelihood(state);
+}
+
+ConstVelocityState* ConstVelocityModel::getNextState(ConstVelocityState* state,
+                                                     PositionReport* report) {
+  return nullptr;
+}
+
+}  // namespace mht
+}  // namespace tracking
+}  // namespace laser_object_tracker
+
 /*------------------------------------------------------*
  * findTrack():  look for the track with given id in the
  * cornerTrackList and return a ptr to it.  If

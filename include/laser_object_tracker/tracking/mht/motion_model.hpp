@@ -104,6 +104,296 @@ class CORNER_TRACK_MHT;
  *
  *-------------------------------------------------------------------*/
 
+namespace laser_object_tracker {
+namespace tracking {
+namespace mht {
+class PositionReport : public MDL_REPORT {
+ public:
+  PositionReport(double false_alarm_log_likelihood,
+                 double x,
+                 double y,
+                 int frame_number,
+                 size_t corner_id)
+    : MDL_REPORT(),
+      false_alarm_log_likelihood_(false_alarm_log_likelihood),
+      measurement_(2, 1),
+      frame_number_(frame_number),
+      corner_id_(corner_id) {
+    measurement_.set(x,  y);
+  }
+
+  double getFalarmLogLikelihood() override {
+    return false_alarm_log_likelihood_;
+  }
+
+  const MATRIX& getMeasurement() const {
+    return measurement_;
+  }
+
+  double getX() const {
+    return measurement_(0);
+  }
+
+  double getY() const {
+    return measurement_(1);
+  }
+
+  int getFrameNumber() const {
+    return frame_number_;
+  }
+
+  size_t getCornerId() const {
+    return corner_id_;
+  }
+
+  void print() override {
+    measurement_.print();
+  }
+  void describe(int spaces) override {
+    measurement_.print(spaces);
+  }
+
+ private:
+  double false_alarm_log_likelihood_;
+
+  MATRIX measurement_;
+
+  int frame_number_;
+  size_t corner_id_;
+};
+
+class ConstVelocityState;
+
+class ConstVelocityModel : public MODEL {
+ public:
+  ConstVelocityModel(double position_measure_variance_x,
+                     double position_measure_variance_y,
+                     double gradient_measure_variance,
+                     double lambda_x,
+                     double start_probability,
+                     double detection_probability,
+                     double max_mahalanobis_distance,
+                     double process_variance,
+                     double state_variance);
+
+  int beginNewStates(MDL_STATE* state, MDL_REPORT* report) override;
+
+  MDL_STATE* getNewState(int i, MDL_STATE* state, MDL_REPORT* report) override;
+
+  void endNewStates() override;
+
+  double getEndLogLikelihood(MDL_STATE* state) override;
+
+  double getContinueLogLikelihood(MDL_STATE* state) override;
+
+  double getSkipLogLikelihood(MDL_STATE* state) override;
+
+  double getDetectLogLikelihood(MDL_STATE* state) override;
+
+ private:
+  ConstVelocityState* getNextState(ConstVelocityState* state,
+                                   PositionReport* report);
+
+  double lambda_x_;
+  double start_log_likelihood_;
+  double end_log_likelihood_;
+  double continue_log_likelihood_;
+  double skip_log_likelihood_;
+  double detect_log_likelihood_;
+
+  double max_mahalanobis_distance_;
+
+  double process_variance_;
+  double state_variance_;
+
+  MATRIX measurement_covariance_;
+  MATRIX initial_covariance_;
+};
+
+class ConstVelocityState : public MDL_STATE {
+ public:
+
+  ConstVelocityState(ConstVelocityModel* model,
+                     double x,
+                     double dx,
+                     double y,
+                     double dy,
+                     const MATRIX& state_covariance,
+                     double log_likelihood,
+                     int times_skipped,
+                     double time_step)
+    : MDL_STATE(model),
+      state_(4, 1),
+      state_covariance_(state_covariance),
+      is_setup_(false),
+      log_likelihood_(log_likelihood),
+      times_skipped_(times_skipped),
+      time_step_(time_step),
+      innovation_covariance_inversed_(nullptr),
+      filter_gain_(nullptr),
+      updated_state_covariance_(nullptr),
+      state_prediction_(nullptr) {
+    state_(0) = x;
+    state_(1) = dx;
+    state_(2) = y;
+    state_(3) = dy;
+  }
+
+  ConstVelocityState(const ConstVelocityState& other)
+      : MDL_STATE(other.getMdl()),
+        state_(other.state_),
+        state_covariance_(other.state_covariance_),
+        is_setup_(false),
+        log_likelihood_(other.log_likelihood_),
+        times_skipped_(other.times_skipped_),
+        time_step_(other.time_step_),
+        log_likelihood_coefficient_(0.0),
+        innovation_covariance_inversed_(nullptr),
+        filter_gain_(nullptr),
+        updated_state_covariance_(nullptr),
+        state_prediction_(nullptr) {}
+
+  ~ConstVelocityState() {
+    cleanup();
+  }
+
+  double getLogLikelihood() override {
+    return log_likelihood_;
+  }
+
+  double getX() const {
+    return state_(0);
+  }
+
+  double getDx() const {
+    return state_(1);
+  }
+
+  void setDx(double dx) {
+    state_(1) = dx;
+  }
+
+  double getY() const {
+    return state_(2);
+  }
+
+  double getDy() const {
+    return state_(3);
+  }
+
+  void setDy(double dy) {
+    state_(3) = dy;
+  }
+
+  double getPredictedX() const {
+    return (*state_prediction_)(0);
+  }
+
+  double getPredictedDx() const {
+    return (*state_prediction_)(1);
+  }
+
+  double getPredictedY() const {
+    return (*state_prediction_)(2);
+  }
+
+  double getPredictedDy() const {
+    return (*state_prediction_)(3);
+  }
+
+  int getTimesSkipped() const {
+    return times_skipped_;
+  }
+
+  double getTimeStep() const {
+    return time_step_;
+  }
+
+  double getLogLikelihoodCoefficient() const {
+    return log_likelihood_coefficient_;
+  }
+
+  const MATRIX& getInnovationCovarianceInversed() const {
+    return *innovation_covariance_inversed_;
+  }
+
+  const MATRIX& getFilterGain() const {
+    return *filter_gain_;
+  }
+
+  const MATRIX& getUpdatedStateCovariance() const {
+    return *updated_state_covariance_;
+  }
+
+  const MATRIX& getStatePrediction() const {
+    return *state_prediction_;
+  }
+
+ private:
+  void setup(double process_variance, const MATRIX& observation_noise_);
+
+  void cleanup() {
+    if (is_setup_) {
+      delete innovation_covariance_inversed_;
+      innovation_covariance_inversed_ = nullptr;
+
+      delete filter_gain_;
+      filter_gain_ = nullptr;
+
+      delete updated_state_covariance_;
+      updated_state_covariance_ = nullptr;
+
+      delete updated_state_covariance_;
+      updated_state_covariance_ = nullptr;
+
+      delete state_prediction_;
+      state_prediction_ = nullptr;
+
+      is_setup_ = false;
+    }
+  }
+
+  MATRIX state_;
+  MATRIX state_covariance_;
+
+  bool is_setup_;
+
+  double log_likelihood_;
+
+  int times_skipped_;
+
+  double time_step_;
+  double log_likelihood_coefficient_;
+
+  MATRIX* innovation_covariance_inversed_;
+  MATRIX* filter_gain_;
+  MATRIX* updated_state_covariance_;
+  MATRIX* state_prediction_;
+};
+
+class FalseAlarm : public DLISTnode {
+ public:
+  explicit FalseAlarm(const PositionReport* report)
+      : DLISTnode(),
+        x_(report->getX()),
+        y_(report->getY()),
+        frame_number_(report->getFrameNumber()),
+        corner_id_(report->getCornerId()) {}
+
+ protected:
+  MEMBERS_FOR_DLISTnode(FalseAlarm)
+
+ private:
+  double x_, y_;
+  int frame_number_;
+  size_t corner_id_;
+};
+
+}  // namespace mht
+}  // namespace tracking
+}  // namespace laser_object_tracker
+
+
 class CONSTPOS_REPORT: public MDL_REPORT
 {
   friend class CONSTVEL_STATE;

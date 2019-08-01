@@ -31,25 +31,35 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_FEATURES_LINE_2_D_HPP
-#define LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_FEATURES_LINE_2_D_HPP
+#include <gtest/gtest.h>
 
-#include <Eigen/Geometry>
+#include "laser_object_tracker/feature_extraction/features/line_2d.hpp"
 
-namespace laser_object_tracker {
-namespace feature_extraction {
-namespace features {
+#include "test/utils.hpp"
 
-using Line2D = Eigen::Hyperplane<double, 2>;
+using namespace laser_object_tracker::feature_extraction::features;
 
-inline double angleBetweenLines(const Line2D& lhs, const Line2D& rhs) {
-  // Actually it should be divided by multiplication of lengths,
-  // but the normal vectors are unit (i.e. have length = 1), so we don't need to
-  return std::acos(lhs.normal().dot(rhs.normal()));
+TEST(Line2DTest, AngleBetweenLinesTest) {
+  Line2D line_1 = Line2D::Through({0.0, 0.0}, {1.0, 0.0});
+  Line2D line_2 = line_1;
+
+  EXPECT_NEAR(0.0, angleBetweenLines(line_1, line_2), test::PRECISION<double>);
+
+  line_2 = Line2D::Through({0.0, 0.0}, {1.0, 1.0});
+  EXPECT_NEAR(M_PI_4, angleBetweenLines(line_1, line_2), test::PRECISION<double>);
+
+  line_2 = Line2D::Through({0.0, 0.0}, {0.0, 1.0});
+  EXPECT_NEAR(M_PI_2, angleBetweenLines(line_1, line_2), test::PRECISION<double>);
+
+  line_2 = Line2D::Through({0.0, 0.0}, {-1.0, 1.0});
+  EXPECT_NEAR(3 * M_PI_4, angleBetweenLines(line_1, line_2), test::PRECISION<double>);
+
+  line_2 = Line2D::Through({0.0, 0.0}, {-1.0, 0.0});
+  EXPECT_NEAR(M_PI, angleBetweenLines(line_1, line_2), test::PRECISION<double>);
+
+  line_2 = Line2D::Through({0.0, 0.0}, {-1.0, -1.0});
+  EXPECT_NEAR(3 * M_PI_4, angleBetweenLines(line_1, line_2), test::PRECISION<double>);
+
+  line_2 = Line2D::Through({0.0, 0.0}, {0.0, -1.0});
+  EXPECT_NEAR(M_PI_2, angleBetweenLines(line_1, line_2), test::PRECISION<double>);
 }
-
-}  // namespace features
-}  // namespace feature_extraction
-}  // namespace laser_object_tracker
-
-#endif // LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_FEATURES_LINE_2_D_HPP

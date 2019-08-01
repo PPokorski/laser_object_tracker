@@ -42,9 +42,10 @@ namespace features {
 Object::Object(const data_types::LaserScanFragment& fragment,
                const Segments2D& segments,
                const Corners2D& corners)
-    : points_number_(fragment.size()),
+    : timestamp_(fragment.getHeader().stamp),
       segments_(segments),
-      corners_(corners) {
+      corners_(corners),
+      points_number_(fragment.size()) {
   if (!corners.empty()) {
     reference_point_ = corners.front().getCorner();
     orientation_ = corners.front().getOrientation();
