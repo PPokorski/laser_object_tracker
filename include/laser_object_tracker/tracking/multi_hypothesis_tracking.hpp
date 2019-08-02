@@ -45,12 +45,12 @@ namespace laser_object_tracker {
 namespace tracking {
 class MultiHypothesisTracking : public BaseMultiTracking {
  public:
-  MultiHypothesisTracking(double position_variance_x,
+  MultiHypothesisTracking(double time_step,
+                          double position_variance_x,
                           double position_variance_y,
-                          double gradient_variance,
-                          double intensity_variance,
+                          double lambda_x,
                           double process_variance,
-                          double mean_new,
+                          double probability_start,
                           double probability_end,
                           double probability_detection,
                           double state_variance,
@@ -71,16 +71,16 @@ class MultiHypothesisTracking : public BaseMultiTracking {
   long corner_id_ = 0;
 
   // Model parameters
+  double time_step_;
   double position_variance_x_;
   double position_variance_y_;
-  double gradient_variance_;
-  double intensity_variance_;
-  double process_variance_;
-  double mean_new_;
+  double lambda_x_;
+  double probability_start_;
   double probability_end_;
   double probability_detection_;
-  double state_variance_;
   double max_distance_;
+  double process_variance_;
+  double state_variance_;
 
   // MHT parameters
   double mean_false_alarms_;
@@ -90,7 +90,8 @@ class MultiHypothesisTracking : public BaseMultiTracking {
 
   ptrDLIST_OF<MODEL> models_;
  public:
-  std::unique_ptr<CORNER_TRACK_MHT> multi_hypothesis_tracking_;
+//  std::unique_ptr<CORNER_TRACK_MHT> multi_hypothesis_tracking_;
+  std::unique_ptr<mht::MHTTracker> multi_hypothesis_tracking_;
 };
 }  // namespace tracking
 }  // namespace laser_object_tracker

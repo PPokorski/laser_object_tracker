@@ -199,21 +199,20 @@ int main(int ac, char **av) {
 //      getTracker(),
 //      getTrackerRejection(pnh));
 
-  laser_object_tracker::tracking::MultiHypothesisTracking multi_tracker(
-      0.2,
-      0.2,
-      0.01,
-      100.0,
-      0.1,
-      0.004,
-      20.0,
-      0.999,
-      1.0,
-      1.0,
-      0.00002,
-      1,
-      0.001,
-      100);
+  laser_object_tracker::tracking::MultiHypothesisTracking multi_tracker(0.1,
+                                                                        0.2,
+                                                                        0.2,
+                                                                        20.0,
+                                                                        0.1,
+                                                                        0.004,
+                                                                        20.0,
+                                                                        0.999,
+                                                                        1.0,
+                                                                        10.0,
+                                                                        0.00002,
+                                                                        1,
+                                                                        0.001,
+                                                                        100);
 
   std::chrono::high_resolution_clock::time_point begin, end;
   while (ros::ok()) {

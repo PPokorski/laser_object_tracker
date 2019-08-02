@@ -35,21 +35,20 @@
 #include "laser_object_tracker/tracking/tracking.hpp"
 
 int main(int ac, char** av) {
-  laser_object_tracker::tracking::MultiHypothesisTracking mht(
-      1.0,
-      1.0,
-      0.01,
-      100.0,
-      0.5,
-      0.004,
-      20.0,
-      0.999,
-      200.0,
-      5.9,
-      0.00002,
-      3,
-      0.001,
-      300);
+  laser_object_tracker::tracking::MultiHypothesisTracking mht(1.0,
+                                                              1.0,
+                                                              1.0,
+                                                              100.0,
+                                                              0.5,
+                                                              0.004,
+                                                              20.0,
+                                                              0.999,
+                                                              200.0,
+                                                              5.9,
+                                                              0.00002,
+                                                              3,
+                                                              0.001,
+                                                              300);
 
   std::vector<laser_object_tracker::feature_extraction::features::Feature> measurements;
   laser_object_tracker::feature_extraction::features::Feature feature;

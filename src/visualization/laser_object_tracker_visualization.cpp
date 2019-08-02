@@ -169,14 +169,14 @@ void LaserObjectTrackerVisualization::publishMultiTracker(const tracking::MultiT
 }
 
 void LaserObjectTrackerVisualization::publishMultiTracker(const tracking::MultiHypothesisTracking& multi_tracking) {
-  auto tracks = multi_tracking.multi_hypothesis_tracking_->GetTracks();
+  auto tracks = multi_tracking.multi_hypothesis_tracking_->getTracks();
   expandToNColors(tracks.size());
 
   auto track = tracks.begin();
   for (int i = 0; i < tracks.size(); ++i) {
     EigenSTL::vector_Vector3d path;
-    for (const auto& point : track->list) {
-      path.emplace_back(point.sx, point.sy, 0.0);
+    for (const auto& point : track->track_) {
+      path.emplace_back(point.getStateX(), point.getStateY(), 0.0);
     }
 
     std::vector<std_msgs::ColorRGBA> colors(path.size(), rgb_colors_.at(i));

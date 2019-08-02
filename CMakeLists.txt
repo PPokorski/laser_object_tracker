@@ -94,6 +94,7 @@ add_library(${PROJECT_NAME}_tracking
 
 target_link_libraries(${PROJECT_NAME}_tracking
         ${OpenCV_LIBS}
+        ${catkin_LIBRARIES}
         mht
         ${PROJECT_NAME}_data_association)
 
