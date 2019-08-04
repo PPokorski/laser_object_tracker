@@ -35,11 +35,150 @@
 
 #include <algorithm>
 
+#include "laser_object_tracker/feature_extraction/features/point_2d.hpp"
+
 int mht::internal::g_time = 0;
 
 namespace laser_object_tracker {
 namespace tracking {
 namespace mht {
+cv::KalmanFilter buildKalmanFilter(int state_dimensions,
+                                   int measurement_dimensions,
+                                   const Eigen::MatrixXd& transition_matrix,
+                                   const Eigen::MatrixXd& measurement_matrix,
+                                   const Eigen::MatrixXd& measurement_noise_covariance,
+                                   const Eigen::MatrixXd& initial_state_covariance,
+                                   const Eigen::MatrixXd& process_noise_covariance) {
+  cv::KalmanFilter kalman_filter(state_dimensions, measurement_dimensions, 0, CV_64F);
+
+  cv::eigen2cv(transition_matrix, kalman_filter.transitionMatrix);
+  cv::eigen2cv(measurement_matrix, kalman_filter.measurementMatrix);
+  cv::eigen2cv(process_noise_covariance, kalman_filter.processNoiseCov);
+  cv::eigen2cv(measurement_noise_covariance, kalman_filter.measurementNoiseCov);
+  cv::eigen2cv(initial_state_covariance, kalman_filter.errorCovPost);
+
+  return kalman_filter;
+}
+
+cv::KalmanFilter copyKalmanFilter(const cv::KalmanFilter& kalman_filter) {
+  cv::KalmanFilter copy_kalman_filter(kalman_filter.measurementMatrix.cols,
+                                      kalman_filter.measurementMatrix.rows,
+                                      0,
+                                      CV_64F);
+
+  kalman_filter.controlMatrix.copyTo(copy_kalman_filter.controlMatrix);
+  kalman_filter.errorCovPost.copyTo(copy_kalman_filter.errorCovPost);
+  kalman_filter.errorCovPre.copyTo(copy_kalman_filter.errorCovPre);
+  kalman_filter.gain.copyTo(copy_kalman_filter.gain);
+  kalman_filter.measurementMatrix.copyTo(copy_kalman_filter.measurementMatrix);
+  kalman_filter.measurementNoiseCov.copyTo(copy_kalman_filter.measurementNoiseCov);
+  kalman_filter.processNoiseCov.copyTo(copy_kalman_filter.processNoiseCov);
+  kalman_filter.statePost.copyTo(copy_kalman_filter.statePost);
+  kalman_filter.statePre.copyTo(copy_kalman_filter.statePre);
+  kalman_filter.temp1.copyTo(copy_kalman_filter.temp1);
+  kalman_filter.temp2.copyTo(copy_kalman_filter.temp2);
+  kalman_filter.temp3.copyTo(copy_kalman_filter.temp3);
+  kalman_filter.temp4.copyTo(copy_kalman_filter.temp4);
+  kalman_filter.temp5.copyTo(copy_kalman_filter.temp5);
+  kalman_filter.transitionMatrix.copyTo(copy_kalman_filter.transitionMatrix);
+
+  return copy_kalman_filter;
+}
+
+double calculateMahalanobisDistance(const cv::KalmanFilter& kalman_filter, const cv::Mat& measurement) {
+  cv::Mat innovation_covariance = kalman_filter.measurementMatrix *
+                                  kalman_filter.errorCovPre *
+                                  kalman_filter.measurementMatrix.t() +
+                                  kalman_filter.measurementNoiseCov;
+
+  cv::Mat innovation_matrix = measurement - kalman_filter.measurementMatrix * kalman_filter.statePre;
+
+  cv::Mat distance = innovation_matrix.t() * innovation_covariance.inv() * innovation_matrix;
+
+  return std::sqrt(distance.at<double>(0));
+}
+
+double calculateLogLikelihood(const cv::KalmanFilter& kalman_filter, double mahalanobis_distance) {
+  // Explained in:
+  // https://stats.stackexchange.com/questions/296598/why-is-the-likelihood-in-kalman-filter-computed-using-filter-results-instead-of
+  static double pi_coefficient = std::log(2 * M_PI);
+  double covariance_coefficient = cv::determinant(kalman_filter.measurementMatrix *
+                                                  kalman_filter.errorCovPre *
+                                                  kalman_filter.measurementMatrix.t() +
+                                                  kalman_filter.measurementNoiseCov);
+
+  double mahalanobis_coefficient = mahalanobis_distance * mahalanobis_distance;
+
+  return -(pi_coefficient + covariance_coefficient + mahalanobis_coefficient) / 2.0;
+}
+
+MDL_STATE *ObjectModel::getNewState(int i, MDL_STATE *state, MDL_REPORT *report) {
+  auto object_state = dynamic_cast<ObjectState*>(state);
+  auto object_report = dynamic_cast<ObjectReport*>(report);
+
+  ObjectState* next_state = nullptr;
+  if (object_state == nullptr) {
+    ObjectState::State state_vector;
+    state_vector.setZero();
+    state_vector.head<2>() = object_report->getObject().getReferencePoint();
+    next_state = new ObjectState(this,
+                                 time_step_,
+                                 start_log_likelihood_,
+                                 0,
+                                 std::move(getKalmanFilter()),
+                                 state_vector);
+  } else if (report == nullptr) {
+    object_state->predict();
+    object_state->incrementTimesSkipped();
+
+    next_state = new ObjectState(*object_state);
+    next_state->setLogLikelihood(0.0);
+  } else {
+    object_state->predict();
+
+    double mahalanobis_distance = mahalanobisDistance(*object_state, *object_report);
+    if (mahalanobis_distance <= max_mahalanobis_distance_) {
+      double log_likelihood = calculateLogLikelihood(object_state->getKalmanFilter(), mahalanobis_distance);
+
+      ObjectState::Measurement measurement = object_report->getObject().getCorners().front().getCorner();
+      object_state->update(measurement);
+
+      next_state = new ObjectState(this,
+                                   time_step_,
+                                   log_likelihood,
+                                   0,
+                                   object_state->getKalmanFilter());
+    }
+  }
+
+  return next_state;
+}
+
+double ObjectModel::getEndProbability(const ObjectState& state) const {
+  double end_probability = 1.0 - std::exp(-state.getTimesSkipped() / skip_decay_rate_);
+  // End probability cannot be 0.0
+  return std::nextafter(end_probability, 1.0);
+}
+
+double ObjectModel::mahalanobisDistance(const ObjectState& state, const ObjectReport& report) const {
+  cv::Mat measurement;
+  cv::eigen2cv(report.getObject().getReferencePoint(), measurement);
+
+  const auto& kalman_filter = state.getKalmanFilter();
+
+  return calculateMahalanobisDistance(kalman_filter, measurement);
+}
+
+cv::KalmanFilter ObjectModel::getKalmanFilter() const {
+  return buildKalmanFilter(ObjectState::STATE_DIMENSION,
+                           ObjectState::MEASUREMENT_DIMENSION,
+                           state_transition_,
+                           measurement_matrix_,
+                           measurement_noise_covariance_,
+                           initial_state_covariance_,
+                           process_noise_covariance_);
+}
+
 ConstVelocityModel::ConstVelocityModel(double position_measure_variance_x,
                                        double position_measure_variance_y,
                                        double lambda_x,
@@ -60,18 +199,8 @@ ConstVelocityModel::ConstVelocityModel(double position_measure_variance_x,
       time_step_(time_step),
       measurement_covariance_(2, 2),
       initial_covariance_(4, 4) {
-  MATRIX process_noise(4, 4);
-
   measurement_covariance_.set(position_measure_variance_x, 0.0,
                               0.0, position_measure_variance_y);
-
-  // TODO Why??
-  process_noise.set(1.0 / 3.0, 1.0 / 2.0, 0.0, 0.0,
-                    1.0 / 2.0, 1.0, 0.0, 0.0,
-                    0.0, 0.0, 1.0 / 3.0, 1.0 / 2.0,
-                    0.0, 0.0, 1.0 / 2.0, 1.0);
-
-  process_noise = process_noise * process_variance_;
 
   initial_covariance_.set(position_measure_variance_x, 0.0, 0.0, 0.0,
                           0.0, state_variance_, 0.0, 0.0,
@@ -108,6 +237,7 @@ MDL_STATE* ConstVelocityModel::getNewState(int i,
 double ConstVelocityModel::getEndLogLikelihood(MDL_STATE* state) {
   auto model_state = (ConstVelocityState*) state;
   double end_probability = 1.0 - std::exp(-model_state->getTimesSkipped() / lambda_x_);
+  // End probability cannot be 0.0
   end_probability = std::nextafter(end_probability, 1.0);
 
   return end_log_likelihood_ = std::log(end_probability);
@@ -116,6 +246,7 @@ double ConstVelocityModel::getEndLogLikelihood(MDL_STATE* state) {
 double ConstVelocityModel::getContinueLogLikelihood(MDL_STATE* state) {
   auto model_state = (ConstVelocityState*) state;
   double end_probability = 1.0 - std::exp(-model_state->getTimesSkipped() / lambda_x_);
+  // End probability cannot be 0.0
   end_probability = std::nextafter(end_probability, 1.0);
 
   return continue_log_likelihood_ = std::log(1.0 - end_probability);
@@ -232,6 +363,99 @@ void ConstVelocityState::setup(double process_variance, const MATRIX& observatio
   is_setup_ = true;
 }
 
+void ObjectTracker::measure(const std::list<CORNER>& new_reports) {
+//  auto* object = new ObjectReport(false_alarm_log_likelihood_,)
+  for (const auto& report : new_reports) {
+    feature_extraction::features::Object object;
+    object.setReferencePoint(feature_extraction::features::Point2D(report.x, report.y));
+    installReport(new ObjectReport(false_alarm_log_likelihood_,
+                                          object,
+                                          report.m_frameNo,
+                                          report.m_cornerID));
+  }
+}
+
+void ObjectTracker::startTrack(int i, int i1, MDL_STATE *state, MDL_REPORT *report) {
+  auto object_state = dynamic_cast<ObjectState*>(state);
+  auto object_report = dynamic_cast<ObjectReport*>(report);
+
+  verify(i,
+         object_report->getObject().getReferencePoint().x(),
+         object_report->getObject().getReferencePoint().y(),
+         object_state->getX(),
+         object_state->getY(),
+         object_state->getLogLikelihood(),
+         object_report->getFrameNumber(),
+         object_report->getCornerId());
+}
+
+void ObjectTracker::continueTrack(int i, int i1, MDL_STATE *state, MDL_REPORT *report) {
+  auto object_state = dynamic_cast<ObjectState*>(state);
+  auto object_report = dynamic_cast<ObjectReport*>(report);
+
+  verify(i,
+         object_report->getObject().getReferencePoint().x(),
+         object_report->getObject().getReferencePoint().y(),
+         object_state->getX(),
+         object_state->getY(),
+         object_state->getLogLikelihood(),
+         object_report->getFrameNumber(),
+         object_report->getCornerId());
+}
+
+void ObjectTracker::skipTrack(int i, int i1, MDL_STATE *state) {
+  auto object_state = dynamic_cast<ObjectState*>(state);
+
+  double nan = std::numeric_limits<double>::quiet_NaN();
+  verify(i,
+         nan,
+         nan,
+         object_state->getX(),
+         object_state->getY(),
+         object_state->getLogLikelihood(),
+         -1,
+         0);
+}
+
+void ObjectTracker::endTrack(int i, int i1) {
+  tracks_.remove_if([i](const auto& track) { return track.getId() == i;});
+}
+
+void ObjectTracker::falseAlarm(int i, MDL_REPORT *report) {
+  false_alarms_.emplace_back((dynamic_cast<ObjectReport*>(report)));
+}
+
+Track *ObjectTracker::findTrack(int id) {
+  auto it = std::find_if(tracks_.begin(),
+                         tracks_.end(),
+                         [id](const auto& track) { return track.getId() == id;});
+
+  if (it != tracks_.end()) {
+    return &(*it);
+  } else {
+    tracks_.emplace_back(id);
+    return &tracks_.back();
+  }
+}
+
+void ObjectTracker::verify(int track_id,
+                           double state_x,
+                           double state_y,
+                           double report_x,
+                           double report_y,
+                           double likelihood,
+                           int frame,
+                           size_t corner_id) {
+  auto track = findTrack(track_id);
+  track->track_.emplace_back(state_x,
+                             state_y,
+                             report_x,
+                             report_y,
+                             likelihood,
+                             frame,
+                             corner_id);
+}
+
 void MHTTracker::measure(const std::list<CORNER>& new_reports) {
   for (const auto& report : new_reports) {
     installReport(new PositionReport(false_alarm_log_likelihood_,
@@ -285,7 +509,7 @@ void MHTTracker::skipTrack(int i, int i1, MDL_STATE* state) {
 }
 
 void MHTTracker::endTrack(int i, int i1) {
-  MDL_MHT::endTrack(i, i1);
+  tracks_.remove_if([i](const auto& track) { return track.getId() == i;});
 }
 
 void MHTTracker::falseAlarm(int i, MDL_REPORT* report) {
@@ -319,7 +543,6 @@ void MHTTracker::verify(int track_id,
                              report_x,
                              report_y,
                              likelihood,
-                             ::mht::internal::g_time,
                              frame,
                              corner_id);
 }
