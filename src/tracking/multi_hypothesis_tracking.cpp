@@ -36,83 +36,53 @@
 namespace laser_object_tracker {
 namespace tracking {
 MultiHypothesisTracking::MultiHypothesisTracking(double time_step,
-                                                 double position_variance_x,
-                                                 double position_variance_y,
-                                                 double lambda_x,
-                                                 double process_variance,
+                                                 double max_mahalanobis_distance,
+                                                 double skip_decay_rate,
                                                  double probability_start,
-                                                 double probability_end,
                                                  double probability_detection,
-                                                 double state_variance,
-                                                 double max_distance,
+                                                 const mht::ObjectState::MeasurementNoiseCovariance& measurement_noise_covariance,
+                                                 const mht::ObjectState::InitialStateCovariance& initial_state_covariance,
+                                                 const mht::ObjectState::ProcessNoiseCovariance& process_noise_covariance,
                                                  double mean_false_alarms,
                                                  int max_depth,
                                                  double min_g_hypothesis_ratio,
                                                  int max_g_hypothesis)
-    : time_step_(time_step),
-      position_variance_x_(position_variance_x),
-      position_variance_y_(position_variance_y),
-      lambda_x_(lambda_x),
-      process_variance_(process_variance),
-      probability_start_(probability_start),
-      probability_end_(probability_end),
-      probability_detection_(probability_detection),
-      state_variance_(state_variance),
-      max_distance_(max_distance),
-      mean_false_alarms_(mean_false_alarms),
-      max_depth_(max_depth),
-      min_g_hypothesis_ratio_(min_g_hypothesis_ratio),
-      max_g_hypothesis_(max_g_hypothesis) {
-  auto* const_velocity_model = new mht::ConstVelocityModel(
-      position_variance_x_,
-      position_variance_y_,
-      lambda_x_,
-      probability_start_,
-      probability_detection_,
-      max_distance_,
-      process_variance_,
-      state_variance_,
-      time_step_);
+    : false_alarm_log_likelihood_(std::log(mean_false_alarms)) {
+  auto* const_velocity_model = new mht::ObjectModel(
+      time_step,
+      max_mahalanobis_distance,
+      skip_decay_rate,
+      probability_start,
+      probability_detection,
+      measurement_noise_covariance,
+      initial_state_covariance,
+      process_noise_covariance);
   models_.append(*const_velocity_model);
 
-  multi_hypothesis_tracking_ = std::make_unique<mht::MHTTracker>(mean_false_alarms_,
-                                                                 max_depth_,
-                                                                 min_g_hypothesis_ratio_,
-                                                                 max_g_hypothesis_,
-                                                                 models_);
+  multi_hypothesis_tracking_ = std::make_unique<mht::ObjectTracker>(mean_false_alarms,
+                                                                    max_depth,
+                                                                    min_g_hypothesis_ratio,
+                                                                    max_g_hypothesis,
+                                                                    models_);
 }
 
 void MultiHypothesisTracking::predict() {
 }
 
-void MultiHypothesisTracking::update(const std::vector<feature_extraction::features::Feature>& measurements) {
-  std::cout << "******************CURRENT_TIME=" << multi_hypothesis_tracking_->getCurrentTime() << std::endl;
-  CORNERLIST reports(measurements.size(), 0.1);
+void MultiHypothesisTracking::update(const std::vector<FeatureT>& measurements) {
+  std::list<REPORT*> reports;
 
   for (const auto& measurement : measurements) {
-    reports.list.emplace_back(measurement.observation_(0),
-                              measurement.observation_(1),
-                              frame_number_,
-                              corner_id_++);
+    reports.push_back(new mht::ObjectReport(false_alarm_log_likelihood_,
+                                            measurement,
+                                            frame_number_,
+                                            corner_id_++));
   }
 
   multi_hypothesis_tracking_->addReports(reports);
   multi_hypothesis_tracking_->scan();
-  ::mht::internal::g_time = multi_hypothesis_tracking_->getCurrentTime();
-//  multi_hypothesis_tracking_->printStats(2);
 
-  std::cout << "Tracks: " << multi_hypothesis_tracking_->getTracks().size()
-            << " False alarms: " << multi_hypothesis_tracking_->getFalseAlarms().size() << std::endl;
   ++frame_number_;
-
-//  for (const auto& track : multi_hypothesis_tracking_->GetTracks()) {
-//    std::cout << "ID: " << track.id << std::endl;
-//    for (const auto& point : track.list) {
-//      std::cout << "r: [" << point.rx << ", " << point.ry << "] " <<
-//                   "s: [" << point.sx << ", " << point.sy << "]" << std::endl;
-//    }
-
-//  }
 }
 
 MultiHypothesisTracking::~MultiHypothesisTracking() {

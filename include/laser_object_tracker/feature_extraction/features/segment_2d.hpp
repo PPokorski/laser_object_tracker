@@ -47,13 +47,23 @@ class Segment2D {
 
   Segment2D(const Point2D& start,
             const Point2D& end,
-            bool is_start_occluded,
-            bool is_end_occluded) :
-      start_(start),
-      end_(end),
-      is_start_occluded_(is_start_occluded),
-      is_end_occluded_(is_end_occluded),
+            bool is_start_occluded = false,
+            bool is_end_occluded = false)
+      : start_(start),
+        end_(end),
+        is_start_occluded_(is_start_occluded),
+        is_end_occluded_(is_end_occluded),
       orientation_(segmentOrientation()) {}
+
+  Segment2D(const Point2D& start,
+            double direction,
+            double length,
+            bool is_start_occluded = false,
+            bool is_end_occluded = false)
+      : Segment2D(start,
+                  Point2D(start.x() + length * std::cos(direction), start.y() + length * std::sin(direction)),
+                  is_start_occluded,
+                  is_end_occluded) {}
 
   explicit Segment2D(const Eigen::VectorXd& coefficients) {
     if (coefficients.size() != 4) {
@@ -71,7 +81,7 @@ class Segment2D {
   }
 
   double length() const {
-    return (end_ - start_).norm();
+    return distance(start_, end_);
   }
 
   const Point2D& getStart() const {

@@ -46,30 +46,21 @@ class Corner2D {
  public:
   Corner2D() = default;
 
-  Corner2D(const Point2D& corner, double orientation, double aperture)
+  Corner2D(const Point2D& corner,
+           double orientation_primary,
+           double orientation_secondary,
+           double aperture,
+           double length_primary,
+           double length_secondary)
       : corner_(corner),
-        orientation_(orientation),
+        segment_longer_(corner, orientation_primary, length_primary),
+        segment_shorter_(corner, orientation_secondary, length_secondary),
         aperture_(aperture) {}
 
-  Corner2D(const Line2D& line_1, const Line2D& line_2, double orientation)
-      : corner_(line_1.intersection(line_2)),
-        orientation_(orientation),
-        aperture_(angleBetweenLines(line_1, line_2)) {
-    if (aperture_ < SMALL_ANGLE) {
-      std::stringstream ss;
-      ss << "The angle between lines is to small. Line 1: " << line_1.coeffs().transpose()
-         << " Line 2: " << line_2.coeffs().transpose() << ". The angle between them: " << aperture_;
-      throw std::invalid_argument(ss.str());
-    }
-  }
-
   Corner2D(const Segment2D& segment_1, const Segment2D& segment_2)
-      : Corner2D(segment_1.line(),
-                 segment_2.line(),
-                 // Orientation is the orientation of the longer segment or the first one
-                 segment_1.length() >= segment_2.length() ?
-                      segment_1.getOrientation() :
-                      segment_2.getOrientation()) {}
+      : Corner2D(segment_1.length() >= segment_2.length() ? segment_1 : segment_2,
+                 segment_1.length() >= segment_2.length() ? segment_2 : segment_1,
+                 true) {}
 
   const Point2D& getCorner() const {
     return corner_;
@@ -80,29 +71,68 @@ class Corner2D {
   }
 
   double getOrientation() const {
-    return orientation_;
+    return getOrientationLonger();
   }
 
-  void setOrientation(double orientation) {
-    orientation_ = orientation;
+  double getOrientationLonger() const {
+    return segment_longer_.getOrientation();
+  }
+
+  double getOrientationShorter() const {
+    return segment_shorter_.getOrientation();
   }
 
   double getAperture() const {
     return aperture_;
   }
 
-  void setAperture(double aperture) {
-    aperture_ = aperture;
+  double getLengthLonger() const {
+    return segment_longer_.length();
+  }
+
+  double getLengthShorter() const {
+    return segment_shorter_.length();
+  }
+
+  const Segment2D& getSegmentLonger() const {
+    return segment_longer_;
+  }
+
+  const Segment2D& getSegmentShorter() const {
+    return segment_shorter_;
   }
 
  private:
   static constexpr double SMALL_ANGLE = 0.02; // 1 degree
 
+  // Bool is for differentiating this c-tor from the other
+  Corner2D(const Segment2D& segment_longer, const Segment2D& segment_shorter, bool)
+      : corner_(segment_longer.line().intersection(segment_shorter.line())),
+        segment_longer_(corner_, distance(corner_, segment_longer.getStart()) >=
+                                 distance(corner_, segment_longer.getEnd()) ?
+                                 segment_longer.getStart() :
+                                 segment_longer.getEnd()),
+        segment_shorter_(corner_, distance(corner_, segment_shorter.getStart()) >=
+                                  distance(corner_, segment_shorter.getEnd()) ?
+                                  segment_shorter.getStart() :
+                                  segment_shorter.getEnd()),
+        aperture_(angleBetweenSegments(segment_longer, segment_shorter)) {
+    if (aperture_ < SMALL_ANGLE) {
+      std::stringstream ss;
+      ss << "The angle between lines is to small. Longer segment: " << segment_longer_.line().coeffs().transpose()
+         << " Shorter segment: " << segment_shorter.line().coeffs().transpose()
+         << ". The angle between them: " << aperture_;
+      throw std::invalid_argument(ss.str());
+    }
+  }
+
   Point2D corner_;
-  double orientation_;
+
+  Segment2D segment_longer_;
+  Segment2D segment_shorter_;
+
   // The angle between segments creating a corner
   double aperture_;
-
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 };

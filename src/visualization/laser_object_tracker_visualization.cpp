@@ -169,15 +169,36 @@ void LaserObjectTrackerVisualization::publishMultiTracker(const tracking::MultiT
 }
 
 void LaserObjectTrackerVisualization::publishMultiTracker(const tracking::MultiHypothesisTracking& multi_tracking) {
-  auto tracks = multi_tracking.multi_hypothesis_tracking_->getTracks();
+  const auto& tracks = multi_tracking.multi_hypothesis_tracking_->getTracks();
   expandToNColors(tracks.size());
 
   auto track = tracks.begin();
   for (int i = 0; i < tracks.size(); ++i) {
     EigenSTL::vector_Vector3d path;
     for (const auto& point : track->track_) {
-      path.emplace_back(point.getStateX(), point.getStateY(), 0.0);
+      Eigen::Vector3d vec(point.getStateX(), point.getStateY(), 0.0);
+
+      if (path.empty() || (path.back() - vec).squaredNorm() >= 0.001) {
+        path.push_back(vec);
+      }
     }
+
+    Eigen::Vector4d state(track->track_.back().getStateX(),
+                          track->track_.back().getStateY(),
+                          track->track_.back().getVelocityX(),
+                          track->track_.back().getVelocityY());
+
+    double yaw = state.tail<2>().norm() > 0.0 ? std::atan2(state(3), state(2)) : 0.0;
+
+    Eigen::Affine3d pose = rviz_visual_tools::RvizVisualTools::convertFromXYZRPY(state(0), state(1), 0.0, 0.0, 0.0, yaw,
+                                                                                rviz_visual_tools::EulerConvention::XYZ);
+
+    pose.translation()(2) += 0.2;
+    rviz_visual_tools_->publishArrow(pose, rviz_visual_tools::BLUE, rviz_visual_tools::XXXLARGE);
+    using namespace std::string_literals;
+    pose.translation()(2) += 0.3;
+    rviz_visual_tools_->publishText(pose, std::to_string(state.tail<2>().norm()) + " m/s"s,
+                                    rviz_visual_tools::WHITE, rviz_visual_tools::XXXXLARGE, false);
 
     std::vector<std_msgs::ColorRGBA> colors(path.size(), rgb_colors_.at(i));
     rviz_visual_tools_->publishPath(path, colors, 0.05);

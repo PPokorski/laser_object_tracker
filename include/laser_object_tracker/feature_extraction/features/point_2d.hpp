@@ -45,6 +45,14 @@ namespace features {
 using Point2D = Eigen::Vector2d;
 using Points2D = std::vector<Point2D, Eigen::aligned_allocator<Point2D>>;
 
+inline double distance(const Point2D& lhs, const Point2D& rhs) {
+  return (lhs - rhs).norm();
+}
+
+inline double squaredDistance(const Point2D& lhs, const Point2D& rhs) {
+  return (lhs - rhs).squaredNorm();
+}
+
 }  // namespace features
 }  // namespace feature_extraction
 }  // namespace laser_object_tracker

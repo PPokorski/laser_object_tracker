@@ -47,9 +47,14 @@ Object::Object(const data_types::LaserScanFragment& fragment,
       corners_(corners),
       points_number_(fragment.size()) {
   if (!corners.empty()) {
+    // We have a corner
     reference_point_ = corners.front().getCorner();
     orientation_ = corners.front().getOrientation();
+
+    reference_point_type_ = ReferencePointType::CORNER;
+    reference_point_source_ = corners.front();
   } else if (!segments.empty()) {
+    // We don't have a corner, looking for a longest segment
     auto longest_segment = std::max_element(segments.begin(),
                                             segments.end(),
                                             [](const auto& lhs, const auto& rhs) {return lhs.length() < rhs.length();});
@@ -57,11 +62,17 @@ Object::Object(const data_types::LaserScanFragment& fragment,
       orientation_ = longest_segment->getOrientation();
       if (!longest_segment->isStartOccluded()) {
         reference_point_ = longest_segment->getStart();
+        reference_point_type_ = ReferencePointType::SEGMENT_START;
       } else if (!longest_segment->isEndOccluded()) {
         reference_point_ = longest_segment->getEnd();
+        reference_point_type_ = ReferencePointType::SEGMENT_END;
       } else {
+        // Both segment's end are occluded, we don't have a reliable reference point
         reference_point_.setZero();
+        reference_point_type_ = ReferencePointType::NONE;
       }
+
+    reference_point_source_ = *longest_segment;
   } else {
     throw std::invalid_argument("Object has no features - corners or segments");
   }

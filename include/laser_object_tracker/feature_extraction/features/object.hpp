@@ -34,6 +34,8 @@
 #ifndef LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_FEATURES_OBJECT_HPP
 #define LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_FEATURES_OBJECT_HPP
 
+#include <variant>
+
 #include "laser_object_tracker/data_types/laser_scan_fragment.hpp"
 #include "laser_object_tracker/feature_extraction/features/corner_2d.hpp"
 #include "laser_object_tracker/feature_extraction/features/point_2d.hpp"
@@ -45,6 +47,15 @@ namespace features {
 
 class Object {
  public:
+  using ReferencePointSource = std::variant<Segment2D, Corner2D>;
+
+  enum class ReferencePointType {
+    CORNER = 0,
+    SEGMENT_START,
+    SEGMENT_END,
+    NONE
+  };
+
   Object() = default;
 
   Object(const data_types::LaserScanFragment& fragment,
@@ -73,6 +84,18 @@ class Object {
 
   void setOrientation(double orientation) {
     orientation_ = orientation;
+  }
+
+  ReferencePointType getReferencePointType() const {
+    return reference_point_type_;
+  }
+
+  bool hasValidReferencePoint() const {
+    return reference_point_type_ != ReferencePointType::NONE;
+  }
+
+  const ReferencePointSource& getReferencePointSource() const {
+    return reference_point_source_;
   }
 
   const Segments2D& getSegments() const {
@@ -122,6 +145,8 @@ class Object {
 
   Point2D reference_point_;
   double orientation_;
+  ReferencePointType reference_point_type_;
+  ReferencePointSource reference_point_source_;
 
   Segments2D segments_;
   Corners2D corners_;

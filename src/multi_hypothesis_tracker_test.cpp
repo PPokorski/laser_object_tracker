@@ -34,21 +34,37 @@
 #include "laser_object_tracker/feature_extraction/features/features.hpp"
 #include "laser_object_tracker/tracking/tracking.hpp"
 
+using namespace laser_object_tracker;
+
 int main(int ac, char** av) {
-  laser_object_tracker::tracking::MultiHypothesisTracking mht(1.0,
-                                                              1.0,
-                                                              1.0,
-                                                              100.0,
-                                                              0.5,
-                                                              0.004,
-                                                              20.0,
-                                                              0.999,
-                                                              200.0,
-                                                              5.9,
-                                                              0.00002,
-                                                              3,
-                                                              0.001,
-                                                              300);
+  tracking::mht::ObjectState::MeasurementNoiseCovariance measurement_noise_covariance;
+  measurement_noise_covariance << 0.1, 0.0,
+      0.0, 0.1;
+
+  tracking::mht::ObjectState::InitialStateCovariance initial_state_covariance;
+  initial_state_covariance << 0.1, 0.0, 0.0, 0.0,
+      0.0, 0.1, 0.0, 0.0,
+      0.0, 0.0, 0.1, 0.0,
+      0.0, 0.0, 0.0, 0.1;
+
+  tracking::mht::ObjectState::ProcessNoiseCovariance process_noise_covariance;
+  process_noise_covariance << 0.2, 0.0, 0.0, 0.0,
+      0.0, 0.2, 0.0, 0.0,
+      0.0, 0.0, 0.2, 0.0,
+      0.0, 0.0, 0.0, 0.2;
+
+  laser_object_tracker::tracking::MultiHypothesisTracking multi_tracker(0.1,
+                                                                        1.0,
+                                                                        20.0,
+                                                                        0.01,
+                                                                        0.999,
+                                                                        measurement_noise_covariance,
+                                                                        initial_state_covariance,
+                                                                        process_noise_covariance,
+                                                                        0.00002,
+                                                                        1,
+                                                                        0.001,
+                                                                        100);
 
   std::vector<laser_object_tracker::feature_extraction::features::Feature> measurements;
   laser_object_tracker::feature_extraction::features::Feature feature;
@@ -58,7 +74,7 @@ int main(int ac, char** av) {
   measurements.push_back(feature);
 
   for (int i = 0; i < 10; ++i) {
-    mht.update(measurements);
+//    multi_tracker.update(measurements);
 
     measurements.back().observation_ << 1.0 + i * 0.1, 1.0 + i * 0.1;
   }

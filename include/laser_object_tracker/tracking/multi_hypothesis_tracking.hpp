@@ -39,22 +39,20 @@
 #include "laser_object_tracker/tracking/base_multi_tracking.hpp"
 #include "laser_object_tracker/tracking/object_matching/fast_object_matching.hpp"
 
-#include "laser_object_tracker/tracking/mht/motion_model.hpp"
+#include "laser_object_tracker/tracking/mht/object_model.hpp"
 
 namespace laser_object_tracker {
 namespace tracking {
-class MultiHypothesisTracking : public BaseMultiTracking {
+class MultiHypothesisTracking : public BaseMultiTracking<feature_extraction::features::Object> {
  public:
   MultiHypothesisTracking(double time_step,
-                          double position_variance_x,
-                          double position_variance_y,
-                          double lambda_x,
-                          double process_variance,
+                          double max_mahalanobis_distance,
+                          double skip_decay_rate,
                           double probability_start,
-                          double probability_end,
                           double probability_detection,
-                          double state_variance,
-                          double max_distance,
+                          const mht::ObjectState::MeasurementNoiseCovariance& measurement_noise_covariance,
+                          const mht::ObjectState::InitialStateCovariance& initial_state_covariance,
+                          const mht::ObjectState::ProcessNoiseCovariance& process_noise_covariance,
                           double mean_false_alarms,
                           int max_depth,
                           double min_g_hypothesis_ratio,
@@ -62,7 +60,7 @@ class MultiHypothesisTracking : public BaseMultiTracking {
 
   void predict() override;
 
-  void update(const std::vector<feature_extraction::features::Feature>& measurements) override;
+  void update(const std::vector<FeatureT>& measurements) override;
 
   ~MultiHypothesisTracking();
 
@@ -70,28 +68,12 @@ class MultiHypothesisTracking : public BaseMultiTracking {
   long frame_number_ = 0;
   long corner_id_ = 0;
 
-  // Model parameters
-  double time_step_;
-  double position_variance_x_;
-  double position_variance_y_;
-  double lambda_x_;
-  double probability_start_;
-  double probability_end_;
-  double probability_detection_;
-  double max_distance_;
-  double process_variance_;
-  double state_variance_;
-
-  // MHT parameters
-  double mean_false_alarms_;
-  int max_depth_;
-  double min_g_hypothesis_ratio_;
-  int max_g_hypothesis_;
+  double false_alarm_log_likelihood_;
 
   ptrDLIST_OF<MODEL> models_;
  public:
 //  std::unique_ptr<CORNER_TRACK_MHT> multi_hypothesis_tracking_;
-  std::unique_ptr<mht::MHTTracker> multi_hypothesis_tracking_;
+  std::unique_ptr<mht::ObjectTracker> multi_hypothesis_tracking_;
 };
 }  // namespace tracking
 }  // namespace laser_object_tracker

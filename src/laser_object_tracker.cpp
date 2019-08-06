@@ -41,6 +41,8 @@
 #include "laser_object_tracker/visualization/visualization.hpp"
 #include "laser_object_tracker/tracking/tracking.hpp"
 
+using Feature = laser_object_tracker::feature_extraction::features::Object;
+
 laser_object_tracker::data_types::LaserScanFragment::LaserScanFragmentFactory factory;
 laser_object_tracker::data_types::LaserScanFragment fragment;
 
@@ -74,10 +76,24 @@ std::shared_ptr<segmentation::BaseSegmentation> getSegmentation(ros::NodeHandle&
   return segmentation;
 }
 
-std::map<std::string, feature_extraction::SearchBasedCornerDetection::CriterionFunctor> getCriterions() {
-  return {{"areaCriterion", feature_extraction::areaCriterion},
-          {"closenessCriterion", feature_extraction::closenessCriterion},
-          {"varianceCriterion", feature_extraction::varianceCriterion}};
+std::shared_ptr<feature_extraction::BaseFeatureExtraction<Feature>> getFeatureExtraction(ros::NodeHandle& nh) {
+  std::shared_ptr<feature_extraction::BaseFeatureExtraction<Feature>> feature_extraction;
+
+  double min_angle_between_lines, max_distance, rho_resolution, theta_resolution;
+  int voting_threshold;
+  nh.getParam("feature_extraction/min_angle_between_lines", min_angle_between_lines);
+  nh.getParam("feature_extraction/max_distance", max_distance);
+  nh.getParam("feature_extraction/rho_resolution", rho_resolution);
+  nh.getParam("feature_extraction/theta_resolution", theta_resolution);
+  nh.getParam("feature_extraction/voting_threshold", voting_threshold);
+
+  feature_extraction.reset(new feature_extraction::MultiLineDetection(min_angle_between_lines,
+                                                                      max_distance,
+                                                                      rho_resolution,
+                                                                      theta_resolution,
+                                                                      voting_threshold));
+
+  return feature_extraction;
 }
 
 std::shared_ptr<laser_object_tracker::filtering::BaseSegmentedFiltering> getFiltering(ros::NodeHandle& nh) {
@@ -99,62 +115,6 @@ std::shared_ptr<laser_object_tracker::filtering::BaseSegmentedFiltering> getFilt
   return std::make_unique<laser_object_tracker::filtering::AggregateSegmentedFiltering>(std::move(filters));
 }
 
-std::unique_ptr<laser_object_tracker::tracking::BaseTracking> getTracker() {
-//  Eigen::MatrixXd transition(4, 4);
-//  transition << 1.0, 0.0, 0.1, 0.0,
-//                0.0, 1.0, 0.0, 0.1,
-//                0.0, 0.0, 1.0, 0.0,
-//                0.0, 0.0, 0.0, 1.0;
-
-//  Eigen::MatrixXd measurement(2, 4);
-//  measurement << 1.0, 0.0, 0.0, 0.0,
-//                 0.0, 1.0, 0.0, 0.0;
-
-  Eigen::MatrixXd process_noise_covariance(6, 6);
-  process_noise_covariance << 0.1, 0.0, 0.0, 0.0, 0.0, 0.0,
-                              0.0, 0.1, 0.0, 0.0, 0.0, 0.0,
-                              0.0, 0.0, 0.1, 0.0, 0.0, 0.0,
-                              0.0, 0.0, 0.0, 0.1, 0.0, 0.0,
-                              0.0, 0.0, 0.0, 0.0, 0.1, 0.0,
-                              0.0, 0.0, 0.0, 0.0, 0.0, 0.1;
-
-  Eigen::MatrixXd measurement_noise_covariance(3, 3);
-  measurement_noise_covariance << 0.01, 0.00, 0.00,
-                                  0.00, 0.01, 0.00,
-                                  0.00, 0.00, 0.01;
-
-  Eigen::MatrixXd initial_state_covariance(6, 6);
-  initial_state_covariance << 0.3, 0.0, 0.0, 0.0, 0.0, 0.0,
-                              0.0, 0.3, 0.0, 0.0, 0.0, 0.0,
-                              0.0, 0.0, 0.3, 0.0, 0.0, 0.0,
-                              0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-                              0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
-                              0.0, 0.0, 0.0, 0.0, 0.0, 1.0;
-
-  return std::make_unique<laser_object_tracker::tracking::CornerTracker>(0.1, 0.1,
-                          measurement_noise_covariance,
-                          initial_state_covariance,
-                          process_noise_covariance);
-}
-
-std::unique_ptr<laser_object_tracker::data_association::BaseDataAssociation> getDataAssociation(ros::NodeHandle& nh) {
-  double max_cost;
-  nh.getParam("data_association/max_cost", max_cost);
-  return std::make_unique<laser_object_tracker::data_association::HungarianAlgorithm>(max_cost);
-}
-
-laser_object_tracker::tracking::MultiTracking::DistanceFunctor getDistanceFunctor() {
-  return [](const laser_object_tracker::feature_extraction::features::Feature& observation,
-           const laser_object_tracker::tracking::BaseTracking& tracker) {
-    return (observation.observation_.head<2>() - tracker.getStateVector().head<2>()).squaredNorm();
-  };
-}
-
-std::unique_ptr<laser_object_tracker::tracking::BaseTrackerRejection> getTrackerRejection(ros::NodeHandle& nh) {
-  int max_iterations_without_update;
-  nh.getParam("tracking/rejection/max_iterations_without_update", max_iterations_without_update);
-  return std::make_unique<laser_object_tracker::tracking::IterationTrackerRejection>(max_iterations_without_update);
-}
 
 int main(int ac, char **av) {
   pcl::PointCloud<pcl::PointXYZ> pcl;
@@ -174,14 +134,7 @@ int main(int ac, char **av) {
   pnh.getParam("feature_extraction/angle_resolution", angle_resolution);
   pnh.getParam("feature_extraction/criterion", criterion_name);
 
-  feature_extraction::SearchBasedCornerDetection::CriterionFunctor criterion;
-  try {
-    criterion = getCriterions().at(criterion_name);
-  } catch (std::exception& e) {
-    ROS_ERROR("%s", e.what());
-    throw;
-  }
-  feature_extraction::SearchBasedCornerDetection detection(angle_resolution, criterion);
+  auto detection = getFeatureExtraction(pnh);
 
   ROS_INFO("Initializing visualization");
   std::string base_frame;
@@ -199,16 +152,30 @@ int main(int ac, char **av) {
 //      getTracker(),
 //      getTrackerRejection(pnh));
 
+  tracking::mht::ObjectState::MeasurementNoiseCovariance measurement_noise_covariance;
+  measurement_noise_covariance << 0.1, 0.0,
+                                  0.0, 0.1;
+
+  tracking::mht::ObjectState::InitialStateCovariance initial_state_covariance;
+  initial_state_covariance << 0.1, 0.0, 0.0, 0.0,
+                              0.0, 0.1, 0.0, 0.0,
+                              0.0, 0.0, 0.1, 0.0,
+                              0.0, 0.0, 0.0, 0.1;
+
+  tracking::mht::ObjectState::ProcessNoiseCovariance process_noise_covariance;
+  process_noise_covariance << 0.2, 0.0, 0.0, 0.0,
+                              0.0, 0.2, 0.0, 0.0,
+                              0.0, 0.0, 0.2, 0.0,
+                              0.0, 0.0, 0.0, 0.2;
+
   laser_object_tracker::tracking::MultiHypothesisTracking multi_tracker(0.1,
-                                                                        0.2,
-                                                                        0.2,
-                                                                        20.0,
-                                                                        0.1,
-                                                                        0.004,
-                                                                        20.0,
-                                                                        0.999,
                                                                         1.0,
-                                                                        10.0,
+                                                                        20.0,
+                                                                        0.01,
+                                                                        0.999,
+                                                                        measurement_noise_covariance,
+                                                                        initial_state_covariance,
+                                                                        process_noise_covariance,
                                                                         0.00002,
                                                                         1,
                                                                         0.001,
@@ -229,12 +196,11 @@ int main(int ac, char **av) {
 //      visualization.publishFeatures(segments);
 
       visualization.publishPointClouds(segments);
-      laser_object_tracker::feature_extraction::features::Corners2D corners_2_d;
-      laser_object_tracker::feature_extraction::features::Feature feature;
-      std::vector<laser_object_tracker::feature_extraction::features::Feature> features;
+      Feature feature;
+      std::vector<Feature> features;
       for (const auto& segment : segments) {
         if (segment.isValid()) {
-          if (detection.extractFeature(segment, feature)) {
+          if (detection->extractFeature(segment, feature)) {
             features.push_back(feature);
 //            features.push_back({feature.observation_.head<2>(), std::vector<int>(), std::vector<bool>()});
 //            std::cout << "Feature vector:\n" << feature.head(2) << std::endl;
@@ -251,7 +217,7 @@ int main(int ac, char **av) {
       end = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double, std::milli> duration = end - begin;
       ROS_INFO("Iteration took: %.2f ms", (duration.count()));
-      visualization.publishCorners(corners_2_d);
+      visualization.publishObjects(features);
       visualization.publishMultiTracker(multi_tracker);
 
       visualization.trigger();

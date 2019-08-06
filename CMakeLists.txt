@@ -2,11 +2,11 @@
 ## Project ##
 #############
 
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.8)
 project(laser_object_tracker)
 
 ## Build flags ##
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 #set(CMAKE_CXX_CPPLINT /usr/local/bin/cpplint;--linelength=120 --root=include)
@@ -88,6 +88,7 @@ add_library(${PROJECT_NAME}_tracking
         src/tracking/iteration_tracker_rejection.cpp
         src/tracking/kalman_filter.cpp
         src/tracking/mht/motion_model.cpp
+        src/tracking/mht/object_model.cpp
         src/tracking/multi_hypothesis_tracking.cpp
         src/tracking/multi_tracking.cpp
         src/tracking/object_matching/fast_object_matching.cpp)

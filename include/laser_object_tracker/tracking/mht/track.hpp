@@ -31,25 +31,102 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_TRACKING_BASE_MULTI_TRACKING_HPP
-#define LASER_OBJECT_TRACKER_TRACKING_BASE_MULTI_TRACKING_HPP
+#ifndef LASER_OBJECT_TRACKER_TRACKING_MHT_TRACK_HPP
+#define LASER_OBJECT_TRACKER_TRACKING_MHT_TRACK_HPP
 
-#include "laser_object_tracker/feature_extraction/features/features.hpp"
+#include <list>
+
+#include <mht/list.h>
 
 namespace laser_object_tracker {
 namespace tracking {
-template<class Feature>
-class BaseMultiTracking {
+namespace mht {
+class TrackElement : public DLISTnode {
  public:
-  using FeatureT = Feature;
+  TrackElement(double state_x,
+               double state_y,
+               double velocity_x,
+               double velocity_y,
+               double report_x,
+               double report_y,
+               double log_likelihood,
+               int frame_number,
+               size_t corner_id)
+      : state_x_(state_x),
+        state_y_(state_y),
+        velocity_x_(velocity_x),
+        velocity_y_(velocity_y),
+        report_x_(report_x),
+        report_y_(report_y),
+        log_likelihood_(log_likelihood),
+        frame_number_(frame_number),
+        corner_id_(corner_id) {
+    has_report_ = !(std::isnan(report_x) || std::isnan(report_y));
+  }
 
-  virtual void predict() = 0;
+  size_t getCornerId() const {
+    return corner_id_;
+  }
 
-  virtual void update(const std::vector<FeatureT>& measurements) = 0;
+  double getStateX() const {
+    return state_x_;
+  }
 
-  virtual ~BaseMultiTracking() = default;
+  double getStateY() const {
+    return state_y_;
+  }
+
+  double getVelocityX() const {
+    return velocity_x_;
+  }
+
+  double getVelocityY() const {
+    return velocity_y_;
+  }
+
+  double getReportX() const {
+    return report_x_;
+  }
+
+  double getReportY() const {
+    return report_y_;
+  }
+
+ protected:
+  MEMBERS_FOR_DLISTnode(TrackElement)
+
+ private:
+  bool has_report_;
+
+  double state_x_, state_y_,
+         velocity_x_, velocity_y_,
+         report_x_, report_y_;
+
+  double log_likelihood_;
+
+  int frame_number_;
+  size_t corner_id_;
 };
+
+class Track : public DLISTnode {
+ public:
+  explicit Track(int id) : id_(id), track_() {}
+
+  int getId() const {
+    return id_;
+  }
+
+  std::list<TrackElement> track_;
+
+ protected:
+  MEMBERS_FOR_DLISTnode(Track)
+
+ private:
+  int id_;
+};
+
+}  // namespace mht
 }  // namespace tracking
 }  // namespace laser_object_tracker
 
-#endif //LASER_OBJECT_TRACKER_TRACKING_BASE_MULTI_TRACKING_HPP
+#endif  // LASER_OBJECT_TRACKER_TRACKING_MHT_TRACK_HPP

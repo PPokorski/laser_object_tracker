@@ -8,12 +8,11 @@ segmentation:
     angle: 0.2
     sigma: 0.2
 feature_extraction:
-  type: "SearchBasedCornerDetection"
-  angle_resolution: 0.01
-  criterion: "varianceCriterion"
-#  distance_threshold: 0.01
-#  max_iterations: 100
-#  probability: 0.99
+  min_angle_between_lines: 0.2
+  max_distance: 0.05
+  rho_resolution: 0.05
+  theta_resolution: 0.04
+  voting_threshold: 10
 filtering:
   min_points: 5
   max_points: 100
