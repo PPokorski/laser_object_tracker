@@ -89,6 +89,22 @@ class ObjectReport : public MDL_REPORT {
     return false_alarm_log_likelihood_;
   }
 
+  feature_extraction::features::Object::ReferencePointType getReferencePointType() const {
+    return object_.getReferencePointType();
+  }
+
+  const feature_extraction::features::Point2D& getReferencePoint() const {
+    return object_.getReferencePoint();
+  }
+
+  bool hasValidReferencePoint() const {
+    return object_.hasValidReferencePoint();
+  }
+
+  const feature_extraction::features::Object::ReferencePointSource& getReferencePointSource() const {
+    return object_.getReferencePointSource();
+  }
+
   const feature_extraction::features::Object& getObject() const {
     return object_;
   }
@@ -159,7 +175,8 @@ class ObjectState : public MDL_STATE {
         log_likelihood_(log_likelihood),
         times_skipped_(times_skipped),
         reference_point_type_(reference_point_type),
-        kalman_filter_(copyKalmanFilter(kalman_filter)) {
+        kalman_filter_(copyKalmanFilter(kalman_filter)),
+        is_updated_(true) {
     initializeWithPointSource(reference_point_source);
   }
 
@@ -176,7 +193,8 @@ class ObjectState : public MDL_STATE {
         log_likelihood_(log_likelihood),
         times_skipped_(times_skipped),
         reference_point_type_(reference_point_type),
-        kalman_filter_(std::move(kalman_filter)) {
+        kalman_filter_(std::move(kalman_filter)),
+        is_updated_(true) {
     cv::eigen2cv(state, kalman_filter_.statePre);
     cv::eigen2cv(state, kalman_filter_.statePost);
     initializeWithPointSource(reference_point_source);
@@ -189,6 +207,7 @@ class ObjectState : public MDL_STATE {
         times_skipped_(other.times_skipped_),
         reference_point_type_(other.reference_point_type_),
         kalman_filter_(copyKalmanFilter(other.kalman_filter_)),
+        is_updated_(other.is_updated_),
         segment_1_(other.segment_1_),
         segment_2_(other.segment_2_),
         is_second_initialized_(other.is_second_initialized_) {}
@@ -203,12 +222,16 @@ class ObjectState : public MDL_STATE {
 
   void predict() {
     kalman_filter_.predict();
+
+    is_updated_ = false;
   }
 
   void update(const Measurement& measurement) {
     cv::Mat cv_measurement;
     cv::eigen2cv(measurement, cv_measurement);
     kalman_filter_.correct(cv_measurement);
+
+    is_updated_ = true;
   }
 
   void incrementTimesSkipped() {
@@ -227,11 +250,56 @@ class ObjectState : public MDL_STATE {
     return reference_point_type_;
   }
 
+  void setReferencePointType(ReferencePointType reference_point_type) {
+    reference_point_type_ = reference_point_type;
+  }
+
   std::pair<const feature_extraction::features::Segment2D*,
-            const feature_extraction::features::Segment2D*> updateReferencePointSource(const ReferencePointSource& source);
+            const feature_extraction::features::Segment2D*>
+            updateReferencePointSource(const ReferencePointSource& reference_source);
 
   double getX() const {
+    return is_updated_ ? getXUpdated() : getXPredicted();
+  }
+
+  void setX(double x) {
+    if (is_updated_) {
+      setXUpdated(x);
+    } else {
+      setXPredicted(x);
+    }
+  }
+
+  double getY() const {
+    return is_updated_ ? getYUpdated() : getYPredicted();
+  }
+
+  void setY(double y) {
+    if (is_updated_) {
+      setYUpdated(y);
+    } else {
+      setYPredicted(y);
+    }
+  }
+
+  Eigen::Vector2d getPosition() const {
+    double x = getX(),
+           y = getY();
+
+    return Eigen::Vector2d(x, y);
+  }
+
+  void setPosition(const Eigen::Vector2d& position) {
+    setX(position.x());
+    setY(position.y());
+  }
+
+  double getXUpdated() const {
     return kalman_filter_.statePost.at<double>(0);
+  }
+
+  void setXUpdated(double x) {
+    kalman_filter_.statePost.at<double>(0) = x;
   }
 
   double getXPredicted() const {
@@ -242,8 +310,12 @@ class ObjectState : public MDL_STATE {
     kalman_filter_.statePre.at<double>(0) = x;
   }
 
-  double getY() const {
+  double getYUpdated() const {
     return kalman_filter_.statePost.at<double>(1);
+  }
+
+  void setYUpdated(double y) {
+    kalman_filter_.statePost.at<double>(1) = y;
   }
 
   double getYPredicted() const {
@@ -255,11 +327,34 @@ class ObjectState : public MDL_STATE {
   }
 
   double getVelocityX() const {
-    return kalman_filter_.statePost.at<double>(2);
+    return is_updated_ ? getVelocityXUpdated() : getVelocityXPredicted();
   }
 
   double getVelocityY() const {
+    return is_updated_ ? getVelocityYUpdated() : getVelocityYPredicted();
+  }
+
+  Eigen::Vector2d getVelocity() const {
+    double v_x = getVelocityX(),
+           v_y = getVelocityY();
+
+    return Eigen::Vector2d(v_x, v_y);
+  }
+
+  double getVelocityXUpdated() const {
+    return kalman_filter_.statePost.at<double>(2);
+  }
+
+  double getVelocityXPredicted() const {
+    return kalman_filter_.statePre.at<double>(2);
+  }
+
+  double getVelocityYUpdated() const {
     return kalman_filter_.statePost.at<double>(3);
+  }
+
+  double getVelocityYPredicted() const {
+    return kalman_filter_.statePre.at<double>(3);
   }
 
   const cv::KalmanFilter& getKalmanFilter() const {
@@ -278,6 +373,7 @@ class ObjectState : public MDL_STATE {
   ReferencePointType reference_point_type_;
 
   cv::KalmanFilter kalman_filter_;
+  bool is_updated_ = false;
 
   feature_extraction::features::Segment2D segment_1_, segment_2_;
 
@@ -305,12 +401,12 @@ class ObjectModel : public MODEL {
         initial_state_covariance_(initial_state_covariance),
         process_noise_covariance_(process_noise_covariance) {
     state_transition_ << 1.0, 0.0, time_step_, 0.0,
-        0.0, 1.0, 0.0, time_step_,
-        0.0, 0.0, 1.0, 0.0,
-        0.0, 0.0, 0.0, 1.0;
+                         0.0, 1.0, 0.0, time_step_,
+                         0.0, 0.0, 1.0, 0.0,
+                         0.0, 0.0, 0.0, 1.0;
 
     measurement_matrix_ << 1.0, 0.0, 0.0, 0.0,
-        0.0, 1.0, 0.0, 0.0;
+                           0.0, 1.0, 0.0, 0.0;
   }
 
   int beginNewStates(MDL_STATE *state, MDL_REPORT *report) override {
@@ -319,12 +415,12 @@ class ObjectModel : public MODEL {
 
   double getEndLogLikelihood(MDL_STATE *state) override {
     auto object_state = dynamic_cast<ObjectState&>(*state);
-    return std::log(getEndProbability(object_state));
+    return std::log(getEndLikelihood(object_state));
   }
 
   double getContinueLogLikelihood(MDL_STATE *state) override {
     auto object_state = dynamic_cast<ObjectState&>(*state);
-    return std::log(1.0 - getEndProbability(object_state));
+    return std::log(1.0 - getEndLikelihood(object_state));
   }
 
   double getSkipLogLikelihood(MDL_STATE *state) override {
@@ -338,10 +434,19 @@ class ObjectModel : public MODEL {
   MDL_STATE *getNewState(int i, MDL_STATE *state, MDL_REPORT *report) override;
 
  private:
-  double getEndProbability(const ObjectState& state) const;
+  double getEndLikelihood(const ObjectState& state) const;
+
   double mahalanobisDistance(const ObjectState& state,
                              const ObjectReport& report) const;
+
   cv::KalmanFilter getKalmanFilter() const;
+
+  void tryMoveState(ObjectState* state,
+                    const ObjectReport* report,
+                    const std::pair<const feature_extraction::features::Segment2D*,
+                                    const feature_extraction::features::Segment2D*>& assignment) const;
+
+  void updateState(ObjectState* state, const ObjectReport* report) const;
 
   double time_step_;
   double max_mahalanobis_distance_;

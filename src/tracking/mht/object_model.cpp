@@ -133,15 +133,16 @@ double assignmentCost(const feature_extraction::features::Segment2D& lhs,
 }
 
 std::pair<const feature_extraction::features::Segment2D*,
-          const feature_extraction::features::Segment2D*> ObjectState::updateReferencePointSource(const ObjectState::ReferencePointSource& source) {
+          const feature_extraction::features::Segment2D*>
+          ObjectState::updateReferencePointSource(const ReferencePointSource& reference_source) {
   using Segment2D = feature_extraction::features::Segment2D;
   using Corner2D = feature_extraction::features::Corner2D;
 
   std::pair<const Segment2D*, const Segment2D*> assignment(nullptr, nullptr);
-  bool is_segment = std::holds_alternative<Segment2D>(source);
+  bool is_segment = std::holds_alternative<Segment2D>(reference_source);
 
   if (is_segment) {
-    auto& segment = std::get<Segment2D>(source);
+    auto& segment = std::get<Segment2D>(reference_source);
 
     if (!is_second_initialized_) {
       segment_1_ = Segment2D(segment.getStart(),
@@ -165,7 +166,7 @@ std::pair<const feature_extraction::features::Segment2D*,
       assignment.first = closer_segment;
     }
   } else {
-    auto& corner = std::get<Corner2D>(source);
+    auto& corner = std::get<Corner2D>(reference_source);
 
     // Minimize the cost of assignment, cost being the angle between orientations
     double segment_1_longer = assignmentCost(segment_1_, corner.getSegmentLonger());
@@ -231,142 +232,43 @@ MDL_STATE *ObjectModel::getNewState(int i, MDL_STATE *state, MDL_REPORT *report)
   if (object_state == nullptr) {
     ObjectState::State state_vector;
     state_vector.setZero();
-    state_vector.head<2>() = object_report->getObject().getReferencePoint();
+    state_vector.head<2>() = object_report->getReferencePoint();
     next_state = new ObjectState(this,
                                  time_step_,
                                  start_log_likelihood_,
                                  0,
-                                 object_report->getObject().getReferencePointType(),
-                                 object_report->getObject().getReferencePointSource(),
+                                 object_report->getReferencePointType(),
+                                 object_report->getReferencePointSource(),
                                  std::move(getKalmanFilter()),
                                  state_vector);
-  } else if (report == nullptr) {
+  } else if (object_report == nullptr) {
     next_state = new ObjectState(*object_state);
 
     next_state->predict();
     next_state->incrementTimesSkipped();
-//    object_state->predict();
-//    object_state->incrementTimesSkipped();
-//    object_state->setLogLikelihood(0.0);
-//
-//    next_state = new ObjectState(*object_state);
-  } else if (object_state->getReferencePointType() == object_report->getObject().getReferencePointType()) {
+  } else if (object_report->hasValidReferencePoint()) {
     next_state = new ObjectState(*object_state);
-//    object_state->predict();
+
     next_state->predict();
+    auto assignment = next_state->updateReferencePointSource(object_report->getReferencePointSource());
 
-//    double mahalanobis_distance = mahalanobisDistance(*object_state, *object_report);
-    double mahalanobis_distance = mahalanobisDistance(*next_state, *object_report);
-    if (mahalanobis_distance <= max_mahalanobis_distance_) {
-//      double log_likelihood = calculateLogLikelihood(object_state->getKalmanFilter(), mahalanobis_distance);
-      next_state->setLogLikelihood(calculateLogLikelihood(next_state->getKalmanFilter(), mahalanobis_distance));
-
-      ObjectState::Measurement measurement = object_report->getObject().getReferencePoint();
-      next_state->update(measurement);
-      next_state->resetTimesSkipped();
-//      object_state->update(measurement);
-//      object_state->resetTimesSkipped();
-//
-//      next_state = new ObjectState(*object_state);
-
-//      next_state = new ObjectState(this,
-//                                   time_step_,
-//                                   log_likelihood,
-//                                   0,
-//                                   object_report->getObject().getReferencePointType(),
-//                                   object_report->getObject().getReferencePointSource(),
-//                                   object_state->getKalmanFilter());
-    }
-  } else if (object_report->getObject().hasValidReferencePoint()) { // Different reference point types
-    next_state = new ObjectState(*object_state);
-//    object_state->predict();
-    next_state->predict();
-//    auto assignment = object_state->updateReferencePointSource(
-//        object_report->getObject().getReferencePointSource());
-    auto assignment = next_state->updateReferencePointSource(
-        object_report->getObject().getReferencePointSource());
-
-    using namespace feature_extraction::features;
-//    Point2D position(object_state->getXPredicted(), object_state->getYPredicted());
-    Point2D position(next_state->getXPredicted(), next_state->getYPredicted());
-    Point2D measured_position = object_report->getObject().getReferencePoint();
-    Segment2D measurement_segment(position,
-                                  object_report->getObject().getReferencePoint());
-    double orientation_1 = assignment.first->getOrientation();
-
-    if (absAngleBetweenAngles(orientation_1, measurement_segment.getOrientation()) > M_PI_2) {
-      orientation_1 += M_PI;
-    }
-    double length_1 = assignment.first->length();
-
-    Point2D projected_position_1 = position;
-    projected_position_1.x() += length_1 * std::cos(orientation_1);
-    projected_position_1.y() += length_1 * std::sin(orientation_1);
-
-    if (assignment.second == nullptr) {
-      if (squaredDistance(projected_position_1, measured_position) <
-          squaredDistance(position, measured_position)) {
-        next_state->setXPredicted(projected_position_1.x());
-        next_state->setYPredicted(projected_position_1.y());
-//        object_state->setXPredicted(projected_position_1.x());
-//        object_state->setYPredicted(projected_position_1.y());
-      }
-    } else {
-      double orientation_2 = assignment.second->getOrientation();
-
-      if (absAngleBetweenAngles(orientation_2, measurement_segment.getOrientation()) > M_PI_2) {
-        orientation_2 += M_PI;
-      }
-      double length_2 = assignment.second->length();
-
-      Point2D projected_position_2 = position;
-      projected_position_2.x() += length_2 * std::cos(orientation_2);
-      projected_position_2.y() += length_2 * std::sin(orientation_2);
-
-      const auto& most_probable = std::min({position, projected_position_1, projected_position_2},
-                                           [&measured_position](const auto& lhs, const auto& rhs)
-                                           {return squaredDistance(lhs, measured_position) <
-                                                   squaredDistance(rhs, measured_position);});
-
-      next_state->setXPredicted(most_probable.x());
-      next_state->setYPredicted(most_probable.y());
-//      object_state->setXPredicted(most_probable.x());
-//      object_state->setYPredicted(most_probable.y());
+    // TODO Think which one would be better
+    // if (next_state->getReferencePointType() != object_report->getReferencePointType()) {
+    if (next_state->getReferencePointType() != ObjectState::ReferencePointType::CORNER ||
+        object_report->getReferencePointType() != ObjectState::ReferencePointType::CORNER) {
+      tryMoveState(next_state, object_report, assignment);
     }
 
-    //    double mahalanobis_distance = mahalanobisDistance(*object_state, *object_report);
-    double mahalanobis_distance = mahalanobisDistance(*next_state, *object_report);
-    if (mahalanobis_distance <= max_mahalanobis_distance_) {
-//      double log_likelihood = calculateLogLikelihood(object_state->getKalmanFilter(), mahalanobis_distance);
-      next_state->setLogLikelihood(calculateLogLikelihood(next_state->getKalmanFilter(), mahalanobis_distance));
-
-      ObjectState::Measurement measurement = object_report->getObject().getReferencePoint();
-      next_state->update(measurement);
-      next_state->resetTimesSkipped();
-//      object_state->update(measurement);
-//      object_state->resetTimesSkipped();
-//
-//      next_state = new ObjectState(*object_state);
-
-//      next_state = new ObjectState(this,
-//                                   time_step_,
-//                                   log_likelihood,
-//                                   0,
-//                                   object_report->getObject().getReferencePointType(),
-//                                   object_report->getObject().getReferencePointSource(),
-//                                   object_state->getKalmanFilter());
-    }
-  } else {
-    next_state = nullptr;
+    updateState(next_state, object_report);
   }
 
   return next_state;
 }
 
-double ObjectModel::getEndProbability(const ObjectState& state) const {
-  double end_probability = 1.0 - std::exp(-state.getTimesSkipped() / skip_decay_rate_);
+double ObjectModel::getEndLikelihood(const ObjectState& state) const {
+  double end_likelihood = 1.0 - std::exp(-state.getTimesSkipped() / skip_decay_rate_);
   // End probability cannot be 0.0
-  return std::nextafter(end_probability, 1.0);
+  return std::nextafter(end_likelihood, 1.0);
 }
 
 double ObjectModel::mahalanobisDistance(const ObjectState& state, const ObjectReport& report) const {
@@ -388,6 +290,66 @@ cv::KalmanFilter ObjectModel::getKalmanFilter() const {
                            process_noise_covariance_);
 }
 
+void ObjectModel::tryMoveState(ObjectState* state,
+                               const ObjectReport* report,
+                               const std::pair<const feature_extraction::features::Segment2D*,
+                                               const feature_extraction::features::Segment2D*>& assignment) const {
+  using namespace feature_extraction::features;
+  const Point2D& position = state->getPosition();
+  const Point2D& measured_position = report->getReferencePoint();
+  Segment2D measurement_segment(position,
+                                measured_position);
+  double orientation_1 = assignment.first->getOrientation();
+
+  if (absAngleBetweenAngles(orientation_1, measurement_segment.getOrientation()) > M_PI_2) {
+    orientation_1 += M_PI;
+  }
+  double length_1 = assignment.first->length();
+
+  Point2D projected_position_1 = position;
+  projected_position_1.x() += length_1 * std::cos(orientation_1);
+  projected_position_1.y() += length_1 * std::sin(orientation_1);
+
+  if (assignment.second == nullptr) {
+    if (squaredDistance(projected_position_1, measured_position) <
+        squaredDistance(position, measured_position)) {
+      state->setPosition(projected_position_1);
+    }
+  } else {
+    double orientation_2 = assignment.second->getOrientation();
+
+    if (absAngleBetweenAngles(orientation_2, measurement_segment.getOrientation()) > M_PI_2) {
+      orientation_2 += M_PI;
+    }
+    double length_2 = assignment.second->length();
+
+    Point2D projected_position_2 = position;
+    projected_position_2.x() += length_2 * std::cos(orientation_2);
+    projected_position_2.y() += length_2 * std::sin(orientation_2);
+
+    const Point2D& most_probable = std::min({position, projected_position_1, projected_position_2},
+                                            [&measured_position](const Point2D& lhs, const Point2D& rhs)
+                                            {return squaredDistance(lhs, measured_position) <
+                                                squaredDistance(rhs, measured_position);});
+
+    state->setPosition(most_probable);
+  }
+}
+
+void ObjectModel::updateState(ObjectState* state, const ObjectReport* report) const {
+  double mahalanobis_distance = mahalanobisDistance(*state, *report);
+  if (mahalanobis_distance <= max_mahalanobis_distance_) {
+    state->setLogLikelihood(calculateLogLikelihood(state->getKalmanFilter(), mahalanobis_distance));
+
+    const ObjectState::Measurement& measurement = report->getReferencePoint();
+    state->update(measurement);
+    state->resetTimesSkipped();
+  } else {
+    delete state;
+    state = nullptr;
+  }
+}
+
 void ObjectTracker::measure(const std::list<REPORT*>& new_reports) {
   for (auto report : new_reports) {
     installReport(report);
@@ -399,10 +361,10 @@ void ObjectTracker::startTrack(int i, int i1, MDL_STATE *state, MDL_REPORT *repo
   auto object_report = dynamic_cast<ObjectReport*>(report);
 
   verify(i,
-         object_state->getX(),
-         object_state->getY(),
-         object_state->getVelocityX(),
-         object_state->getVelocityY(),
+         object_state->getXUpdated(),
+         object_state->getYUpdated(),
+         object_state->getVelocityXUpdated(),
+         object_state->getVelocityYUpdated(),
          object_report->getObject().getReferencePoint().x(),
          object_report->getObject().getReferencePoint().y(),
          object_state->getLogLikelihood(),
@@ -415,10 +377,10 @@ void ObjectTracker::continueTrack(int i, int i1, MDL_STATE *state, MDL_REPORT *r
   auto object_report = dynamic_cast<ObjectReport*>(report);
 
   verify(i,
-         object_state->getX(),
-         object_state->getY(),
-         object_state->getVelocityX(),
-         object_state->getVelocityY(),
+         object_state->getXUpdated(),
+         object_state->getYUpdated(),
+         object_state->getVelocityXUpdated(),
+         object_state->getVelocityYUpdated(),
          object_report->getObject().getReferencePoint().x(),
          object_report->getObject().getReferencePoint().y(),
          object_state->getLogLikelihood(),
@@ -431,10 +393,10 @@ void ObjectTracker::skipTrack(int i, int i1, MDL_STATE *state) {
 
   double nan = std::numeric_limits<double>::quiet_NaN();
   verify(i,
-         object_state->getX(),
-         object_state->getY(),
-         object_state->getVelocityX(),
-         object_state->getVelocityY(),
+         object_state->getXUpdated(),
+         object_state->getYUpdated(),
+         object_state->getVelocityXUpdated(),
+         object_state->getVelocityYUpdated(),
          nan,
          nan,
          object_state->getLogLikelihood(),
