@@ -33,197 +33,26 @@
 
 #include <chrono>
 
-#include "laser_object_tracker/data_association/data_association.hpp"
-#include "laser_object_tracker/data_types/data_types.hpp"
-#include "laser_object_tracker/feature_extraction/feature_extraction.hpp"
-#include "laser_object_tracker/filtering/filtering.hpp"
-#include "laser_object_tracker/segmentation/segmentation.hpp"
-#include "laser_object_tracker/visualization/visualization.hpp"
-#include "laser_object_tracker/tracking/tracking.hpp"
-
-using Feature = laser_object_tracker::feature_extraction::features::Object;
-
-laser_object_tracker::data_types::LaserScanFragment::LaserScanFragmentFactory factory;
-laser_object_tracker::data_types::LaserScanFragment fragment;
-
-void laserScanCallback(const sensor_msgs::LaserScan::Ptr& laser_scan) {
-//  ROS_INFO("Received laser scan");
-  fragment = factory.fromLaserScan(std::move(*laser_scan));
-
-//  ROS_INFO("Fragment has %d elements.", fragment.size());
-}
-
-using namespace laser_object_tracker;
-
-std::shared_ptr<segmentation::BaseSegmentation> getSegmentation(ros::NodeHandle& nh) {
-  std::shared_ptr<segmentation::BaseSegmentation> segmentation;
-
-  std::string type;
-  nh.getParam("segmentation/type", type);
-  if (type == "BreakpointDetection") {
-    double threshold;
-    nh.getParam("segmentation/threshold", threshold);
-
-    segmentation.reset(new segmentation::BreakpointDetection(threshold));
-  } else if (type == "AdaptiveThresholdDetection") {
-    double angle, sigma;
-    nh.getParam("segmentation/angle", angle);
-    nh.getParam("segmentation/sigma", sigma);
-
-    segmentation.reset(new segmentation::AdaptiveBreakpointDetection(angle, sigma));
-  }
-
-  return segmentation;
-}
-
-std::shared_ptr<feature_extraction::BaseFeatureExtraction<Feature>> getFeatureExtraction(ros::NodeHandle& nh) {
-  std::shared_ptr<feature_extraction::BaseFeatureExtraction<Feature>> feature_extraction;
-
-  double min_angle_between_lines, max_distance, rho_resolution, theta_resolution;
-  int voting_threshold;
-  nh.getParam("feature_extraction/min_angle_between_lines", min_angle_between_lines);
-  nh.getParam("feature_extraction/max_distance", max_distance);
-  nh.getParam("feature_extraction/rho_resolution", rho_resolution);
-  nh.getParam("feature_extraction/theta_resolution", theta_resolution);
-  nh.getParam("feature_extraction/voting_threshold", voting_threshold);
-
-  feature_extraction.reset(new feature_extraction::MultiLineDetection(min_angle_between_lines,
-                                                                      max_distance,
-                                                                      rho_resolution,
-                                                                      theta_resolution,
-                                                                      voting_threshold));
-
-  return feature_extraction;
-}
-
-std::shared_ptr<laser_object_tracker::filtering::BaseSegmentedFiltering> getFiltering(ros::NodeHandle& nh) {
-  int min_points, max_points;
-  nh.getParam("filtering/min_points", min_points);
-  nh.getParam("filtering/max_points", max_points);
-  auto points = std::make_unique<laser_object_tracker::filtering::PointsNumberFilter>(min_points, max_points);
-
-  double min_area, max_area, min_dimension;
-  nh.getParam("filtering/min_area", min_area);
-  nh.getParam("filtering/max_area", max_area);
-  nh.getParam("filtering/min_dimension", min_dimension);
-  auto obb = std::make_unique<laser_object_tracker::filtering::OBBAreaFilter>(min_area, max_area, min_dimension);
-
-  std::vector<std::unique_ptr<laser_object_tracker::filtering::BaseSegmentedFiltering>> filters;
-  filters.push_back(std::move(points));
-  filters.push_back(std::move(obb));
-
-  return std::make_unique<laser_object_tracker::filtering::AggregateSegmentedFiltering>(std::move(filters));
-}
-
+#include "laser_object_tracker/multi_tracker_ros.hpp"
 
 int main(int ac, char **av) {
-  pcl::PointCloud<pcl::PointXYZ> pcl;
-  pcl::SampleConsenusModelCross2D<pcl::PointXYZ> corner(pcl.makeShared());
-
-  ros::init(ac, av, "laser_object_detector");
+  ros::init(ac, av, "laser_object_tracker");
   ros::NodeHandle pnh("~");
 
-  ROS_INFO("Initializing segmentation");
-  auto segmentation = getSegmentation(pnh);
-  auto filtering = getFiltering(pnh);
-
-  std::string feature_type;
-  double angle_resolution;
-  std::string criterion_name;
-  pnh.getParam("feature_extraction/type", feature_type);
-  pnh.getParam("feature_extraction/angle_resolution", angle_resolution);
-  pnh.getParam("feature_extraction/criterion", criterion_name);
-
-  auto detection = getFeatureExtraction(pnh);
-
-  ROS_INFO("Initializing visualization");
-  std::string base_frame;
-  pnh.getParam("base_frame", base_frame);
-  laser_object_tracker::visualization::LaserObjectTrackerVisualization visualization(pnh, base_frame);
-  ROS_INFO("Initializing subscriber");
-  ros::Subscriber subscriber_laser_scan = pnh.subscribe("in_scan", 1, laserScanCallback);
-
   ros::Rate rate(10.0);
+  laser_object_tracker::MultiTrackerROS tracker_ros(pnh);
   ROS_INFO("Done initialization");
-
-//  laser_object_tracker::tracking::MultiTracking multi_tracker(
-//      getDistanceFunctor(),
-//      getDataAssociation(pnh),
-//      getTracker(),
-//      getTrackerRejection(pnh));
-
-  tracking::mht::ObjectState::MeasurementNoiseCovariance measurement_noise_covariance;
-  measurement_noise_covariance << 0.1, 0.0,
-                                  0.0, 0.1;
-
-  tracking::mht::ObjectState::InitialStateCovariance initial_state_covariance;
-  initial_state_covariance << 0.1, 0.0, 0.0, 0.0,
-                              0.0, 0.1, 0.0, 0.0,
-                              0.0, 0.0, 0.1, 0.0,
-                              0.0, 0.0, 0.0, 0.1;
-
-  tracking::mht::ObjectState::ProcessNoiseCovariance process_noise_covariance;
-  process_noise_covariance << 0.2, 0.0, 0.0, 0.0,
-                              0.0, 0.2, 0.0, 0.0,
-                              0.0, 0.0, 0.2, 0.0,
-                              0.0, 0.0, 0.0, 0.2;
-
-  laser_object_tracker::tracking::MultiHypothesisTracking multi_tracker(0.1,
-                                                                        1.0,
-                                                                        20.0,
-                                                                        0.01,
-                                                                        0.999,
-                                                                        measurement_noise_covariance,
-                                                                        initial_state_covariance,
-                                                                        process_noise_covariance,
-                                                                        0.00002,
-                                                                        1,
-                                                                        0.001,
-                                                                        100);
 
   std::chrono::high_resolution_clock::time_point begin, end;
   while (ros::ok()) {
     ros::spinOnce();
     begin = std::chrono::high_resolution_clock::now();
-    multi_tracker.predict();
 
-    if (!fragment.empty()) {
-      visualization.clearMarkers();
-      visualization.publishPointCloud(fragment);
-      auto segments = segmentation->segment(fragment);
-      filtering->filter(segments);
-      ROS_INFO("Detected %lu segments", segments.size());
-//      visualization.publishFeatures(segments);
+    tracker_ros.update();
 
-      visualization.publishPointClouds(segments);
-      Feature feature;
-      std::vector<Feature> features;
-      for (const auto& segment : segments) {
-        if (segment.isValid()) {
-          if (detection->extractFeature(segment, feature)) {
-            features.push_back(feature);
-//            features.push_back({feature.observation_.head<2>(), std::vector<int>(), std::vector<bool>()});
-//            std::cout << "Feature vector:\n" << feature.head(2) << std::endl;
-//            corners_2_d.push_back(laser_object_tracker::feature_extraction::features::Corner2D(feature.observation_));
-          }
-        }
-      }
-
-//      Eigen::MatrixXd cost_matrix = multi_tracker.buildCostMatrix(features);
-//      Eigen::VectorXi assignment_vector = multi_tracker.buildAssignmentVector(cost_matrix);
-//      visualization.publishAssignments(multi_tracker, features, cost_matrix, assignment_vector);
-
-      multi_tracker.update(features);
-      end = std::chrono::high_resolution_clock::now();
-      std::chrono::duration<double, std::milli> duration = end - begin;
-      ROS_INFO("Iteration took: %.2f ms", (duration.count()));
-      visualization.publishObjects(features);
-      visualization.publishMultiTracker(multi_tracker);
-
-      visualization.trigger();
-    } else {
-      ROS_WARN("Received laser scan is empty");
-    }
+    end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> duration = end - begin;
+    ROS_INFO("Iteration took: %.2f ms", (duration.count()));
 
     rate.sleep();
   }

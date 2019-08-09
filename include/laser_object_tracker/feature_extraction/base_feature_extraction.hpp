@@ -34,6 +34,8 @@
 #ifndef LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_BASE_FEATURE_EXTRACTION_HPP
 #define LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_BASE_FEATURE_EXTRACTION_HPP
 
+#include <vector>
+
 #include "laser_object_tracker/data_types/laser_scan_fragment.hpp"
 #include "laser_object_tracker/feature_extraction/features/features.hpp"
 
@@ -46,6 +48,19 @@ class BaseFeatureExtraction {
   using FeatureT = Feature;
 
   virtual bool extractFeature(const data_types::LaserScanFragment& fragment, FeatureT& feature) = 0;
+
+  virtual std::vector<FeatureT> extractFeatures(const std::vector<data_types::LaserScanFragment>& fragments) {
+    std::vector<FeatureT> features;
+    features.reserve(fragments.size());
+    Feature feature;
+    for (const auto& fragment : fragments) {
+      if (extractFeature(fragment, feature)) {
+        features.push_back(feature);
+      }
+    }
+
+    return features;
+  }
 
   virtual ~BaseFeatureExtraction() = default;
 

@@ -46,7 +46,7 @@
 #include <mht/mdlmht.h>
 
 #include "laser_object_tracker/feature_extraction/features/object.hpp"
-#include "laser_object_tracker/tracking/mht/track.hpp"
+//#include "laser_object_tracker/tracking/mht/track.hpp"
 
 namespace laser_object_tracker {
 namespace tracking {
@@ -105,6 +105,10 @@ class ObjectReport : public MDL_REPORT {
     return object_.getReferencePointSource();
   }
 
+  const ros::Time& getTimestamp() const {
+    return object_.getTimestamp();
+  }
+
   const feature_extraction::features::Object& getObject() const {
     return object_;
   }
@@ -146,6 +150,7 @@ class ObjectState : public MDL_STATE {
 
   ObjectState(MODEL* model,
               double time_step,
+              const ros::Time& timestamp,
               double log_likelihood,
               int times_skipped,
               ReferencePointType reference_point_type,
@@ -154,6 +159,7 @@ class ObjectState : public MDL_STATE {
               const State& state)
       : ObjectState(model,
                     time_step,
+                    timestamp,
                     log_likelihood,
                     times_skipped,
                     reference_point_type,
@@ -165,6 +171,7 @@ class ObjectState : public MDL_STATE {
 
   ObjectState(MODEL* model,
               double time_step,
+              const ros::Time& timestamp,
               double log_likelihood,
               int times_skipped,
               ReferencePointType reference_point_type,
@@ -172,6 +179,7 @@ class ObjectState : public MDL_STATE {
               const cv::KalmanFilter& kalman_filter)
       : MDL_STATE(model),
         time_step_(time_step),
+        timestamp_(timestamp),
         log_likelihood_(log_likelihood),
         times_skipped_(times_skipped),
         reference_point_type_(reference_point_type),
@@ -182,6 +190,7 @@ class ObjectState : public MDL_STATE {
 
   ObjectState(MODEL* model,
               double time_step,
+              const ros::Time& timestamp,
               double log_likelihood,
               int times_skipped,
               ReferencePointType reference_point_type,
@@ -190,6 +199,7 @@ class ObjectState : public MDL_STATE {
               const State& state)
       : MDL_STATE(model),
         time_step_(time_step),
+        timestamp_(timestamp),
         log_likelihood_(log_likelihood),
         times_skipped_(times_skipped),
         reference_point_type_(reference_point_type),
@@ -203,6 +213,7 @@ class ObjectState : public MDL_STATE {
   ObjectState(const ObjectState& other)
       : MDL_STATE(other.getMdl()),
         time_step_(other.time_step_),
+        timestamp_(other.timestamp_),
         log_likelihood_(other.log_likelihood_),
         times_skipped_(other.times_skipped_),
         reference_point_type_(other.reference_point_type_),
@@ -252,6 +263,10 @@ class ObjectState : public MDL_STATE {
 
   void setReferencePointType(ReferencePointType reference_point_type) {
     reference_point_type_ = reference_point_type;
+  }
+
+  const ros::Time& getTimestamp() const {
+    return timestamp_;
   }
 
   std::pair<const feature_extraction::features::Segment2D*,
@@ -357,6 +372,38 @@ class ObjectState : public MDL_STATE {
     return kalman_filter_.statePre.at<double>(3);
   }
 
+  Eigen::Matrix2d getPositionCovariance() const {
+    return is_updated_ ? getPositionCovarianceUpdated() : getPositionCovariancePredicted();
+  }
+
+  Eigen::Matrix2d getPositionCovarianceUpdated() const {
+    Eigen::Matrix4d covariance;
+    cv::cv2eigen(kalman_filter_.statePost, covariance);
+    return covariance.topLeftCorner<2, 2>();
+  }
+
+  Eigen::Matrix2d getPositionCovariancePredicted() const {
+    Eigen::Matrix4d covariance;
+    cv::cv2eigen(kalman_filter_.statePre, covariance);
+    return covariance.topLeftCorner<2, 2>();
+  }
+
+  Eigen::Matrix2d getVelocityCovariance() const {
+    return is_updated_ ? getVelocityCovarianceUpdated() : getVelocityCovariancePredicted();
+  }
+
+  Eigen::Matrix2d getVelocityCovarianceUpdated() const {
+    Eigen::Matrix4d covariance;
+    cv::cv2eigen(kalman_filter_.statePost, covariance);
+    return covariance.bottomRightCorner<2, 2>();
+  }
+
+  Eigen::Matrix2d getVelocityCovariancePredicted() const {
+    Eigen::Matrix4d covariance;
+    cv::cv2eigen(kalman_filter_.statePre, covariance);
+    return covariance.bottomRightCorner<2, 2>();
+  }
+
   const cv::KalmanFilter& getKalmanFilter() const {
     return kalman_filter_;
   }
@@ -365,6 +412,7 @@ class ObjectState : public MDL_STATE {
   void initializeWithPointSource(const ReferencePointSource& source);
 
   double time_step_;
+  ros::Time timestamp_;
 
   double log_likelihood_;
 
@@ -487,6 +535,31 @@ class ObjectFalseAlarm : public DLISTnode {
   size_t corner_id_;
 };
 
+struct TrackElement {
+  double likelihood_;
+  ros::Time timestamp_;
+
+  Eigen::Vector2d position_;
+  Eigen::Matrix2d position_covariance_;
+
+  Eigen::Vector2d velocity_;
+  Eigen::Matrix2d velocity_covariance_;
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
+struct Track {
+  explicit Track(int id) : id_(id) {}
+
+  Track(int id, std::vector<TrackElement, Eigen::aligned_allocator<TrackElement>> track)
+      : id_(id),
+        track_(std::move(track)) {}
+
+  int id_;
+
+  std::vector<TrackElement, Eigen::aligned_allocator<TrackElement>> track_;
+};
+
 class ObjectTracker : public MDL_MHT {
  public:
   ObjectTracker(double false_alarm_likelihood,
@@ -523,18 +596,10 @@ class ObjectTracker : public MDL_MHT {
   void falseAlarm(int i, MDL_REPORT* report) override;
 
  private:
-  Track* findTrack(int id);
+  Track& findTrack(int id);
 
-  void verify(int track_id,
-              double state_x,
-              double state_y,
-              double velocity_x,
-              double velocity_y,
-              double report_x,
-              double report_y,
-              double likelihood,
-              int frame,
-              size_t corner_id);
+  void verify(int id,
+              const TrackElement& track_element);
 
   double false_alarm_log_likelihood_;
   std::list<Track> tracks_;

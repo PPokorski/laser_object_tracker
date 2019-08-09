@@ -72,7 +72,6 @@ ConstVelocityModel::ConstVelocityModel(double position_measure_variance_x,
 }
 
 int ConstVelocityModel::beginNewStates(MDL_STATE* state, MDL_REPORT* report) {
-  // TODO Track initiation
   return 1;
 }
 

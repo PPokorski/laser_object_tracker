@@ -71,8 +71,6 @@ class MultiHypothesisTracking : public BaseMultiTracking<feature_extraction::fea
   double false_alarm_log_likelihood_;
 
   ptrDLIST_OF<MODEL> models_;
- public:
-//  std::unique_ptr<CORNER_TRACK_MHT> multi_hypothesis_tracking_;
   std::unique_ptr<mht::ObjectTracker> multi_hypothesis_tracking_;
 };
 }  // namespace tracking

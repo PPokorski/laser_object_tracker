@@ -235,6 +235,7 @@ MDL_STATE *ObjectModel::getNewState(int i, MDL_STATE *state, MDL_REPORT *report)
     state_vector.head<2>() = object_report->getReferencePoint();
     next_state = new ObjectState(this,
                                  time_step_,
+                                 object_report->getTimestamp(),
                                  start_log_likelihood_,
                                  0,
                                  object_report->getReferencePointType(),
@@ -360,91 +361,77 @@ void ObjectTracker::startTrack(int i, int i1, MDL_STATE *state, MDL_REPORT *repo
   auto object_state = dynamic_cast<ObjectState*>(state);
   auto object_report = dynamic_cast<ObjectReport*>(report);
 
+  TrackElement track_element{
+    object_state->getLogLikelihood(),
+    object_state->getTimestamp(),
+    object_state->getPosition(),
+    object_state->getPositionCovariance(),
+    object_state->getVelocity(),
+    object_state->getVelocityCovariance()
+  };
+
   verify(i,
-         object_state->getXUpdated(),
-         object_state->getYUpdated(),
-         object_state->getVelocityXUpdated(),
-         object_state->getVelocityYUpdated(),
-         object_report->getObject().getReferencePoint().x(),
-         object_report->getObject().getReferencePoint().y(),
-         object_state->getLogLikelihood(),
-         object_report->getFrameNumber(),
-         object_report->getCornerId());
+         track_element);
 }
 
 void ObjectTracker::continueTrack(int i, int i1, MDL_STATE *state, MDL_REPORT *report) {
   auto object_state = dynamic_cast<ObjectState*>(state);
   auto object_report = dynamic_cast<ObjectReport*>(report);
 
+  TrackElement track_element{
+      object_state->getLogLikelihood(),
+      object_state->getTimestamp(),
+      object_state->getPosition(),
+      object_state->getPositionCovariance(),
+      object_state->getVelocity(),
+      object_state->getVelocityCovariance()
+  };
+
   verify(i,
-         object_state->getXUpdated(),
-         object_state->getYUpdated(),
-         object_state->getVelocityXUpdated(),
-         object_state->getVelocityYUpdated(),
-         object_report->getObject().getReferencePoint().x(),
-         object_report->getObject().getReferencePoint().y(),
-         object_state->getLogLikelihood(),
-         object_report->getFrameNumber(),
-         object_report->getCornerId());
+         track_element);
 }
 
 void ObjectTracker::skipTrack(int i, int i1, MDL_STATE *state) {
   auto object_state = dynamic_cast<ObjectState*>(state);
 
-  double nan = std::numeric_limits<double>::quiet_NaN();
+  TrackElement track_element{
+      object_state->getLogLikelihood(),
+      object_state->getTimestamp(),
+      object_state->getPosition(),
+      object_state->getPositionCovariance(),
+      object_state->getVelocity(),
+      object_state->getVelocityCovariance()
+  };
+
   verify(i,
-         object_state->getXUpdated(),
-         object_state->getYUpdated(),
-         object_state->getVelocityXUpdated(),
-         object_state->getVelocityYUpdated(),
-         nan,
-         nan,
-         object_state->getLogLikelihood(),
-         -1,
-         0);
+         track_element);
 }
 
 void ObjectTracker::endTrack(int i, int i1) {
-  tracks_.remove_if([i](const auto& track) { return track.getId() == i;});
+  tracks_.remove_if([i](const auto& track) { return track.id_ == i;});
 }
 
 void ObjectTracker::falseAlarm(int i, MDL_REPORT *report) {
   false_alarms_.emplace_back((dynamic_cast<ObjectReport*>(report)));
 }
 
-Track *ObjectTracker::findTrack(int id) {
+Track& ObjectTracker::findTrack(int id) {
   auto it = std::find_if(tracks_.begin(),
                          tracks_.end(),
-                         [id](const auto& track) { return track.getId() == id;});
+                         [id](const auto& track) { return track.id_ == id;});
 
   if (it != tracks_.end()) {
-    return &(*it);
+    return *it;
   } else {
     tracks_.emplace_back(id);
-    return &tracks_.back();
+    return tracks_.back();
   }
 }
 
-void ObjectTracker::verify(int track_id,
-                           double state_x,
-                           double state_y,
-                           double velocity_x,
-                           double velocity_y,
-                           double report_x,
-                           double report_y,
-                           double likelihood,
-                           int frame,
-                           size_t corner_id) {
-  auto track = findTrack(track_id);
-  track->track_.emplace_back(state_x,
-                             state_y,
-                             velocity_x,
-                             velocity_y,
-                             report_x,
-                             report_y,
-                             likelihood,
-                             frame,
-                             corner_id);
+void ObjectTracker::verify(int id,
+                           const TrackElement& track_element) {
+  auto& track = findTrack(id);
+  track.track_.push_back(track_element);
 }
 }  // namespace mht
 }  // namespace tracking

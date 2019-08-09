@@ -82,6 +82,24 @@ void MultiHypothesisTracking::update(const std::vector<FeatureT>& measurements) 
   multi_hypothesis_tracking_->addReports(reports);
   multi_hypothesis_tracking_->scan();
 
+  tracks_.clear();
+  tracks_.reserve(multi_hypothesis_tracking_->getTracks().size());
+  for (const auto& track : multi_hypothesis_tracking_->getTracks()) {
+    tracks_.emplace_back(track.id_);
+    tracks_.back().track_.reserve(track.track_.size());
+
+    for (const auto& track_element : track.track_) {
+      tracks_.back().track_.push_back({
+        track_element.likelihood_,
+        track_element.timestamp_,
+        track_element.position_,
+        track_element.position_covariance_,
+        track_element.velocity_,
+        track_element.velocity_covariance_
+      });
+    }
+  }
+
   ++frame_number_;
 }
 

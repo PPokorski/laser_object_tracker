@@ -109,6 +109,7 @@ add_library(${PROJECT_NAME}_data_association
 ## Executables ##
 add_executable(${PROJECT_NAME}_node
         src/laser_object_tracker.cpp
+        src/multi_tracker_ros.cpp
         src/visualization/laser_object_tracker_visualization.cpp)
 
 target_link_libraries(${PROJECT_NAME}_node
