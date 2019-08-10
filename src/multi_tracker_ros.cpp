@@ -145,7 +145,12 @@ MultiTrackerROS::getFeatureExtraction(ros::NodeHandle& node_handle) {
 std::shared_ptr<tracking::BaseMultiTracking<MultiTrackerROS::Feature>>
 MultiTrackerROS::getMultiTracking(ros::NodeHandle& node_handle) {
   std::shared_ptr<tracking::BaseMultiTracking<Feature>> multi_tracking;
-  double time_step,
+  double buffer_length,
+         min_buffer_filling,
+         distance_threshold,
+         orientation_angle_threshold,
+         aperture_angle_threshold,
+         time_step,
          max_mahalanobis_distance,
          skip_decay_rate,
          probability_start,
@@ -160,14 +165,19 @@ MultiTrackerROS::getMultiTracking(ros::NodeHandle& node_handle) {
   std::vector<double> initial_state_covariance_data;
   std::vector<double> process_noise_covariance_data;
 
-  node_handle.getParam("tracking/time_step", time_step);
-  node_handle.getParam("tracking/max_mahalanobis_distance", max_mahalanobis_distance);
-  node_handle.getParam("tracking/skip_decay_rate", skip_decay_rate);
-  node_handle.getParam("tracking/probability_start", probability_start);
-  node_handle.getParam("tracking/probability_detection", probability_detection);
-  node_handle.getParam("tracking/measurement_noise_covariance", measurement_noise_covariance_data);
-  node_handle.getParam("tracking/initial_state_covariance", initial_state_covariance_data);
-  node_handle.getParam("tracking/process_noise_covariance", process_noise_covariance_data);
+  node_handle.getParam("tracking/objec_matching/buffer_length", buffer_length);
+  node_handle.getParam("tracking/objec_matching/min_buffer_filling", min_buffer_filling);
+  node_handle.getParam("tracking/objec_matching/distance_threshold", distance_threshold);
+  node_handle.getParam("tracking/objec_matching/orientation_angle_threshold", orientation_angle_threshold);
+  node_handle.getParam("tracking/objec_matching/aperture_angle_threshold", aperture_angle_threshold);
+  node_handle.getParam("tracking/model/time_step", time_step);
+  node_handle.getParam("tracking/model/max_mahalanobis_distance", max_mahalanobis_distance);
+  node_handle.getParam("tracking/model/skip_decay_rate", skip_decay_rate);
+  node_handle.getParam("tracking/model/probability_start", probability_start);
+  node_handle.getParam("tracking/model/probability_detection", probability_detection);
+  node_handle.getParam("tracking/model/measurement_noise_covariance", measurement_noise_covariance_data);
+  node_handle.getParam("tracking/model/initial_state_covariance", initial_state_covariance_data);
+  node_handle.getParam("tracking/model/process_noise_covariance", process_noise_covariance_data);
   node_handle.getParam("tracking/mean_false_alarms", mean_false_alarms);
   node_handle.getParam("tracking/max_depth", max_depth);
   node_handle.getParam("tracking/min_g_hypothesis_ratio", min_g_hypothesis_ratio);
@@ -180,18 +190,29 @@ MultiTrackerROS::getMultiTracking(ros::NodeHandle& node_handle) {
   tracking::mht::ObjectState::ProcessNoiseCovariance process_noise_covariance(
       process_noise_covariance_data.data());
 
-  multi_tracking.reset(new tracking::MultiHypothesisTracking(time_step,
-                                                                max_mahalanobis_distance,
-                                                                skip_decay_rate,
-                                                                probability_start,
-                                                                probability_detection,
-                                                                measurement_noise_covariance,
-                                                                initial_state_covariance,
-                                                                process_noise_covariance,
-                                                                mean_false_alarms,
-                                                                max_depth,
-                                                                min_g_hypothesis_ratio,
-                                                                max_g_hypothesis));
+  tracking::object_matching::FastObjectMatching fast_object_matching(
+      buffer_length,
+      min_buffer_filling,
+      distance_threshold,
+      orientation_angle_threshold,
+      aperture_angle_threshold);
+
+  auto* model = new tracking::mht::ObjectModel(
+      time_step,
+      max_mahalanobis_distance,
+      skip_decay_rate,
+      probability_start,
+      probability_detection,
+      measurement_noise_covariance,
+      initial_state_covariance,
+      process_noise_covariance);
+
+  multi_tracking.reset(new tracking::MultiHypothesisTracking(fast_object_matching,
+                                                             model,
+                                                             mean_false_alarms,
+                                                             max_depth,
+                                                             min_g_hypothesis_ratio,
+                                                             max_g_hypothesis));
   return multi_tracking;
 }
 

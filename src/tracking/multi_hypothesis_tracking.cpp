@@ -35,29 +35,15 @@
 
 namespace laser_object_tracker {
 namespace tracking {
-MultiHypothesisTracking::MultiHypothesisTracking(double time_step,
-                                                 double max_mahalanobis_distance,
-                                                 double skip_decay_rate,
-                                                 double probability_start,
-                                                 double probability_detection,
-                                                 const mht::ObjectState::MeasurementNoiseCovariance& measurement_noise_covariance,
-                                                 const mht::ObjectState::InitialStateCovariance& initial_state_covariance,
-                                                 const mht::ObjectState::ProcessNoiseCovariance& process_noise_covariance,
+MultiHypothesisTracking::MultiHypothesisTracking(object_matching::FastObjectMatching object_matching,
+                                                 tracking::mht::ObjectModel* model,
                                                  double mean_false_alarms,
                                                  int max_depth,
                                                  double min_g_hypothesis_ratio,
                                                  int max_g_hypothesis)
-    : false_alarm_log_likelihood_(std::log(mean_false_alarms)) {
-  auto* const_velocity_model = new mht::ObjectModel(
-      time_step,
-      max_mahalanobis_distance,
-      skip_decay_rate,
-      probability_start,
-      probability_detection,
-      measurement_noise_covariance,
-      initial_state_covariance,
-      process_noise_covariance);
-  models_.append(*const_velocity_model);
+    : false_alarm_log_likelihood_(std::log(mean_false_alarms)),
+      fast_object_matching_(std::move(object_matching)) {
+  models_.append(*model);
 
   multi_hypothesis_tracking_ = std::make_unique<mht::ObjectTracker>(mean_false_alarms,
                                                                     max_depth,
@@ -72,7 +58,19 @@ void MultiHypothesisTracking::predict() {
 void MultiHypothesisTracking::update(const std::vector<FeatureT>& measurements) {
   std::list<REPORT*> reports;
 
+  if (measurements.empty()) {
+    return;
+  }
+  if (!fast_object_matching_.isReady(measurements.front().getTimestamp())) {
+    fast_object_matching_.buffer(measurements);
+    fast_object_matching_.popOutdated(measurements.front().getTimestamp());
+    return;
+  }
+
   for (const auto& measurement : measurements) {
+    if (fast_object_matching_.isMatched(measurement)) {
+      continue;
+    }
     reports.push_back(new mht::ObjectReport(false_alarm_log_likelihood_,
                                             measurement,
                                             frame_number_,
@@ -101,6 +99,8 @@ void MultiHypothesisTracking::update(const std::vector<FeatureT>& measurements) 
   }
 
   ++frame_number_;
+  fast_object_matching_.buffer(measurements);
+  fast_object_matching_.popOutdated(measurements.front().getTimestamp());
 }
 
 MultiHypothesisTracking::~MultiHypothesisTracking() {

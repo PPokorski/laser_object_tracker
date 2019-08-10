@@ -177,7 +177,8 @@ catkin_add_gtest(${PROJECT_NAME}_test
         test/src/segmentation/distance_calculation_test.cpp
         test/src/tracking/iteration_tracker_rejection_test.cpp
         test/src/tracking/kalman_filter_test.cpp
-        test/src/tracking/multi_tracking_test.cpp)
+        test/src/tracking/multi_tracking_test.cpp
+        test/src/tracking/object_matching/fast_object_matching_test.cpp)
 
 target_link_libraries(${PROJECT_NAME}_test
         gmock_main

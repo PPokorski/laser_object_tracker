@@ -45,14 +45,8 @@ namespace laser_object_tracker {
 namespace tracking {
 class MultiHypothesisTracking : public BaseMultiTracking<feature_extraction::features::Object> {
  public:
-  MultiHypothesisTracking(double time_step,
-                          double max_mahalanobis_distance,
-                          double skip_decay_rate,
-                          double probability_start,
-                          double probability_detection,
-                          const mht::ObjectState::MeasurementNoiseCovariance& measurement_noise_covariance,
-                          const mht::ObjectState::InitialStateCovariance& initial_state_covariance,
-                          const mht::ObjectState::ProcessNoiseCovariance& process_noise_covariance,
+  MultiHypothesisTracking(object_matching::FastObjectMatching object_matching,
+                          tracking::mht::ObjectModel* model,
                           double mean_false_alarms,
                           int max_depth,
                           double min_g_hypothesis_ratio,
@@ -69,6 +63,8 @@ class MultiHypothesisTracking : public BaseMultiTracking<feature_extraction::fea
   long corner_id_ = 0;
 
   double false_alarm_log_likelihood_;
+  
+  object_matching::FastObjectMatching fast_object_matching_;
 
   ptrDLIST_OF<MODEL> models_;
   std::unique_ptr<mht::ObjectTracker> multi_hypothesis_tracking_;

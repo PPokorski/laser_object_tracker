@@ -38,16 +38,18 @@ namespace tracking {
 namespace object_matching {
 
 FastObjectMatching::FastObjectMatching(double buffer_length,
+                                       double min_buffer_filling,
                                        double distance_threshold,
                                        double orientation_angle_threshold,
                                        double aperture_angle_threshold)
     : buffer_length_(buffer_length),
+      min_buffer_filling_(min_buffer_filling),
       distance_threshold_(distance_threshold),
       orientation_angle_threshold_(orientation_angle_threshold),
       aperture_angle_threshold_(aperture_angle_threshold) {}
 
 bool FastObjectMatching::isMatched(const feature_extraction::features::Object& object) const {
-  if (buffer_.empty()) {
+  if (!isReady(object.getTimestamp())) {
     return false;
   }
 
@@ -63,6 +65,10 @@ bool FastObjectMatching::isMatched(const feature_extraction::features::Object& o
   });
 }
 
+bool FastObjectMatching::isReady(const ros::Time& current_time) const {
+  return buffer_.empty() ? false : current_time - buffer_.front().second >= min_buffer_filling_;
+}
+
 void FastObjectMatching::buffer(const std::vector<feature_extraction::features::Object>& objects) {
   if (objects.empty()) {
     return;
@@ -72,11 +78,8 @@ void FastObjectMatching::buffer(const std::vector<feature_extraction::features::
 }
 
 void FastObjectMatching::popOutdated(const ros::Time& current_time) {
-  if (buffer_.empty()) {
-    return;
-  }
-
-  while (current_time - buffer_.front().second > buffer_length_) {
+  while (!buffer_.empty() &&
+         current_time - buffer_.front().second > buffer_length_) {
     buffer_.pop();
   }
 }

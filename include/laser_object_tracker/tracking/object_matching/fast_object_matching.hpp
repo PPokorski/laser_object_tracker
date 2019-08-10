@@ -49,15 +49,62 @@ namespace object_matching {
 class FastObjectMatching {
  public:
   FastObjectMatching(double buffer_length,
+                     double min_buffer_filling,
                      double distance_threshold,
                      double orientation_angle_threshold,
                      double aperture_angle_threshold);
 
   bool isMatched(const feature_extraction::features::Object& object) const;
 
+  bool isReady(const ros::Time& current_time) const;
+
   void buffer(const std::vector<feature_extraction::features::Object>& objects);
 
   void popOutdated(const ros::Time& current_time);
+
+  int size() const {
+    return buffer_.size();
+  }
+
+  double getBufferLength() const {
+    return buffer_length_.toSec();
+  }
+
+  void setBufferLength(double buffer_length) {
+    buffer_length_ = ros::Duration(buffer_length);
+  }
+
+  double getMinBufferFilling() const {
+    return min_buffer_filling_.toSec();
+  }
+
+  void setMinBufferFilling(double min_buffer_filling) {
+    min_buffer_filling_ = ros::Duration(min_buffer_filling);
+  }
+
+  double getDistanceThreshold() const {
+    return distance_threshold_;
+  }
+
+  void setDistanceThreshold(double distance_threshold) {
+    distance_threshold_ = distance_threshold;
+  }
+
+  double getOrientationAngleThreshold() const {
+    return orientation_angle_threshold_;
+  }
+
+  void setOrientationAngleThreshold(double orientation_angle_threshold) {
+    orientation_angle_threshold_ = orientation_angle_threshold;
+  }
+
+  double getApertureAngleThreshold() const {
+    return aperture_angle_threshold_;
+  }
+
+  void setApertureAngleThreshold(double aperture_angle_threshold) {
+    aperture_angle_threshold_ = aperture_angle_threshold;
+  }
 
  private:
   using BufferElement = std::pair<std::vector<feature_extraction::features::Object>,
@@ -76,7 +123,9 @@ class FastObjectMatching {
                        const feature_extraction::features::Segment2D& rhs) const;
 
   double angleBetweenAngles(double target, double source) const;
+
   ros::Duration buffer_length_;
+  ros::Duration min_buffer_filling_;
 
   double distance_threshold_;
   double orientation_angle_threshold_;
