@@ -37,15 +37,15 @@ namespace laser_object_tracker {
 namespace tracking {
 MultiHypothesisTracking::MultiHypothesisTracking(object_matching::FastObjectMatching object_matching,
                                                  tracking::mht::ObjectModel* model,
-                                                 double mean_false_alarms,
+                                                 double false_alarm_likelihood,
                                                  int max_depth,
                                                  double min_g_hypothesis_ratio,
                                                  int max_g_hypothesis)
-    : false_alarm_log_likelihood_(std::log(mean_false_alarms)),
+    : false_alarm_log_likelihood_(std::log(false_alarm_likelihood)),
       fast_object_matching_(std::move(object_matching)) {
   models_.append(*model);
 
-  multi_hypothesis_tracking_ = std::make_unique<mht::ObjectTracker>(mean_false_alarms,
+  multi_hypothesis_tracking_ = std::make_unique<mht::ObjectTracker>(false_alarm_likelihood,
                                                                     max_depth,
                                                                     min_g_hypothesis_ratio,
                                                                     max_g_hypothesis,

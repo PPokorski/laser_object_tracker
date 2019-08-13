@@ -43,6 +43,13 @@
 #include "laser_object_tracker/visualization/visualization.hpp"
 
 namespace laser_object_tracker {
+template<class T>
+void getParam(ros::NodeHandle& node_handle, const std::string& key, T& param) {
+  if (!node_handle.getParam(key, param)) {
+    throw std::logic_error("Param " + key + " not found!");
+  }
+}
+
 class MultiTrackerROS {
  public:
   using Feature = feature_extraction::features::Object;
@@ -67,6 +74,9 @@ class MultiTrackerROS {
 
   ros::NodeHandle node_handle_;
   ros::Subscriber sub_laser_scan;
+
+  std::string base_frame_;
+  ros::Duration transform_wait_timeout_;
 
   bool is_scan_updated_;
 

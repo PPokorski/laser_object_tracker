@@ -31,42 +31,52 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_FILTERING_OBB_AREA_FILTER_HPP
-#define LASER_OBJECT_TRACKER_FILTERING_OBB_AREA_FILTER_HPP
+#ifndef LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_OCCLUSION_CHECKING_OCCLUSION_CHECKING_HPP
+#define LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_OCCLUSION_CHECKING_OCCLUSION_CHECKING_HPP
 
-#include "laser_object_tracker/filtering/base_segmented_filtering.hpp"
+#include "laser_object_tracker/data_types/laser_scan_fragment.hpp"
+#include "laser_object_tracker/feature_extraction/features/point_2d.hpp"
 
 namespace laser_object_tracker {
-namespace filtering {
+namespace feature_extraction {
+namespace occlusion_checking {
 
-class OBBAreaFilter : public BaseSegmentedFiltering {
+class DistanceOcclusionChecking {
  public:
-  OBBAreaFilter(double min_area, double max_area, double min_box_dimension);
+  explicit DistanceOcclusionChecking(double distance_threshold)
+      : distance_threshold_(distance_threshold) {}
 
-  bool shouldFilter(const data_types::LaserScanFragment& fragment) const override;
+  bool operator()(const data_types::LaserScanFragment& fragment,
+                  const data_types::FragmentElement& point) {
+    if (fragment.empty()) {
+      return false;
+    }
 
-  bool isTrivial() const override {
-    return true;
+    const auto& front = fragment.front();
+    const auto& back = fragment.back();
+
+    double threshold_squared = distance_threshold_ * distance_threshold_;
+
+    if (distanceSquared(front, point) < threshold_squared) {
+      return front.isOccluded();
+    } else if (distanceSquared(back, point) < threshold_squared) {
+      return back.isOccluded();
+    } else {
+      return false;
+    }
   }
-
-  double getMinArea() const;
-
-  void setMinArea(double min_area);
-
-  double getMaxArea() const;
-
-  void setMaxArea(double max_area);
-
-  double getMinBoxDimension() const;
-
-  void setMinBoxDimension(double min_box_dimension);
  private:
-  double getOBBArea(const data_types::LaserScanFragment& fragment) const;
-
-  double min_area_, max_area_, min_box_dimension_;
+  double distanceSquared(const data_types::FragmentElement& element,
+                         const data_types::FragmentElement& point) {
+    return (element.point().x - point.point().x) * (element.point().x - point.point().x) +
+           (element.point().y - point.point().y) * (element.point().y - point.point().y);
+  }
+  double distance_threshold_;
 };
 
-}  // namespace filtering
+
+}  // namespace occlusion_checking
+}  // namespace feature_extraction
 }  // namespace laser_object_tracker
 
-#endif //LASER_OBJECT_TRACKER_FILTERING_OBB_AREA_FILTER_HPP
+#endif  // LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_OCCLUSION_CHECKING_OCCLUSION_CHECKING_HPP

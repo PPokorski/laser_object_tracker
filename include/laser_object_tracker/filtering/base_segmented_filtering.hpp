@@ -45,6 +45,8 @@ class BaseSegmentedFiltering {
 
   virtual void filter(std::vector<data_types::LaserScanFragment>& fragments) const;
 
+  virtual bool isTrivial() const = 0;
+
   virtual ~BaseSegmentedFiltering() = default;
 };
 

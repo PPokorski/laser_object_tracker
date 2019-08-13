@@ -45,10 +45,16 @@ class AggregateSegmentedFiltering : public BaseSegmentedFiltering {
 
   bool shouldFilter(const data_types::LaserScanFragment& fragment) const override;
 
+  void filter(std::vector<data_types::LaserScanFragment>& fragments) const override;
+
+  bool isTrivial() const override {
+    return false;
+  }
   void add(std::unique_ptr<BaseSegmentedFiltering> filter);
 
  private:
-  std::vector<std::unique_ptr<BaseSegmentedFiltering>> filters_;
+  std::vector<std::unique_ptr<BaseSegmentedFiltering>> trivial_filters_;
+  std::vector<std::unique_ptr<BaseSegmentedFiltering>> non_trivial_filters_;
 };
 
 }  // namespace filtering

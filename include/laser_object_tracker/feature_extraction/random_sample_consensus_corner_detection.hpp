@@ -44,7 +44,8 @@ namespace feature_extraction {
 
 class RandomSampleConsensusCornerDetection : public BaseFeatureExtraction<features::Feature> {
  public:
-  RandomSampleConsensusCornerDetection(double distance_threshold,
+  RandomSampleConsensusCornerDetection(OcclusionChecking occlusion_checking,
+                                       double distance_threshold,
                                        int max_iterations,
                                        double probability);
 

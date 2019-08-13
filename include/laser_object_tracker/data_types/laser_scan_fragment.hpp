@@ -36,6 +36,7 @@
 
 // ROS
 #include <laser_geometry/laser_geometry.h>
+#include <tf/transform_listener.h>
 
 // PROJECT
 #include "laser_object_tracker/data_types/definitions.hpp"
@@ -74,6 +75,10 @@ class LaserScanFragment {
      */
     LaserScanFragment fromLaserScan(LaserScanType&& laser_scan);
 
+    LaserScanFragment fromLaserScan(LaserScanType laser_scan,
+                                    const std::string& base_frame,
+                                    const ros::Duration& timeout);
+
    private:
     /**
      * @brief Given fragment with initialized laser_scan, initialize rest of the fields
@@ -81,7 +86,12 @@ class LaserScanFragment {
      */
     void completeInitialization(LaserScanFragment& fragment);
 
+    void completeInitialization(LaserScanFragment& fragment,
+                                const std::string& base_frame,
+                                const ros::Duration& timeout);
+
     laser_geometry::LaserProjection laser_projector_;
+    tf::TransformListener transform_listener_;
   };
 
   /**
@@ -111,6 +121,14 @@ class LaserScanFragment {
    */
   std_msgs::Header getHeader() const {
     return laser_scan_.header;
+  }
+
+  std::string getOriginalFrame() const {
+    return laser_scan_.header.frame_id;
+  }
+
+  std::string getCurrentFrame() const {
+    return laser_scan_cloud_.header.frame_id;
   }
 
   /**

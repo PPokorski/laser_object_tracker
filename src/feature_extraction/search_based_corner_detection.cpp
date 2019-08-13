@@ -38,9 +38,12 @@
 namespace laser_object_tracker {
 namespace feature_extraction {
 
-SearchBasedCornerDetection::SearchBasedCornerDetection(double theta_resolution,
-                                                       CriterionFunctor criterion) :
-    theta_resolution_(theta_resolution), criterion_(std::move(criterion)) {}
+SearchBasedCornerDetection::SearchBasedCornerDetection(OcclusionChecking occlusion_checking,
+                                                       double theta_resolution,
+                                                       CriterionFunctor criterion)
+    : BaseFeatureExtraction(occlusion_checking),
+      theta_resolution_(theta_resolution),
+      criterion_(std::move(criterion)) {}
 
 bool
 SearchBasedCornerDetection::extractFeature(const data_types::LaserScanFragment& fragment, FeatureT& feature) {

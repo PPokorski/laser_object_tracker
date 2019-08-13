@@ -45,7 +45,8 @@ namespace feature_extraction {
 
 class RandomSampleConsensusSegmentDetection : public BaseFeatureExtraction<features::Feature> {
  public:
-  RandomSampleConsensusSegmentDetection(double distance_threshold,
+  RandomSampleConsensusSegmentDetection(OcclusionChecking occlusion_checking,
+                                        double distance_threshold,
                                         int max_iterations,
                                         double probability);
 

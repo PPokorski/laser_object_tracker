@@ -36,16 +36,36 @@
 namespace laser_object_tracker {
 namespace filtering {
 AggregateSegmentedFiltering::AggregateSegmentedFiltering(
-    std::vector<std::unique_ptr<BaseSegmentedFiltering>>&& filters) : filters_(std::move(filters)) {}
+    std::vector<std::unique_ptr<BaseSegmentedFiltering>>&& filters) {
+  for (auto& filter : filters) {
+    if (filter->isTrivial()) {
+      trivial_filters_.push_back(std::move(filter));
+    } else {
+      non_trivial_filters_.push_back(std::move(filter));
+    }
+  }
+}
 
 bool AggregateSegmentedFiltering::shouldFilter(const data_types::LaserScanFragment& fragment) const {
-  return std::any_of(filters_.begin(),
-                     filters_.end(),
+  return std::any_of(trivial_filters_.begin(),
+                     trivial_filters_.end(),
                      [&fragment](const auto& filter) {return filter->shouldFilter(fragment);});
 }
 
+void AggregateSegmentedFiltering::filter(std::vector<data_types::LaserScanFragment>& fragments) const {
+  for (auto& filter : non_trivial_filters_) {
+    filter->filter(fragments);
+  }
+
+  BaseSegmentedFiltering::filter(fragments);
+}
+
 void AggregateSegmentedFiltering::add(std::unique_ptr<BaseSegmentedFiltering> filter) {
-  filters_.push_back(std::move(filter));
+  if (filter->isTrivial()) {
+    trivial_filters_.push_back(std::move(filter));
+  } else {
+    non_trivial_filters_.push_back(std::move(filter));
+  }
 }
 }  // namespace filtering
 }  // namespace laser_object_tracker

@@ -35,13 +35,17 @@
 
 namespace laser_object_tracker {
 namespace filtering {
-OcclusionDetection::OcclusionDetection(double max_angle_gap) : max_angle_gap_(max_angle_gap) {}
+OcclusionDetection::OcclusionDetection(double max_angle_gap)
+    : max_angle_gap_(max_angle_gap) {}
 
 bool OcclusionDetection::shouldFilter(const laser_object_tracker::data_types::LaserScanFragment& fragment) const {
   return false;
 }
 
 void OcclusionDetection::filter(std::vector<data_types::LaserScanFragment>& fragments) const {
+  if (fragments.empty()) {
+    return;
+  }
   fragments.front().front().isOccluded() = true;
 
   for (int i = 1; i < fragments.size(); ++i) {
@@ -52,11 +56,11 @@ void OcclusionDetection::filter(std::vector<data_types::LaserScanFragment>& frag
     }
 
     if (current_element.range() < previous_element.range()) {
-      current_element.isOccluded() = true;
+      previous_element.isOccluded() = true;
     }
 
     if (current_element.range() > previous_element.range()) {
-      previous_element.isOccluded() = true;
+      current_element.isOccluded() = true;
     }
   }
 

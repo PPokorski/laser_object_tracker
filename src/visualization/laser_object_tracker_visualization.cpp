@@ -101,6 +101,13 @@ void LaserObjectTrackerVisualization::publishSegment(const feature_extraction::f
   point_2.head<2>() = segment.getEnd();
   point_2(2) = 0.1;
 
+  if (segment.isStartOccluded()) {
+    rviz_visual_tools_->publishSphere(point_1, rviz_visual_tools::RED, rviz_visual_tools::XXLARGE);
+  }
+  if (segment.isEndOccluded()) {
+    rviz_visual_tools_->publishSphere(point_2, rviz_visual_tools::RED, rviz_visual_tools::XXLARGE);
+  }
+
   rviz_visual_tools_->publishLine(point_1, point_2, color);
 }
 
@@ -128,9 +135,10 @@ void LaserObjectTrackerVisualization::publishPoint(const feature_extraction::fea
                                                    const std_msgs::ColorRGBA& color) {
     Eigen::Vector3d publish_point;
     publish_point.head<2>() = point;
+    publish_point(2) = 0.0;
 
     rviz_visual_tools_->publishSphere(publish_point, color,
-            rviz_visual_tools_->getScale(rviz_visual_tools::scales::XLARGE));
+            rviz_visual_tools_->getScale(rviz_visual_tools::scales::XXLARGE));
 }
 
 void LaserObjectTrackerVisualization::publishCorners(const feature_extraction::features::Corners2D& corners) {
@@ -139,24 +147,6 @@ void LaserObjectTrackerVisualization::publishCorners(const feature_extraction::f
   for (int i = 0; i < corners.size(); ++i) {
     publishCorner(corners.at(i), rgb_colors_.at(i));
   }
-}
-
-void LaserObjectTrackerVisualization::publishTracker(const tracking::BaseTracking& tracker,
-                                                     const std_msgs::ColorRGBA& color) {
-  Eigen::VectorXd state = tracker.getStateVector();
-//  std::cout << "Tracker state:" << std::endl << state << std::endl;
-  double yaw = state(2);
-//  double yaw = state.tail<2>().isZero()? 0.0 : std::atan2(state(3), state(2));
-  Eigen::Affine3d pose = rviz_visual_tools::RvizVisualTools::convertFromXYZRPY(state(0), state(1), 0.0, 0.0, 0.0, yaw,
-      rviz_visual_tools::EulerConvention::XYZ);
-
-  pose.translation()(2) += 0.2;
-  rviz_visual_tools_->publishArrow(pose, rviz_visual_tools::BLUE, rviz_visual_tools::XXXLARGE);
-  rviz_visual_tools_->publishSphere(pose, color, rviz_visual_tools_->getScale(rviz_visual_tools::scales::XXLARGE));
-  using namespace std::string_literals;
-  pose.translation()(2) += 0.3;
-  rviz_visual_tools_->publishText(pose, "ID: " + std::to_string(tracker.getId()) + " " + std::to_string(state.segment<2>(3).norm()) + " m/s"s,
-          rviz_visual_tools::WHITE, rviz_visual_tools::XXXXLARGE, false);
 }
 
 void LaserObjectTrackerVisualization::publishMultiTracker(const std::shared_ptr<tracking::BaseMultiTracking<
@@ -179,67 +169,24 @@ void LaserObjectTrackerVisualization::publishMultiTracker(const std::shared_ptr<
                           track->track_.back().velocity_.x(),
                           track->track_.back().velocity_.y());
 
-    double yaw = state.tail<2>().norm() > 0.0 ? std::atan2(state(3), state(2)) : 0.0;
+    rviz_visual_tools::scales text_scale;
+    if (state.tail<2>().norm() >= 0.1) {
+      double yaw = state.tail<2>().norm() > 0.0 ? std::atan2(state(3), state(2)) : 0.0;
 
-    Eigen::Affine3d pose = rviz_visual_tools::RvizVisualTools::convertFromXYZRPY(state(0), state(1), 0.0, 0.0, 0.0, yaw,
-                                                                                 rviz_visual_tools::EulerConvention::XYZ);
+      Eigen::Affine3d pose = rviz_visual_tools::RvizVisualTools::convertFromXYZRPY(state(0), state(1), 0.0, 0.0, 0.0, yaw,
+                                                                                   rviz_visual_tools::EulerConvention::XYZ);
 
-    pose.translation()(2) += 0.2;
-    rviz_visual_tools_->publishArrow(pose, rviz_visual_tools::BLUE, rviz_visual_tools::XXXLARGE);
-    using namespace std::string_literals;
-    pose.translation()(2) += 0.3;
-    rviz_visual_tools_->publishText(pose, std::to_string(state.tail<2>().norm()) + " m/s"s,
-                                    rviz_visual_tools::WHITE, rviz_visual_tools::XXXXLARGE, false);
+      pose.translation()(2) += 0.2;
+      rviz_visual_tools_->publishArrow(pose, rviz_visual_tools::BLUE, rviz_visual_tools::XXXLARGE);
+      using namespace std::string_literals;
+      pose.translation()(2) += 0.3;
 
-    std::vector<std_msgs::ColorRGBA> colors(path.size(), rgb_colors_.at(i));
-    rviz_visual_tools_->publishPath(path, colors, 0.05);
+      rviz_visual_tools_->publishText(pose, std::to_string(state.tail<2>().norm()) + " m/s"s,
+                                      rviz_visual_tools::WHITE, rviz_visual_tools::XXXXLARGE, false);
 
-    ++track;
-  }
-}
-
-void LaserObjectTrackerVisualization::publishMultiTracker(const tracking::MultiTracking& multi_tracker) {
-  expandToNColors(multi_tracker.size());
-  for (int i = 0; i < multi_tracker.size(); ++i) {
-    if (multi_tracker.at(i).getStateVector().segment<2>(3).norm() >= 0.1) {
-      publishTracker(multi_tracker.at(i), rgb_colors_.at(i));
+      std::vector<std_msgs::ColorRGBA> colors(path.size(), rgb_colors_.at(i));
+      rviz_visual_tools_->publishPath(path, colors, 0.05);
     }
-  }
-}
-
-void LaserObjectTrackerVisualization::publishMultiTracker(const tracking::MultiHypothesisTracking& multi_tracking) {
-  expandToNColors(multi_tracking.size());
-
-  auto track = multi_tracking.begin();
-  for (int i = 0; i < multi_tracking.size(); ++i) {
-    EigenSTL::vector_Vector3d path;
-    for (const auto& point : track->track_) {
-      Eigen::Vector3d vec(point.position_.x(), point.position_.y(), 0.0);
-
-      if (path.empty() || (path.back() - vec).squaredNorm() >= 0.001) {
-        path.push_back(vec);
-      }
-    }
-
-    Eigen::Vector4d state(track->track_.back().position_.x(),
-                          track->track_.back().position_.y(),
-                          track->track_.back().velocity_.x(),
-                          track->track_.back().velocity_.y());
-
-    double yaw = state.tail<2>().norm() > 0.0 ? std::atan2(state(3), state(2)) : 0.0;
-
-    Eigen::Affine3d pose = rviz_visual_tools::RvizVisualTools::convertFromXYZRPY(state(0), state(1), 0.0, 0.0, 0.0, yaw,
-                                                                                rviz_visual_tools::EulerConvention::XYZ);
-
-    pose.translation()(2) += 0.2;
-    rviz_visual_tools_->publishArrow(pose, rviz_visual_tools::BLUE, rviz_visual_tools::XXXLARGE);
-    using namespace std::string_literals;
-    pose.translation()(2) += 0.3;
-    rviz_visual_tools_->publishText(pose, std::to_string(state.tail<2>().norm()) + " m/s"s,
-                                    rviz_visual_tools::WHITE, rviz_visual_tools::XXXXLARGE, false);
-
-    std::vector<std_msgs::ColorRGBA> colors(path.size(), rgb_colors_.at(i));
-    rviz_visual_tools_->publishPath(path, colors, 0.05);
 
     ++track;
   }
@@ -277,6 +224,8 @@ void LaserObjectTrackerVisualization::publishAssignments(const tracking::MultiTr
 
 void LaserObjectTrackerVisualization::publishObject(const feature_extraction::features::Object& object,
                                                     const std_msgs::ColorRGBA& color) {
+  publishPoint(object.getReferencePoint(), color);
+
   for (const auto& segment : object.getSegments()) {
     publishSegment(segment, color);
   }

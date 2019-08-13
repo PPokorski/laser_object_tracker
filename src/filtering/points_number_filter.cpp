@@ -54,6 +54,7 @@ int PointsNumberFilter::getMaxPoints() const {
 void PointsNumberFilter::setMaxPoints(int max_points) {
   max_points_ = max_points;
 }
+
 bool PointsNumberFilter::shouldFilter(const data_types::LaserScanFragment& fragment) const {
   return fragment.size() < min_points_ || fragment.size() > max_points_;
 }

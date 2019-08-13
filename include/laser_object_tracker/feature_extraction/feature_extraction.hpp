@@ -38,6 +38,7 @@
 #include "laser_object_tracker/feature_extraction/pcl/sac_model_cross2d.hpp"
 #include "laser_object_tracker/feature_extraction/base_feature_extraction.hpp"
 #include "laser_object_tracker/feature_extraction/multi_line_detection.hpp"
+#include "laser_object_tracker/feature_extraction/occlusion_checking/occlusion_checking.hpp"
 #include "laser_object_tracker/feature_extraction/random_sample_consensus_corner_detection.hpp"
 #include "laser_object_tracker/feature_extraction/random_sample_consensus_segment_detection.hpp"
 #include "laser_object_tracker/feature_extraction/search_based_corner_detection.hpp"

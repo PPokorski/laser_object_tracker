@@ -44,7 +44,8 @@ namespace feature_extraction {
 class MultiLineDetection : public BaseFeatureExtraction<features::Object> {
  public:
 
-  MultiLineDetection(double min_angle_between_lines,
+  MultiLineDetection(OcclusionChecking occlusion_checking,
+                     double min_angle_between_lines,
                      double max_distance,
                      double rho_resolution,
                      double theta_resolution,

@@ -38,10 +38,12 @@
 namespace laser_object_tracker {
 namespace feature_extraction {
 
-RandomSampleConsensusSegmentDetection::RandomSampleConsensusSegmentDetection(double distance_threshold,
+RandomSampleConsensusSegmentDetection::RandomSampleConsensusSegmentDetection(OcclusionChecking occlusion_checking,
+                                                                             double distance_threshold,
                                                                              int max_iterations,
-                                                                             double probability) :
-    sample_consensus_(ModelType::Ptr(nullptr), 0.0) {
+                                                                             double probability)
+    : BaseFeatureExtraction(occlusion_checking),
+      sample_consensus_(ModelType::Ptr(nullptr), 0.0) {
   sample_consensus_.setDistanceThreshold(distance_threshold);
   sample_consensus_.setMaxIterations(max_iterations);
   sample_consensus_.setProbability(probability);

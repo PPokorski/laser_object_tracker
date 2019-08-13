@@ -90,7 +90,8 @@ TEST(SearchBasedCornerDetectionTest, VarianceCriterionTest) {
 
 TEST(SearchBasedDetectionTest, AccessorsTest) {
   using namespace laser_object_tracker::feature_extraction;
-  SearchBasedCornerDetection detection(1.0, areaCriterion);
+  SearchBasedCornerDetection detection
+      (laser_object_tracker::feature_extraction::BaseFeatureExtraction::OcclusionChecking(), 1.0, areaCriterion);
 
   EXPECT_NEAR(1.0, detection.getThetaResolution(), test::PRECISION<double>);
   EXPECT_EQ(areaCriterion,
@@ -107,9 +108,12 @@ TEST(SearchBasedDetectionTest, AccessorsTest) {
 TEST(SearchBasedCornerDetectionTest, DetectionSimpleCriterionTest) {
   using namespace laser_object_tracker::data_types;
   using namespace laser_object_tracker::feature_extraction;
-  SearchBasedCornerDetection detection(0.1, [](const Eigen::VectorXd&, const Eigen::VectorXd&) {
-    return 0.0;
-  });
+  SearchBasedCornerDetection detection
+      (laser_object_tracker::feature_extraction::BaseFeatureExtraction::OcclusionChecking(),
+       0.1,
+       [](const Eigen::VectorXd&, const Eigen::VectorXd&) {
+         return 0.0;
+       });
 
   LaserScanFragment::LaserScanFragmentFactory factory;
   auto fragment = factory.fromLaserScan(test::generateLaserScan({std::sqrt(2.0f), 1.0, std::sqrt(2.0f), 1.0},
@@ -131,7 +135,8 @@ TEST(SearchBasedCornerDetectionTest, DetectionSimpleCriterionTest) {
 TEST(SearchBasedCornerDetectionTest, DetectionClosenesssCriterionTest) {
   using namespace laser_object_tracker::data_types;
   using namespace laser_object_tracker::feature_extraction;
-  SearchBasedCornerDetection detection(0.001, closenessCriterion);
+  SearchBasedCornerDetection detection
+      (laser_object_tracker::feature_extraction::BaseFeatureExtraction::OcclusionChecking(), 0.001, closenessCriterion);
 
   LaserScanFragment::LaserScanFragmentFactory factory;
   auto fragment = factory.fromLaserScan(test::generateLaserScan({1.0, 0.73205080756, 0.73205080756, 1.0},
@@ -154,7 +159,8 @@ TEST(SearchBasedCornerDetectionTest, DetectionClosenesssCriterionTest) {
 TEST(SearchBasedCornerDetectionTest, ExceptionThrowTest) {
   using namespace laser_object_tracker::data_types;
   using namespace laser_object_tracker::feature_extraction;
-  SearchBasedCornerDetection detection(0.0, areaCriterion);
+  SearchBasedCornerDetection detection
+      (laser_object_tracker::feature_extraction::BaseFeatureExtraction::OcclusionChecking(), 0.0, areaCriterion);
 
   features::Feature feature;
   EXPECT_THROW(detection.extractFeature(LaserScanFragment(), feature), std::invalid_argument);

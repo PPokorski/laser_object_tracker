@@ -46,6 +46,10 @@ class OcclusionDetection : public BaseSegmentedFiltering {
 
   void filter(std::vector<data_types::LaserScanFragment>& fragments) const override;
 
+  bool isTrivial() const override {
+    return false;
+  }
+
  private:
   double max_angle_gap_;
 };

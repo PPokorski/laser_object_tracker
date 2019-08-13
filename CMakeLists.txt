@@ -121,39 +121,6 @@ target_link_libraries(${PROJECT_NAME}_node
         ${PROJECT_NAME}_segmentation
         ${PROJECT_NAME}_tracking)
 
-add_executable(${PROJECT_NAME}_multi_tracker
-        src/multi_tracker_test.cpp)
-
-target_link_libraries(${PROJECT_NAME}_multi_tracker
-        ${catkin_LIBRARIES}
-        ${PROJECT_NAME}_tracking)
-
-add_executable(hungarian_test
-        src/hungarian_algorithm_test.cpp)
-
-target_link_libraries(hungarian_test
-        ${PROJECT_NAME}_data_association)
-
-add_executable(multi_line_detection_test
-        src/multi_line_detection_test.cpp
-        src/visualization/laser_object_tracker_visualization.cpp)
-
-target_link_libraries(multi_line_detection_test
-        ${catkin_LIBRARIES}
-        ${PROJECT_NAME}_data_association
-        ${PROJECT_NAME}_data_types
-        ${PROJECT_NAME}_feature_extraction
-        ${PROJECT_NAME}_filtering
-        ${PROJECT_NAME}_segmentation
-        ${PROJECT_NAME}_tracking)
-
-add_executable(multi_hypothesis_tracker_test
-        src/multi_hypothesis_tracker_test.cpp)
-
-target_link_libraries(multi_hypothesis_tracker_test
-        ${PROJECT_NAME}_tracking)
-
-
 ## Tests ##
 include_directories(
         test/include)

@@ -39,7 +39,8 @@
 
 TEST(RandomSampleConsensusSegmentDetectionTest, AccessorsTest) {
   using namespace laser_object_tracker::feature_extraction;
-  RandomSampleConsensusSegmentDetection detection(100.0, 21, 0.3);
+  RandomSampleConsensusSegmentDetection detection
+      (laser_object_tracker::feature_extraction::BaseFeatureExtraction::OcclusionChecking(), 100.0, 21, 0.3);
 
   EXPECT_NEAR(100.0, detection.getDistanceThreshold(), test::PRECISION<double>);
   EXPECT_EQ(21, detection.getMaxIterations());
@@ -58,7 +59,8 @@ TEST(RandomSampleConsensusSegmentDetectionTest, AccessorsTest) {
 TEST(RandomSampleConsensusSegmentDetectionTest, SimpleLineTest) {
   using namespace laser_object_tracker::data_types;
   using namespace laser_object_tracker::feature_extraction;
-  RandomSampleConsensusSegmentDetection detection(100000.0, 100, 0.99);
+  RandomSampleConsensusSegmentDetection detection
+      (laser_object_tracker::feature_extraction::BaseFeatureExtraction::OcclusionChecking(), 100000.0, 100, 0.99);
 
   LaserScanFragment::LaserScanFragmentFactory factory;
   auto fragment = factory.fromLaserScan(test::generateLaserScan({1.0, 1.0}, -M_PI_2, M_PI_2));
@@ -87,7 +89,8 @@ TEST(RandomSampleConsensusSegmentDetectionTest, SimpleLineTest) {
 TEST(RandomSampleConsensusSegmentDetectionTest, ExceptionThrowTest) {
   using namespace laser_object_tracker::data_types;
   using namespace laser_object_tracker::feature_extraction;
-  RandomSampleConsensusSegmentDetection detection(0.0, 0, 0);
+  RandomSampleConsensusSegmentDetection detection
+      (laser_object_tracker::feature_extraction::BaseFeatureExtraction::OcclusionChecking(), 0.0, 0, 0);
 
   features::Feature feature;
   EXPECT_THROW(detection.extractFeature(LaserScanFragment(), feature), std::invalid_argument);

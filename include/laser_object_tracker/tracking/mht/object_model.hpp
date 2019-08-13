@@ -494,7 +494,7 @@ class ObjectModel : public MODEL {
                     const std::pair<const feature_extraction::features::Segment2D*,
                                     const feature_extraction::features::Segment2D*>& assignment) const;
 
-  void updateState(ObjectState* state, const ObjectReport* report) const;
+  bool updateState(ObjectState* state, const ObjectReport* report) const;
 
   double time_step_;
   double max_mahalanobis_distance_;

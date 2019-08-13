@@ -47,7 +47,7 @@ class MultiHypothesisTracking : public BaseMultiTracking<feature_extraction::fea
  public:
   MultiHypothesisTracking(object_matching::FastObjectMatching object_matching,
                           tracking::mht::ObjectModel* model,
-                          double mean_false_alarms,
+                          double false_alarm_likelihood,
                           int max_depth,
                           double min_g_hypothesis_ratio,
                           int max_g_hypothesis);

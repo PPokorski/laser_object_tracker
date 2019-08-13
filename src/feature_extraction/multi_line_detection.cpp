@@ -39,7 +39,8 @@
 
 namespace laser_object_tracker {
 namespace feature_extraction {
-MultiLineDetection::MultiLineDetection(double min_angle_between_lines,
+MultiLineDetection::MultiLineDetection(OcclusionChecking occlusion_checking,
+                                       double min_angle_between_lines,
                                        double max_distance,
                                        double rho_resolution,
                                        double theta_resolution,
@@ -48,7 +49,8 @@ MultiLineDetection::MultiLineDetection(double min_angle_between_lines,
                                        double rho_max,
                                        double theta_min,
                                        double theta_max)
-    : min_angle_between_lines_(min_angle_between_lines),
+    : BaseFeatureExtraction(occlusion_checking),
+      min_angle_between_lines_(min_angle_between_lines),
       max_distance_(max_distance),
       rho_resolution_(rho_resolution),
       theta_resolution_(theta_resolution),
@@ -213,9 +215,9 @@ features::Segments2D MultiLineDetection::segmentsFromLines(const data_types::Las
     }
 
     segments_it->setStart(min_point);
-    segments_it->setIsStartOccluded(min_element->isOccluded());
+    segments_it->setIsStartOccluded(occlusion_checking_(fragment, *min_element));
     segments_it->setEnd(max_point);
-    segments_it->setIsEndOccluded(max_element->isOccluded());
+    segments_it->setIsEndOccluded(occlusion_checking_(fragment, *max_element));
     ++segments_it;
   }
 

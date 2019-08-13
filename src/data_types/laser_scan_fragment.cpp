@@ -57,6 +57,18 @@ LaserScanFragment LaserScanFragment::LaserScanFragmentFactory::fromLaserScan(Las
   return fragment;
 }
 
+LaserScanFragment LaserScanFragment::LaserScanFragmentFactory::fromLaserScan(LaserScanType laser_scan,
+                                                                             const std::string& base_frame,
+                                                                             const ros::Duration& timeout) {
+
+  LaserScanFragment fragment;
+  fragment.laser_scan_ = std::move(laser_scan);
+
+  completeInitialization(fragment, base_frame, timeout);
+
+  return fragment;
+}
+
 void LaserScanFragment::LaserScanFragmentFactory::completeInitialization(LaserScanFragment& fragment) {
   if (fragment.laser_scan_.ranges.empty()) {
     return;
@@ -64,6 +76,45 @@ void LaserScanFragment::LaserScanFragmentFactory::completeInitialization(LaserSc
 
   sensor_msgs::PointCloud2 pcl2;
   laser_projector_.projectLaser(fragment.laser_scan_, pcl2);
+  pcl::moveFromROSMsg(pcl2, fragment.laser_scan_cloud_);
+
+  fragment.occlusion_vector_.resize(fragment.laser_scan_.ranges.size(), false);
+
+  auto range_it = fragment.laser_scan_.ranges.cbegin();
+  auto pcl_it = fragment.laser_scan_cloud_.begin();
+  for (; range_it != fragment.laser_scan_.ranges.cend(); ++range_it, ++pcl_it) {
+    if (*range_it < fragment.getRangeMin() || *range_it >= fragment.getRangeMax()) {
+      pcl_it = fragment.laser_scan_cloud_.insert(pcl_it, {std::numeric_limits<float>::quiet_NaN(),
+                                                          std::numeric_limits<float>::quiet_NaN(),
+                                                          std::numeric_limits<float>::quiet_NaN()});
+    }
+  }
+
+  fragment.initializeInternalContainer();
+}
+
+void LaserScanFragment::LaserScanFragmentFactory::completeInitialization(LaserScanFragment& fragment,
+                                                                         const std::string& base_frame,
+                                                                         const ros::Duration& timeout) {
+  if (fragment.laser_scan_.ranges.empty()) {
+    return;
+  }
+
+  if (!transform_listener_.waitForTransform(
+      base_frame,
+      fragment.laser_scan_.header.frame_id,
+      fragment.laser_scan_.header.stamp + ros::Duration().fromSec(fragment.laser_scan_.ranges.size() *
+                                                                  fragment.laser_scan_.time_increment),
+      timeout)) {
+    fragment = LaserScanFragment();
+    return;
+  }
+
+  sensor_msgs::PointCloud2 pcl2;
+  laser_projector_.transformLaserScanToPointCloud(base_frame,
+                                                  fragment.laser_scan_,
+                                                  pcl2,
+                                                  transform_listener_);
   pcl::moveFromROSMsg(pcl2, fragment.laser_scan_cloud_);
 
   fragment.occlusion_vector_.resize(fragment.laser_scan_.ranges.size(), false);

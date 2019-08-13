@@ -34,6 +34,7 @@
 #ifndef LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_BASE_FEATURE_EXTRACTION_HPP
 #define LASER_OBJECT_TRACKER_FEATURE_EXTRACTION_BASE_FEATURE_EXTRACTION_HPP
 
+#include <functional>
 #include <vector>
 
 #include "laser_object_tracker/data_types/laser_scan_fragment.hpp"
@@ -46,6 +47,11 @@ template<class Feature>
 class BaseFeatureExtraction {
  public:
   using FeatureT = Feature;
+  using OcclusionChecking = std::function<bool(const data_types::LaserScanFragment&,
+                                               const data_types::FragmentElement&)>;
+
+  explicit BaseFeatureExtraction(OcclusionChecking occlusion_checking)
+      : occlusion_checking_(std::move(occlusion_checking)) {}
 
   virtual bool extractFeature(const data_types::LaserScanFragment& fragment, FeatureT& feature) = 0;
 
@@ -74,6 +80,8 @@ class BaseFeatureExtraction {
       matrix(i, 1) = fragment.at(i).point().y;
     }
   }
+
+  OcclusionChecking occlusion_checking_;
 };
 }  // namespace feature_extraction
 }  // namespace laser_object_tracker

@@ -31,6 +31,7 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
+#include <laser_object_tracker/filtering/occlusion_detection.hpp>
 #include "laser_object_tracker/multi_tracker_ros.hpp"
 
 namespace laser_object_tracker {
@@ -47,7 +48,12 @@ MultiTrackerROS::MultiTrackerROS(const ros::NodeHandle& node_handle)
     segmented_filtering_(getSegmentedFiltering(node_handle_)),
     feature_extraction_(getFeatureExtraction(node_handle_)),
     multi_tracking_(getMultiTracking(node_handle_)),
-    visualization_(getVisualization(node_handle_)) {}
+    visualization_(getVisualization(node_handle_)) {
+  getParam(node_handle_, "base_frame", base_frame_);
+  double transform_wait_timeout;
+  getParam(node_handle_, "transform_wait_timeout", transform_wait_timeout);
+  transform_wait_timeout_ = transform_wait_timeout_.fromSec(transform_wait_timeout);
+}
 
 void MultiTrackerROS::update() {
   if (!is_scan_updated_) {
@@ -86,7 +92,9 @@ void MultiTrackerROS::update() {
 }
 
 void MultiTrackerROS::laserScanCallback(const sensor_msgs::LaserScan::Ptr& laser_scan) {
-  last_scan_fragment_ = scan_fragment_factory_.fromLaserScan(std::move(*laser_scan));
+  last_scan_fragment_ = scan_fragment_factory_.fromLaserScan(std::move(*laser_scan),
+                                                             base_frame_,
+                                                             transform_wait_timeout_);
 
   is_scan_updated_ = true;
 }
@@ -94,8 +102,8 @@ void MultiTrackerROS::laserScanCallback(const sensor_msgs::LaserScan::Ptr& laser
 std::shared_ptr<segmentation::BaseSegmentation> MultiTrackerROS::getSegmentation(ros::NodeHandle& node_handle) {
   std::shared_ptr<segmentation::BaseSegmentation> segmentation;
   double angle, sigma;
-  node_handle.getParam("segmentation/angle", angle);
-  node_handle.getParam("segmentation/sigma", sigma);
+  getParam(node_handle, "segmentation/angle", angle);
+  getParam(node_handle, "segmentation/sigma", sigma);
 
   segmentation.reset(new segmentation::AdaptiveBreakpointDetection(angle, sigma));
   return segmentation;
@@ -103,18 +111,24 @@ std::shared_ptr<segmentation::BaseSegmentation> MultiTrackerROS::getSegmentation
 
 std::shared_ptr<filtering::BaseSegmentedFiltering> MultiTrackerROS::getSegmentedFiltering(ros::NodeHandle& node_handle) {
   std::shared_ptr<filtering::BaseSegmentedFiltering> segmented_filtering;
+
+  double max_angle_gap;
+  getParam(node_handle, "filtering/occlusion/max_angle_gap", max_angle_gap);
+  auto occlusion = std::make_unique<filtering::OcclusionDetection>(max_angle_gap);
+
   int min_points, max_points;
-  node_handle.getParam("filtering/min_points", min_points);
-  node_handle.getParam("filtering/max_points", max_points);
-  auto points = std::make_unique<laser_object_tracker::filtering::PointsNumberFilter>(min_points, max_points);
+  getParam(node_handle, "filtering/points_number/min_points", min_points);
+  getParam(node_handle, "filtering/points_number/max_points", max_points);
+  auto points = std::make_unique<filtering::PointsNumberFilter>(min_points, max_points);
 
   double min_area, max_area, min_dimension;
-  node_handle.getParam("filtering/min_area", min_area);
-  node_handle.getParam("filtering/max_area", max_area);
-  node_handle.getParam("filtering/min_dimension", min_dimension);
-  auto obb = std::make_unique<laser_object_tracker::filtering::OBBAreaFilter>(min_area, max_area, min_dimension);
+  getParam(node_handle, "filtering/area/min_area", min_area);
+  getParam(node_handle, "filtering/area/max_area", max_area);
+  getParam(node_handle, "filtering/area/min_dimension", min_dimension);
+  auto obb = std::make_unique<filtering::OBBAreaFilter>(min_area, max_area, min_dimension);
 
-  std::vector<std::unique_ptr<laser_object_tracker::filtering::BaseSegmentedFiltering>> filters;
+  std::vector<std::unique_ptr<filtering::BaseSegmentedFiltering>> filters;
+  filters.push_back(std::move(occlusion));
   filters.push_back(std::move(points));
   filters.push_back(std::move(obb));
 
@@ -126,19 +140,27 @@ std::shared_ptr<filtering::BaseSegmentedFiltering> MultiTrackerROS::getSegmented
 std::shared_ptr<feature_extraction::BaseFeatureExtraction<MultiTrackerROS::Feature>>
 MultiTrackerROS::getFeatureExtraction(ros::NodeHandle& node_handle) {
   std::shared_ptr<feature_extraction::BaseFeatureExtraction<Feature>> feature_extraction;
-  double min_angle_between_lines, max_distance, rho_resolution, theta_resolution;
+  double occlusion_distance_threshold,
+         min_angle_between_lines,
+         max_distance,
+         rho_resolution,
+         theta_resolution;
   int voting_threshold;
-  node_handle.getParam("feature_extraction/min_angle_between_lines", min_angle_between_lines);
-  node_handle.getParam("feature_extraction/max_distance", max_distance);
-  node_handle.getParam("feature_extraction/rho_resolution", rho_resolution);
-  node_handle.getParam("feature_extraction/theta_resolution", theta_resolution);
-  node_handle.getParam("feature_extraction/voting_threshold", voting_threshold);
+  getParam(node_handle, "feature_extraction/occlusion_checking/distance_threshold", occlusion_distance_threshold);
+  getParam(node_handle, "feature_extraction/min_angle_between_lines", min_angle_between_lines);
+  getParam(node_handle, "feature_extraction/max_distance", max_distance);
+  getParam(node_handle, "feature_extraction/rho_resolution", rho_resolution);
+  getParam(node_handle, "feature_extraction/theta_resolution", theta_resolution);
+  getParam(node_handle, "feature_extraction/voting_threshold", voting_threshold);
 
-  feature_extraction.reset(new feature_extraction::MultiLineDetection(min_angle_between_lines,
-                                                                      max_distance,
-                                                                      rho_resolution,
-                                                                      theta_resolution,
-                                                                      voting_threshold));
+  feature_extraction::occlusion_checking::DistanceOcclusionChecking occlusion_checking(occlusion_distance_threshold);
+
+  feature_extraction.reset(new feature_extraction::MultiLineDetection(occlusion_checking,
+                                                                         min_angle_between_lines,
+                                                                         max_distance,
+                                                                         rho_resolution,
+                                                                         theta_resolution,
+                                                                         voting_threshold));
   return feature_extraction;
 }
 
@@ -155,7 +177,7 @@ MultiTrackerROS::getMultiTracking(ros::NodeHandle& node_handle) {
          skip_decay_rate,
          probability_start,
          probability_detection,
-         mean_false_alarms,
+         false_alarm_likelihood,
          min_g_hypothesis_ratio;
 
   int max_depth,
@@ -165,23 +187,23 @@ MultiTrackerROS::getMultiTracking(ros::NodeHandle& node_handle) {
   std::vector<double> initial_state_covariance_data;
   std::vector<double> process_noise_covariance_data;
 
-  node_handle.getParam("tracking/objec_matching/buffer_length", buffer_length);
-  node_handle.getParam("tracking/objec_matching/min_buffer_filling", min_buffer_filling);
-  node_handle.getParam("tracking/objec_matching/distance_threshold", distance_threshold);
-  node_handle.getParam("tracking/objec_matching/orientation_angle_threshold", orientation_angle_threshold);
-  node_handle.getParam("tracking/objec_matching/aperture_angle_threshold", aperture_angle_threshold);
-  node_handle.getParam("tracking/model/time_step", time_step);
-  node_handle.getParam("tracking/model/max_mahalanobis_distance", max_mahalanobis_distance);
-  node_handle.getParam("tracking/model/skip_decay_rate", skip_decay_rate);
-  node_handle.getParam("tracking/model/probability_start", probability_start);
-  node_handle.getParam("tracking/model/probability_detection", probability_detection);
-  node_handle.getParam("tracking/model/measurement_noise_covariance", measurement_noise_covariance_data);
-  node_handle.getParam("tracking/model/initial_state_covariance", initial_state_covariance_data);
-  node_handle.getParam("tracking/model/process_noise_covariance", process_noise_covariance_data);
-  node_handle.getParam("tracking/mean_false_alarms", mean_false_alarms);
-  node_handle.getParam("tracking/max_depth", max_depth);
-  node_handle.getParam("tracking/min_g_hypothesis_ratio", min_g_hypothesis_ratio);
-  node_handle.getParam("tracking/max_g_hypothesis", max_g_hypothesis);
+  getParam(node_handle, "tracking/object_matching/buffer_length", buffer_length);
+  getParam(node_handle, "tracking/object_matching/min_buffer_filling", min_buffer_filling);
+  getParam(node_handle, "tracking/object_matching/distance_threshold", distance_threshold);
+  getParam(node_handle, "tracking/object_matching/orientation_angle_threshold", orientation_angle_threshold);
+  getParam(node_handle, "tracking/object_matching/aperture_angle_threshold", aperture_angle_threshold);
+  getParam(node_handle, "tracking/model/time_step", time_step);
+  getParam(node_handle, "tracking/model/max_mahalanobis_distance", max_mahalanobis_distance);
+  getParam(node_handle, "tracking/model/skip_decay_rate", skip_decay_rate);
+  getParam(node_handle, "tracking/model/probability_start", probability_start);
+  getParam(node_handle, "tracking/model/probability_detection", probability_detection);
+  getParam(node_handle, "tracking/model/measurement_noise_covariance", measurement_noise_covariance_data);
+  getParam(node_handle, "tracking/model/initial_state_covariance", initial_state_covariance_data);
+  getParam(node_handle, "tracking/model/process_noise_covariance", process_noise_covariance_data);
+  getParam(node_handle, "tracking/false_alarm_likelihood", false_alarm_likelihood);
+  getParam(node_handle, "tracking/max_depth", max_depth);
+  getParam(node_handle, "tracking/min_g_hypothesis_ratio", min_g_hypothesis_ratio);
+  getParam(node_handle, "tracking/max_g_hypothesis", max_g_hypothesis);
 
   tracking::mht::ObjectState::MeasurementNoiseCovariance measurement_noise_covariance(
       measurement_noise_covariance_data.data());
@@ -209,7 +231,7 @@ MultiTrackerROS::getMultiTracking(ros::NodeHandle& node_handle) {
 
   multi_tracking.reset(new tracking::MultiHypothesisTracking(fast_object_matching,
                                                              model,
-                                                             mean_false_alarms,
+                                                             false_alarm_likelihood,
                                                              max_depth,
                                                              min_g_hypothesis_ratio,
                                                              max_g_hypothesis));
@@ -218,7 +240,7 @@ MultiTrackerROS::getMultiTracking(ros::NodeHandle& node_handle) {
 
 std::shared_ptr<visualization::LaserObjectTrackerVisualization> MultiTrackerROS::getVisualization(ros::NodeHandle& node_handle) {
   std::string base_frame;
-  node_handle.getParam("base_frame", base_frame);
+  getParam(node_handle, "base_frame", base_frame);
 
   return std::make_shared<visualization::LaserObjectTrackerVisualization>(node_handle, base_frame);
 }

@@ -45,6 +45,10 @@ class PointsNumberFilter : public BaseSegmentedFiltering {
 
   bool shouldFilter(const data_types::LaserScanFragment& fragment) const override;
 
+  bool isTrivial() const override {
+    return true;
+  }
+
   int getMinPoints() const;
 
   void setMinPoints(int min_points);

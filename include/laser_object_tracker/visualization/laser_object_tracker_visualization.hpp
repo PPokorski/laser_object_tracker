@@ -81,13 +81,7 @@ class LaserObjectTrackerVisualization {
 
   void publishPoint(const feature_extraction::features::Point2D& point, const std_msgs::ColorRGBA& color);
 
-  void publishTracker(const tracking::BaseTracking& tracker, const std_msgs::ColorRGBA& color);
-
   void publishMultiTracker(const std::shared_ptr<tracking::BaseMultiTracking<feature_extraction::features::Object>>& multi_tracker);
-
-  void publishMultiTracker(const tracking::MultiTracking& multi_tracker);
-
-  void publishMultiTracker(const tracking::MultiHypothesisTracking& multi_tracking);
 
   void publishAssignments(const tracking::MultiTracking& multi_tracker,
                           const std::vector<feature_extraction::features::Feature>& measurements,

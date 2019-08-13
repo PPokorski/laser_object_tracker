@@ -260,7 +260,10 @@ MDL_STATE *ObjectModel::getNewState(int i, MDL_STATE *state, MDL_REPORT *report)
       tryMoveState(next_state, object_report, assignment);
     }
 
-    updateState(next_state, object_report);
+    if (!updateState(next_state, object_report)) {
+      delete next_state;
+      next_state = nullptr;
+    }
   }
 
   return next_state;
@@ -337,7 +340,7 @@ void ObjectModel::tryMoveState(ObjectState* state,
   }
 }
 
-void ObjectModel::updateState(ObjectState* state, const ObjectReport* report) const {
+bool ObjectModel::updateState(ObjectState* state, const ObjectReport* report) const {
   double mahalanobis_distance = mahalanobisDistance(*state, *report);
   if (mahalanobis_distance <= max_mahalanobis_distance_) {
     state->setLogLikelihood(calculateLogLikelihood(state->getKalmanFilter(), mahalanobis_distance));
@@ -345,9 +348,10 @@ void ObjectModel::updateState(ObjectState* state, const ObjectReport* report) co
     const ObjectState::Measurement& measurement = report->getReferencePoint();
     state->update(measurement);
     state->resetTimesSkipped();
+
+    return true;
   } else {
-    delete state;
-    state = nullptr;
+    return false;
   }
 }
 
