@@ -54,7 +54,7 @@ class MultiTrackerROS {
  public:
   using Feature = feature_extraction::features::Object;
 
-  MultiTrackerROS(const ros::NodeHandle& node_handle);
+  explicit MultiTrackerROS(int id, const ros::NodeHandle& node_handle);
 
   void update();
 
@@ -70,7 +70,10 @@ class MultiTrackerROS {
   static std::shared_ptr<tracking::BaseMultiTracking<Feature>> getMultiTracking(
       ros::NodeHandle& node_handle);
   static std::shared_ptr<visualization::LaserObjectTrackerVisualization> getVisualization(
+      int id,
       ros::NodeHandle& node_handle);
+
+  int id_;
 
   ros::NodeHandle node_handle_;
   ros::Subscriber sub_laser_scan;

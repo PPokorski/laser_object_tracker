@@ -40,7 +40,13 @@ int main(int ac, char **av) {
   ros::NodeHandle pnh("~");
 
   ros::Rate rate(10.0);
-  laser_object_tracker::MultiTrackerROS tracker_ros(pnh);
+  int scanners_number;
+  laser_object_tracker::getParam(pnh, "scanners_number", scanners_number);
+  std::vector<laser_object_tracker::MultiTrackerROS> trackers_ros;
+  trackers_ros.reserve(scanners_number);
+  for (int i = 0; i < scanners_number; ++i) {
+    trackers_ros.emplace_back(i, pnh);
+  }
   ROS_INFO("Done initialization");
 
   std::chrono::high_resolution_clock::time_point begin, end;
@@ -48,7 +54,9 @@ int main(int ac, char **av) {
     ros::spinOnce();
     begin = std::chrono::high_resolution_clock::now();
 
-    tracker_ros.update();
+    for (auto& tracker : trackers_ros) {
+      tracker.update();
+    }
 
     end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> duration = end - begin;

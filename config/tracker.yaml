@@ -1,5 +1,6 @@
 #base_frame: "/base_laser_front_link"
 base_frame: "/robot_0/odom"
+scanners_number: 2
 transform_wait_timeout: 0.5
 segmentation:
     type: "AdaptiveThresholdDetection"
@@ -33,7 +34,9 @@ tracking:
   model:
     time_step: 0.1
     max_mahalanobis_distance: 0.5
-    skip_decay_rate: 20.0
+    target_confirmation_rate: 0.02
+    target_confirmation_threshold: 0.9
+    hold_target_probability: 0.99
     probability_start: 0.01
     probability_detection: 0.9
     measurement_noise_covariance: [0.1, 0.0,

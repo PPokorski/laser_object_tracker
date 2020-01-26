@@ -35,9 +35,10 @@
 #include "laser_object_tracker/multi_tracker_ros.hpp"
 
 namespace laser_object_tracker {
-MultiTrackerROS::MultiTrackerROS(const ros::NodeHandle& node_handle)
-  : node_handle_(node_handle),
-    sub_laser_scan(node_handle_.subscribe("in_laser_scan",
+MultiTrackerROS::MultiTrackerROS(int id, const ros::NodeHandle& node_handle)
+  : id_(id),
+    node_handle_(node_handle),
+    sub_laser_scan(node_handle_.subscribe("in_laser_scan/" + std::to_string(id_),
                                           1,
                                           &MultiTrackerROS::laserScanCallback,
                                           this)),
@@ -48,7 +49,7 @@ MultiTrackerROS::MultiTrackerROS(const ros::NodeHandle& node_handle)
     segmented_filtering_(getSegmentedFiltering(node_handle_)),
     feature_extraction_(getFeatureExtraction(node_handle_)),
     multi_tracking_(getMultiTracking(node_handle_)),
-    visualization_(getVisualization(node_handle_)) {
+    visualization_(getVisualization(id, node_handle_)) {
   getParam(node_handle_, "base_frame", base_frame_);
   double transform_wait_timeout;
   getParam(node_handle_, "transform_wait_timeout", transform_wait_timeout);
@@ -174,7 +175,9 @@ MultiTrackerROS::getMultiTracking(ros::NodeHandle& node_handle) {
          aperture_angle_threshold,
          time_step,
          max_mahalanobis_distance,
-         skip_decay_rate,
+         target_confirmation_rate,
+         target_confirmation_threshold,
+         hold_target_probability,
          probability_start,
          probability_detection,
          false_alarm_likelihood,
@@ -194,7 +197,9 @@ MultiTrackerROS::getMultiTracking(ros::NodeHandle& node_handle) {
   getParam(node_handle, "tracking/object_matching/aperture_angle_threshold", aperture_angle_threshold);
   getParam(node_handle, "tracking/model/time_step", time_step);
   getParam(node_handle, "tracking/model/max_mahalanobis_distance", max_mahalanobis_distance);
-  getParam(node_handle, "tracking/model/skip_decay_rate", skip_decay_rate);
+  getParam(node_handle, "tracking/model/target_confirmation_rate", target_confirmation_rate);
+  getParam(node_handle, "tracking/model/target_confirmation_threshold", target_confirmation_threshold);
+  getParam(node_handle, "tracking/model/hold_target_probability", hold_target_probability);
   getParam(node_handle, "tracking/model/probability_start", probability_start);
   getParam(node_handle, "tracking/model/probability_detection", probability_detection);
   getParam(node_handle, "tracking/model/measurement_noise_covariance", measurement_noise_covariance_data);
@@ -222,7 +227,9 @@ MultiTrackerROS::getMultiTracking(ros::NodeHandle& node_handle) {
   auto* model = new tracking::mht::ObjectModel(
       time_step,
       max_mahalanobis_distance,
-      skip_decay_rate,
+      target_confirmation_rate,
+      target_confirmation_threshold,
+      hold_target_probability,
       probability_start,
       probability_detection,
       measurement_noise_covariance,
@@ -238,10 +245,12 @@ MultiTrackerROS::getMultiTracking(ros::NodeHandle& node_handle) {
   return multi_tracking;
 }
 
-std::shared_ptr<visualization::LaserObjectTrackerVisualization> MultiTrackerROS::getVisualization(ros::NodeHandle& node_handle) {
+std::shared_ptr<visualization::LaserObjectTrackerVisualization> MultiTrackerROS::getVisualization(
+    int id,
+    ros::NodeHandle& node_handle) {
   std::string base_frame;
   getParam(node_handle, "base_frame", base_frame);
 
-  return std::make_shared<visualization::LaserObjectTrackerVisualization>(node_handle, base_frame);
+  return std::make_shared<visualization::LaserObjectTrackerVisualization>(id, node_handle, base_frame);
 }
 }  // namespace laser_object_tracker

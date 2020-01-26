@@ -37,6 +37,7 @@
 #include <list>
 
 #include <Eigen/Core>
+#include <Eigen/StdVector>
 
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/video/tracking.hpp>
@@ -153,6 +154,8 @@ class ObjectState : public MDL_STATE {
               const ros::Time& timestamp,
               double log_likelihood,
               int times_skipped,
+              int times_updated,
+              bool is_confirmed_target,
               ReferencePointType reference_point_type,
               const ReferencePointSource& reference_point_source,
               const cv::KalmanFilter& kalman_filter,
@@ -162,6 +165,8 @@ class ObjectState : public MDL_STATE {
                     timestamp,
                     log_likelihood,
                     times_skipped,
+                    times_updated,
+                    is_confirmed_target,
                     reference_point_type,
                     reference_point_source,
                     kalman_filter) {
@@ -174,6 +179,8 @@ class ObjectState : public MDL_STATE {
               const ros::Time& timestamp,
               double log_likelihood,
               int times_skipped,
+              int times_updated,
+              bool is_confirmed_target,
               ReferencePointType reference_point_type,
               const ReferencePointSource& reference_point_source,
               const cv::KalmanFilter& kalman_filter)
@@ -182,6 +189,8 @@ class ObjectState : public MDL_STATE {
         timestamp_(timestamp),
         log_likelihood_(log_likelihood),
         times_skipped_(times_skipped),
+        times_updated_(times_updated),
+        is_confirmed_target_(is_confirmed_target),
         reference_point_type_(reference_point_type),
         kalman_filter_(copyKalmanFilter(kalman_filter)),
         is_updated_(true) {
@@ -193,6 +202,8 @@ class ObjectState : public MDL_STATE {
               const ros::Time& timestamp,
               double log_likelihood,
               int times_skipped,
+              int times_updated,
+              bool is_confirmed_target,
               ReferencePointType reference_point_type,
               const ReferencePointSource& reference_point_source,
               cv::KalmanFilter&& kalman_filter,
@@ -202,6 +213,8 @@ class ObjectState : public MDL_STATE {
         timestamp_(timestamp),
         log_likelihood_(log_likelihood),
         times_skipped_(times_skipped),
+        times_updated_(times_updated),
+        is_confirmed_target_(is_confirmed_target),
         reference_point_type_(reference_point_type),
         kalman_filter_(std::move(kalman_filter)),
         is_updated_(true) {
@@ -216,6 +229,8 @@ class ObjectState : public MDL_STATE {
         timestamp_(other.timestamp_),
         log_likelihood_(other.log_likelihood_),
         times_skipped_(other.times_skipped_),
+        times_updated_(other.times_updated_),
+        is_confirmed_target_(other.is_confirmed_target_),
         reference_point_type_(other.reference_point_type_),
         kalman_filter_(copyKalmanFilter(other.kalman_filter_)),
         is_updated_(other.is_updated_),
@@ -249,12 +264,28 @@ class ObjectState : public MDL_STATE {
     ++times_skipped_;
   }
 
+  void incrementTimesUpdated() {
+    ++times_updated_;
+  }
+
   void resetTimesSkipped() {
     times_skipped_ = 0;
   }
 
+  void setIsConfirmedTarget(bool is_confirmed_target) {
+    is_confirmed_target_ = is_confirmed_target;
+  }
+
   int getTimesSkipped() const {
     return times_skipped_;
+  }
+
+  int getTimesUpdated() const {
+    return times_updated_;
+  }
+
+  bool isConfirmedTarget() const {
+    return is_confirmed_target_;
   }
 
   ReferencePointType getReferencePointType() const {
@@ -416,12 +447,14 @@ class ObjectState : public MDL_STATE {
 
   double log_likelihood_;
 
-  int times_skipped_;
+  int times_skipped_ = 0;
+  int times_updated_ = 0;
 
   ReferencePointType reference_point_type_;
 
   cv::KalmanFilter kalman_filter_;
   bool is_updated_ = false;
+  bool is_confirmed_target_ = false;
 
   feature_extraction::features::Segment2D segment_1_, segment_2_;
 
@@ -432,7 +465,9 @@ class ObjectModel : public MODEL {
  public:
   ObjectModel(double time_step,
               double max_mahalanobis_distance,
-              double skip_decay_rate,
+              double target_confirmation_rate,
+              double target_confirmation_threshold,
+              double hold_target_probability,
               double start_likelihood,
               double detect_likelihood,
               const ObjectState::MeasurementNoiseCovariance& measurement_noise_covariance,
@@ -441,7 +476,9 @@ class ObjectModel : public MODEL {
       : MODEL(),
         time_step_(time_step),
         max_mahalanobis_distance_(max_mahalanobis_distance),
-        skip_decay_rate_(skip_decay_rate),
+        target_confirmation_rate_(target_confirmation_rate),
+        target_confirmation_log_threshold_(std::log(target_confirmation_threshold)),
+        hold_target_probability_(hold_target_probability),
         start_log_likelihood_(std::log(start_likelihood)),
         skip_log_likelihood_(std::log(1 - detect_likelihood)),
         detect_log_likelihood_(std::log(detect_likelihood)),
@@ -463,12 +500,13 @@ class ObjectModel : public MODEL {
 
   double getEndLogLikelihood(MDL_STATE *state) override {
     auto object_state = dynamic_cast<ObjectState&>(*state);
-    return std::log(getEndLikelihood(object_state));
+    // Likelihood cannot be 0.0, hence std::nextafter, when getContinueLikelihood returns 1.0
+    return std::log(std::nextafter(1.0 - getContinueLikelihood(object_state), 1.0));
   }
 
   double getContinueLogLikelihood(MDL_STATE *state) override {
     auto object_state = dynamic_cast<ObjectState&>(*state);
-    return std::log(1.0 - getEndLikelihood(object_state));
+    return std::log(getContinueLikelihood(object_state));
   }
 
   double getSkipLogLikelihood(MDL_STATE *state) override {
@@ -482,7 +520,9 @@ class ObjectModel : public MODEL {
   MDL_STATE *getNewState(int i, MDL_STATE *state, MDL_REPORT *report) override;
 
  private:
-  double getEndLikelihood(const ObjectState& state) const;
+  double getIsConfirmedTargetLikelihood(const ObjectState& state) const;
+
+  double getContinueLikelihood(const ObjectState& state) const;
 
   double mahalanobisDistance(const ObjectState& state,
                              const ObjectReport& report) const;
@@ -499,9 +539,10 @@ class ObjectModel : public MODEL {
   double time_step_;
   double max_mahalanobis_distance_;
 
-  // The higher rate, the slower decay
-  double skip_decay_rate_;
+  double target_confirmation_rate_;
+  double target_confirmation_log_threshold_;
 
+  double hold_target_probability_;
   double start_log_likelihood_;
   double skip_log_likelihood_;
   double detect_log_likelihood_;

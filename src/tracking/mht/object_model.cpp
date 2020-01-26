@@ -238,6 +238,8 @@ MDL_STATE *ObjectModel::getNewState(int i, MDL_STATE *state, MDL_REPORT *report)
                                  object_report->getTimestamp(),
                                  start_log_likelihood_,
                                  0,
+                                 0,
+                                 false,
                                  object_report->getReferencePointType(),
                                  object_report->getReferencePointSource(),
                                  std::move(getKalmanFilter()),
@@ -269,10 +271,16 @@ MDL_STATE *ObjectModel::getNewState(int i, MDL_STATE *state, MDL_REPORT *report)
   return next_state;
 }
 
-double ObjectModel::getEndLikelihood(const ObjectState& state) const {
-  double end_likelihood = 1.0 - std::exp(-state.getTimesSkipped() / skip_decay_rate_);
-  // End probability cannot be 0.0
-  return std::nextafter(end_likelihood, 1.0);
+double ObjectModel::getIsConfirmedTargetLikelihood(const ObjectState& state) const {
+  if (state.isConfirmedTarget()) {
+    return 1.0;
+  } else {
+    return 1.0 - std::exp(-target_confirmation_rate_ * state.getTimesUpdated());
+  }
+}
+
+double ObjectModel::getContinueLikelihood(const ObjectState& state) const {
+  return std::pow(hold_target_probability_, state.getTimesSkipped());
 }
 
 double ObjectModel::mahalanobisDistance(const ObjectState& state, const ObjectReport& report) const {
@@ -343,7 +351,15 @@ void ObjectModel::tryMoveState(ObjectState* state,
 bool ObjectModel::updateState(ObjectState* state, const ObjectReport* report) const {
   double mahalanobis_distance = mahalanobisDistance(*state, *report);
   if (mahalanobis_distance <= max_mahalanobis_distance_) {
-    state->setLogLikelihood(calculateLogLikelihood(state->getKalmanFilter(), mahalanobis_distance));
+    state->incrementTimesUpdated();
+    double confirmed_target_likelihood = getIsConfirmedTargetLikelihood(*state);
+    if (confirmed_target_likelihood > target_confirmation_log_threshold_) {
+      state->setIsConfirmedTarget(true);
+      confirmed_target_likelihood = 1.0;
+    }
+
+    state->setLogLikelihood(calculateLogLikelihood(state->getKalmanFilter(), mahalanobis_distance) +
+                            std::log(confirmed_target_likelihood));
 
     const ObjectState::Measurement& measurement = report->getReferencePoint();
     state->update(measurement);

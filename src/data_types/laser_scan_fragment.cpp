@@ -39,6 +39,10 @@
 namespace laser_object_tracker {
 namespace data_types {
 
+LaserScanFragment::LaserScanFragmentFactory::LaserScanFragmentFactory()
+    : laser_projector_(std::make_unique<laser_geometry::LaserProjection>()),
+      transform_listener_(std::make_unique<tf::TransformListener>()) {}
+
 LaserScanFragment LaserScanFragment::LaserScanFragmentFactory::fromLaserScan(const LaserScanType& laser_scan) {
   LaserScanFragment fragment;
   fragment.laser_scan_ = laser_scan;
@@ -75,7 +79,7 @@ void LaserScanFragment::LaserScanFragmentFactory::completeInitialization(LaserSc
   }
 
   sensor_msgs::PointCloud2 pcl2;
-  laser_projector_.projectLaser(fragment.laser_scan_, pcl2);
+  laser_projector_->projectLaser(fragment.laser_scan_, pcl2);
   pcl::moveFromROSMsg(pcl2, fragment.laser_scan_cloud_);
 
   fragment.occlusion_vector_.resize(fragment.laser_scan_.ranges.size(), false);
@@ -100,7 +104,7 @@ void LaserScanFragment::LaserScanFragmentFactory::completeInitialization(LaserSc
     return;
   }
 
-  if (!transform_listener_.waitForTransform(
+  if (!transform_listener_->waitForTransform(
       base_frame,
       fragment.laser_scan_.header.frame_id,
       fragment.laser_scan_.header.stamp + ros::Duration().fromSec(fragment.laser_scan_.ranges.size() *
@@ -111,10 +115,10 @@ void LaserScanFragment::LaserScanFragmentFactory::completeInitialization(LaserSc
   }
 
   sensor_msgs::PointCloud2 pcl2;
-  laser_projector_.transformLaserScanToPointCloud(base_frame,
-                                                  fragment.laser_scan_,
-                                                  pcl2,
-                                                  transform_listener_);
+  laser_projector_->transformLaserScanToPointCloud(base_frame,
+                                                   fragment.laser_scan_,
+                                                   pcl2,
+                                                   *transform_listener_);
   pcl::moveFromROSMsg(pcl2, fragment.laser_scan_cloud_);
 
   fragment.occlusion_vector_.resize(fragment.laser_scan_.ranges.size(), false);

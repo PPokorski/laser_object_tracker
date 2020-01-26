@@ -53,8 +53,16 @@ void LaserObjectTrackerVisualization::publishPointClouds(const std::vector<data_
 
     pcl::PointCloud<pcl::PointXYZRGB> tmp;
     pcl::copyPointCloud(fragment.pointCloud(), tmp);
+
     for (auto& point : tmp.points) {
       point.rgb = color;
+    }
+
+    for (const auto& point : fragment) {
+      if (point.isOccluded()) {
+        feature_extraction::features::Point2D xy(point.point().x, point.point().y);
+        publishPoint(xy, rgb_colors_.at(i), "Occlusion");
+      }
     }
 
     pcl += tmp;
@@ -72,12 +80,16 @@ void LaserObjectTrackerVisualization::expandToNColors(int colors) {
 
   std::random_device rd;
   std::mt19937 gen(rd());
-  std::uniform_int_distribution<uint8_t> dist;
+  std::uniform_real_distribution<float> dist(0.0, 360.0);
+  static float hue = dist(gen);
+  static constexpr float golden_ratio = 222.49223595f;
 
   while (colors > colours_.size()) {
-    uint8_t r = dist(gen),
-        g = dist(gen),
-        b = dist(gen);
+    float h = hue,
+        s = 0.75,
+        v = 0.75;
+
+    auto [r, g, b] = HSVToRGB(h, s, v);
     uint32_t rgb = static_cast<uint32_t>(r) << 16 |
         static_cast<uint32_t>(g) << 8 |
         static_cast<uint32_t>(b);
@@ -90,7 +102,25 @@ void LaserObjectTrackerVisualization::expandToNColors(int colors) {
     color.b = b / 255.0;
     color.a = 1.0;
     rgb_colors_.push_back(color);
+
+    hue += golden_ratio;
+    hue = std::fmod(hue, 360.0);
   }
+}
+
+std::tuple<uint8_t, uint8_t, uint8_t> LaserObjectTrackerVisualization::HSVToRGB(float h, float s, float v) const {
+  cv::Mat hsv(cv::Size(1, 1), CV_32FC3);
+  hsv.at<cv::Vec3f>(0, 0)[0] = h;
+  hsv.at<cv::Vec3f>(0, 0)[1] = s;
+  hsv.at<cv::Vec3f>(0, 0)[2] = v;
+
+  cv::Mat rgb(hsv.size(), hsv.type());
+  cv::cvtColor(hsv, rgb, CV_HSV2RGB);
+  cv::Vec3f channel = rgb.at<cv::Vec3f>(0, 0);
+  channel *= 255.0;
+  return {channel[0],
+          channel[1],
+          channel[2]};
 }
 
 void LaserObjectTrackerVisualization::publishSegment(const feature_extraction::features::Segment2D& segment,
@@ -132,13 +162,14 @@ void LaserObjectTrackerVisualization::publishCorner(const feature_extraction::fe
 }
 
 void LaserObjectTrackerVisualization::publishPoint(const feature_extraction::features::Point2D& point,
-                                                   const std_msgs::ColorRGBA& color) {
+                                                   const std_msgs::ColorRGBA& color,
+                                                   const std::string& ns) {
     Eigen::Vector3d publish_point;
     publish_point.head<2>() = point;
     publish_point(2) = 0.0;
 
     rviz_visual_tools_->publishSphere(publish_point, color,
-            rviz_visual_tools_->getScale(rviz_visual_tools::scales::XXLARGE));
+            rviz_visual_tools_->getScale(rviz_visual_tools::scales::XXXLARGE), ns);
 }
 
 void LaserObjectTrackerVisualization::publishCorners(const feature_extraction::features::Corners2D& corners) {
@@ -170,7 +201,7 @@ void LaserObjectTrackerVisualization::publishMultiTracker(const std::shared_ptr<
                           track->track_.back().velocity_.y());
 
     rviz_visual_tools::scales text_scale;
-    if (state.tail<2>().norm() >= 0.1) {
+    if (state.tail<2>().norm() >= 0.0) {
       double yaw = state.tail<2>().norm() > 0.0 ? std::atan2(state(3), state(2)) : 0.0;
 
       Eigen::Affine3d pose = rviz_visual_tools::RvizVisualTools::convertFromXYZRPY(state(0), state(1), 0.0, 0.0, 0.0, yaw,
@@ -224,7 +255,7 @@ void LaserObjectTrackerVisualization::publishAssignments(const tracking::MultiTr
 
 void LaserObjectTrackerVisualization::publishObject(const feature_extraction::features::Object& object,
                                                     const std_msgs::ColorRGBA& color) {
-  publishPoint(object.getReferencePoint(), color);
+  publishPoint(object.getReferencePoint(), color, "Reference point");
 
   for (const auto& segment : object.getSegments()) {
     publishSegment(segment, color);

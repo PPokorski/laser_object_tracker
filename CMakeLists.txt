@@ -87,7 +87,6 @@ add_library(${PROJECT_NAME}_tracking
         src/tracking/corner_tracker.cpp
         src/tracking/iteration_tracker_rejection.cpp
         src/tracking/kalman_filter.cpp
-        src/tracking/mht/motion_model.cpp
         src/tracking/mht/object_model.cpp
         src/tracking/multi_hypothesis_tracking.cpp
         src/tracking/multi_tracking.cpp

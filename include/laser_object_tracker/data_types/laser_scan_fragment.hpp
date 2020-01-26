@@ -62,6 +62,8 @@ class LaserScanFragment {
    */
   class LaserScanFragmentFactory {
    public:
+    LaserScanFragmentFactory();
+
     /**
      * @brief Copy factory method, initializes all internal data.
      * @param laser_scan LaserScan measurement. This value is being copied.
@@ -90,8 +92,8 @@ class LaserScanFragment {
                                 const std::string& base_frame,
                                 const ros::Duration& timeout);
 
-    laser_geometry::LaserProjection laser_projector_;
-    tf::TransformListener transform_listener_;
+    std::unique_ptr<laser_geometry::LaserProjection> laser_projector_;
+    std::unique_ptr<tf::TransformListener> transform_listener_;
   };
 
   /**
