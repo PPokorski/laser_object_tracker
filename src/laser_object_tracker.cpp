@@ -50,6 +50,8 @@ int main(int ac, char **av) {
   }
   ROS_INFO("Done initialization");
 
+  // TODO Use parameters, move to one common class
+  // Add support for velocity difference
   laser_object_tracker::track_unifying::TrackUnifying track_unifying(0.52, 0.5);
 
   std::string base_frame;

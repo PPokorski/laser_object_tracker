@@ -37,6 +37,8 @@ namespace laser_object_tracker {
 namespace feature_extraction {
 namespace features {
 double distanceBetweenSegments(const Segment2D& lhs, const Segment2D& rhs) {
+  // Taken from
+  // http://geomalgorithms.com/a07-_distance.html
   static constexpr double SMALL_NUMBER = 1e-3;
   Eigen::Vector2d u = lhs.getEnd() - lhs.getStart(),
                   v = rhs.getEnd() - rhs.getStart(),

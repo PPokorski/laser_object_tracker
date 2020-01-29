@@ -381,8 +381,6 @@ void ObjectTracker::startTrack(int i, int i1, MDL_STATE *state, MDL_REPORT *repo
   auto object_state = dynamic_cast<ObjectState*>(state);
   auto object_report = dynamic_cast<ObjectReport*>(report);
 
-  std::cout << "Start " << i << std::endl;
-
   TrackElement track_element{
     object_state->getLogLikelihood(),
     object_state->getTimestamp(),
@@ -402,8 +400,6 @@ void ObjectTracker::continueTrack(int i, int i1, MDL_STATE *state, MDL_REPORT *r
   auto object_state = dynamic_cast<ObjectState*>(state);
   auto object_report = dynamic_cast<ObjectReport*>(report);
 
-  std::cout << "Continue " << i << std::endl;
-
   TrackElement track_element{
       object_state->getLogLikelihood(),
       object_state->getTimestamp(),
@@ -421,8 +417,6 @@ void ObjectTracker::continueTrack(int i, int i1, MDL_STATE *state, MDL_REPORT *r
 
 void ObjectTracker::skipTrack(int i, int i1, MDL_STATE *state) {
   auto object_state = dynamic_cast<ObjectState*>(state);
-
-  std::cout << "Skip " << i << std::endl;
 
   TrackElement track_element{
       object_state->getLogLikelihood(),

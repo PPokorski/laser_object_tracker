@@ -37,6 +37,7 @@
 #include <map>
 
 #include <boost/bimap.hpp>
+#include <boost/bimap/multiset_of.hpp>
 
 #include "laser_object_tracker/tracking/multi_hypothesis_tracking.hpp"
 
@@ -62,35 +63,6 @@ class TrackUnifying {
     int track_id;
   };
 
-  struct TrackIDWithSource {
-    int id;
-    TrackSource source;
-  };
-
-  struct CompareId {
-    using is_transparent = void;
-
-    bool operator()(const TrackIDWithSource& lhs, const TrackIDWithSource& rhs) const {
-      return lhs.id < rhs.id;
-    }
-
-    bool operator()(int lhs, const TrackIDWithSource& rhs) const {
-      return lhs < rhs.id;
-    }
-
-    bool operator()(const TrackIDWithSource& lhs, int rhs) const {
-      return lhs.id < rhs;
-    }
-
-    bool operator()(const TrackSource& lhs, const TrackIDWithSource& rhs) const {
-      return lhs < rhs.source;
-    }
-
-    bool operator()(const TrackIDWithSource& lhs, const TrackSource& rhs) const {
-      return lhs.source < rhs;
-    }
-  };
-
   void unifySourcePair(const std::pair<int, Tracks>& lhs,
                        const std::pair<int, Tracks>& rhs);
 
@@ -109,8 +81,7 @@ class TrackUnifying {
   double angle_threshold_;
   double distance_threshold_;
 
-  std::multiset<TrackIDWithSource, CompareId> tracks_sources_;
-
+  boost::bimap<boost::bimaps::multiset_of<int>, TrackSource> tracks_sources_;
   Tracks tracks_;
 };
 }  // namespace track_merging

@@ -41,7 +41,7 @@ TrackUnifying::TrackUnifying(double angle_threshold, double distance_threshold)
 std::vector<tracking::ObjectTrack> TrackUnifying::unifyTracks(const std::map<int, Tracks>& tracks) {
   for (const auto& id_tracks : tracks) {
     for (const auto& track : id_tracks.second) {
-      if (tracks_sources_.count(TrackSource{id_tracks.first, track.id_}) == 0) {
+      if (tracks_sources_.right.count(TrackSource{id_tracks.first, track.id_}) == 0) {
         tracks_sources_.insert({current_id_++, {id_tracks.first, track.id_}});
       }
     }
@@ -55,18 +55,19 @@ std::vector<tracking::ObjectTrack> TrackUnifying::unifyTracks(const std::map<int
 
   tracks_.reserve(tracks_sources_.size());
   for (auto it = tracks_sources_.begin(); it != tracks_sources_.end();) {
-    int id = it->id;
-    auto it_end = tracks_sources_.upper_bound(*it);
+    int id = it->left;
+    auto left_it_end = tracks_sources_.left.upper_bound(id);
+    auto it_end = tracks_sources_.project_up(left_it_end);
     Tracks filtered_tracks;
     for (; it != it_end; ++it) {
-      auto& track = tracks.at(it->source.tracker_id);
-      auto track_it = findTrackByID(track, it->source.track_id);
+      auto& track = tracks.at(it->right.tracker_id);
+      auto track_it = findTrackByID(track, it->right.track_id);
       if (track_it != track.end()) {
         filtered_tracks.push_back(*track_it);
       } else {
         auto it_to_erase = it--; // Set it to previous position
-        if (tracks_sources_.count(it_to_erase->id) == 1) {
-          eraseTrack(it_to_erase->id);
+        if (tracks_sources_.left.count(id) == 1) {
+          eraseTrack(id);
         }
         tracks_sources_.erase(it_to_erase);
       }
@@ -94,22 +95,22 @@ void TrackUnifying::unifySourcePair(const std::pair<int, Tracks>& lhs,
         TrackSource source_1 {lhs.first, it_1->id_};
         TrackSource source_2 {rhs.first, it_2->id_};
 
-        auto set_it_1 = tracks_sources_.find(source_1);
-        auto set_it_2 = tracks_sources_.find(source_2);
-        if (set_it_1 == tracks_sources_.end() || set_it_2 == tracks_sources_.end()) {
+        auto bimap_it_1 = tracks_sources_.right.find(source_1);
+        auto bimap_it_2 = tracks_sources_.right.find(source_2);
+        if (bimap_it_1 == tracks_sources_.right.end() || bimap_it_2 == tracks_sources_.right.end()) {
           continue;
         }
-        if (set_it_1->id == set_it_2->id) {
+        if (bimap_it_1->second == bimap_it_2->second) { // Compare IDs
           continue;
         }
 
-        auto first_id = set_it_1->id <= set_it_2->id ? set_it_1 : set_it_2;
-        auto second_id = set_it_1->id <= set_it_2->id ? set_it_2 : set_it_1;
+        auto first_id = bimap_it_1->second <= bimap_it_2->second ? bimap_it_1 : bimap_it_2;
+        auto second_id = bimap_it_1->second <= bimap_it_2->second ? bimap_it_2 : bimap_it_1;
 
-        int id = first_id->id;
-        TrackSource source = second_id->source;
+        int id = first_id->second;
+        TrackSource source = second_id->first;
 
-        tracks_sources_.erase(second_id);
+        tracks_sources_.right.erase(second_id);
         tracks_sources_.insert({id, source});
       }
     }
