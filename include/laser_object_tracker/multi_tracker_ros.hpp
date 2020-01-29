@@ -53,10 +53,15 @@ void getParam(ros::NodeHandle& node_handle, const std::string& key, T& param) {
 class MultiTrackerROS {
  public:
   using Feature = feature_extraction::features::Object;
+  using Track = tracking::ObjectTrack;
 
   explicit MultiTrackerROS(int id, const ros::NodeHandle& node_handle);
 
-  void update();
+  tracking::BaseMultiTracking<Feature, Track>::Container update();
+
+  int getID() const {
+    return id_;
+  }
 
  private:
   void laserScanCallback(const sensor_msgs::LaserScan::Ptr& laser_scan);
@@ -67,7 +72,7 @@ class MultiTrackerROS {
       ros::NodeHandle& node_handle);
   static std::shared_ptr<feature_extraction::BaseFeatureExtraction<Feature>> getFeatureExtraction(
       ros::NodeHandle& node_handle);
-  static std::shared_ptr<tracking::BaseMultiTracking<Feature>> getMultiTracking(
+  static std::shared_ptr<tracking::BaseMultiTracking<Feature, Track>> getMultiTracking(
       ros::NodeHandle& node_handle);
   static std::shared_ptr<visualization::LaserObjectTrackerVisualization> getVisualization(
       int id,
@@ -89,7 +94,7 @@ class MultiTrackerROS {
   std::shared_ptr<segmentation::BaseSegmentation> segmentation_;
   std::shared_ptr<filtering::BaseSegmentedFiltering> segmented_filtering_;
   std::shared_ptr<feature_extraction::BaseFeatureExtraction<Feature>> feature_extraction_;
-  std::shared_ptr<tracking::BaseMultiTracking<Feature>> multi_tracking_;
+  std::shared_ptr<tracking::BaseMultiTracking<Feature, Track>> multi_tracking_;
   std::shared_ptr<visualization::LaserObjectTrackerVisualization> visualization_;
 };
 }  // namespace laser_object_tracker

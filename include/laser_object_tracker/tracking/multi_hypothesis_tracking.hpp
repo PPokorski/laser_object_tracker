@@ -43,7 +43,38 @@
 
 namespace laser_object_tracker {
 namespace tracking {
-class MultiHypothesisTracking : public BaseMultiTracking<feature_extraction::features::Object> {
+struct ObjectTrackElement {
+  double likelihood_;
+  ros::Time timestamp_;
+  bool was_updated_;
+
+  Eigen::Vector2d position_;
+  Eigen::Matrix2d position_covariance_;
+
+  Eigen::Vector2d velocity_;
+  Eigen::Matrix2d velocity_covariance_;
+
+  std::vector<feature_extraction::features::Point2D,
+              Eigen::aligned_allocator<feature_extraction::features::Point2D>> polyline_;
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
+struct ObjectTrack {
+  ObjectTrack() = default;
+
+  explicit ObjectTrack(int id) : id_(id) {}
+
+  ObjectTrack(int id, std::vector<ObjectTrackElement, Eigen::aligned_allocator<ObjectTrackElement>> track)
+      : id_(id),
+        track_(std::move(track)) {}
+
+  int id_;
+
+  std::vector<ObjectTrackElement, Eigen::aligned_allocator<ObjectTrackElement>> track_;
+};
+
+class MultiHypothesisTracking : public BaseMultiTracking<feature_extraction::features::Object, ObjectTrack> {
  public:
   MultiHypothesisTracking(object_matching::FastObjectMatching object_matching,
                           tracking::mht::ObjectModel* model,
@@ -54,7 +85,7 @@ class MultiHypothesisTracking : public BaseMultiTracking<feature_extraction::fea
 
   void predict() override;
 
-  void update(const std::vector<FeatureT>& measurements) override;
+  const Container& update(const std::vector<FeatureT>& measurements) override;
 
   ~MultiHypothesisTracking();
 

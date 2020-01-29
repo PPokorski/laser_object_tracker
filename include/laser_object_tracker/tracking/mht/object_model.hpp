@@ -439,6 +439,14 @@ class ObjectState : public MDL_STATE {
     return kalman_filter_;
   }
 
+  std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d>> getPolyline() const {
+    if (!is_second_initialized_) {
+      return {segment_1_.getStart(), segment_1_.getEnd()};
+    } else {
+      return {segment_1_.getEnd(), segment_1_.getStart(), segment_2_.getEnd()};
+    }
+  }
+
  private:
   void initializeWithPointSource(const ReferencePointSource& source);
 
@@ -579,12 +587,16 @@ class ObjectFalseAlarm : public DLISTnode {
 struct TrackElement {
   double likelihood_;
   ros::Time timestamp_;
+  bool was_updated_;
 
   Eigen::Vector2d position_;
   Eigen::Matrix2d position_covariance_;
 
   Eigen::Vector2d velocity_;
   Eigen::Matrix2d velocity_covariance_;
+
+  std::vector<feature_extraction::features::Point2D,
+              Eigen::aligned_allocator<feature_extraction::features::Point2D>> polyline_;
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };

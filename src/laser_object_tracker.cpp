@@ -34,6 +34,7 @@
 #include <chrono>
 
 #include "laser_object_tracker/multi_tracker_ros.hpp"
+#include "laser_object_tracker/track_unifying.hpp"
 
 int main(int ac, char **av) {
   ros::init(ac, av, "laser_object_tracker");
@@ -49,14 +50,27 @@ int main(int ac, char **av) {
   }
   ROS_INFO("Done initialization");
 
+  laser_object_tracker::track_unifying::TrackUnifying track_unifying(0.52, 0.5);
+
+  std::string base_frame;
+  laser_object_tracker::getParam(pnh, "base_frame", base_frame);
+  laser_object_tracker::visualization::LaserObjectTrackerVisualization vis(10, pnh, base_frame);
+
   std::chrono::high_resolution_clock::time_point begin, end;
   while (ros::ok()) {
+    vis.clearMarkers();
     ros::spinOnce();
     begin = std::chrono::high_resolution_clock::now();
 
+    std::map<int, laser_object_tracker::tracking::MultiHypothesisTracking::Container> tracks;
+
     for (auto& tracker : trackers_ros) {
-      tracker.update();
+      tracks.emplace(tracker.getID(), tracker.update());
     }
+    if (std::any_of(tracks.begin(), tracks.end(), [](const auto& id_track) {return !id_track.second.empty();})) {
+      vis.publishMultiTracker(track_unifying.unifyTracks(tracks));
+    }
+    vis.trigger();
 
     end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> duration = end - begin;

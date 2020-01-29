@@ -181,11 +181,16 @@ void LaserObjectTrackerVisualization::publishCorners(const feature_extraction::f
 }
 
 void LaserObjectTrackerVisualization::publishMultiTracker(const std::shared_ptr<tracking::BaseMultiTracking<
-    feature_extraction::features::Object>>& multi_tracker) {
-  expandToNColors(multi_tracker->size());
+    feature_extraction::features::Object, tracking::ObjectTrack>>& multi_tracker) {
+  publishMultiTracker(multi_tracker->getTracks());
+}
 
-  auto track = multi_tracker->begin();
-  for (int i = 0; i < multi_tracker->size(); ++i) {
+void LaserObjectTrackerVisualization::publishMultiTracker(const tracking::BaseMultiTracking<feature_extraction::features::Object,
+                                                                                            tracking::ObjectTrack>::Container& tracks) {
+  expandToNColors(tracks.size());
+
+  auto track = tracks.begin();
+  for (int i = 0; i < tracks.size(); ++i) {
     EigenSTL::vector_Vector3d path;
     for (const auto& point : track->track_) {
       Eigen::Vector3d vec(point.position_.x(), point.position_.y(), 0.0);
@@ -212,7 +217,7 @@ void LaserObjectTrackerVisualization::publishMultiTracker(const std::shared_ptr<
       using namespace std::string_literals;
       pose.translation()(2) += 0.3;
 
-      rviz_visual_tools_->publishText(pose, std::to_string(state.tail<2>().norm()) + " m/s"s,
+      rviz_visual_tools_->publishText(pose, "ID: " + std::to_string(track->id_) + " " + std::to_string(state.tail<2>().norm()) + " m/s"s,
                                       rviz_visual_tools::WHITE, rviz_visual_tools::XXXXLARGE, false);
 
       std::vector<std_msgs::ColorRGBA> colors(path.size(), rgb_colors_.at(i));

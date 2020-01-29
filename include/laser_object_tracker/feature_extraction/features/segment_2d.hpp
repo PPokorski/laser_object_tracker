@@ -140,6 +140,8 @@ using Segments2D = std::vector<Segment2D, Eigen::aligned_allocator<Segment2D>>;
 inline double angleBetweenSegments(const Segment2D& lhs, const Segment2D& rhs) {
   return angleBetweenLines(lhs.line(), rhs.line());
 }
+
+double distanceBetweenSegments(const Segment2D& lhs, const Segment2D& rhs);
 }  // namespace features
 }  // namespace feature_extraction
 }  // namespace laser_object_tracker

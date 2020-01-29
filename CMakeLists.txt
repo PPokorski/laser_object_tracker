@@ -74,6 +74,7 @@ target_link_libraries(${PROJECT_NAME}_filtering
 add_library(${PROJECT_NAME}_feature_extraction
         src/feature_extraction/features/corner_2d.cpp
         src/feature_extraction/features/object.cpp
+        src/feature_extraction/features/segment_2d.cpp
         src/feature_extraction/multi_line_detection.cpp
         src/feature_extraction/random_sample_consensus_corner_detection.cpp
         src/feature_extraction/random_sample_consensus_segment_detection.cpp
@@ -109,6 +110,7 @@ add_library(${PROJECT_NAME}_data_association
 add_executable(${PROJECT_NAME}_node
         src/laser_object_tracker.cpp
         src/multi_tracker_ros.cpp
+        src/track_unifying.cpp
         src/visualization/laser_object_tracker_visualization.cpp)
 
 target_link_libraries(${PROJECT_NAME}_node

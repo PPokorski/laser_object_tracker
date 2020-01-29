@@ -55,26 +55,25 @@ MultiHypothesisTracking::MultiHypothesisTracking(object_matching::FastObjectMatc
 void MultiHypothesisTracking::predict() {
 }
 
-void MultiHypothesisTracking::update(const std::vector<FeatureT>& measurements) {
+const MultiHypothesisTracking::Container& MultiHypothesisTracking::update(const std::vector<FeatureT>& measurements) {
   std::list<REPORT*> reports;
 
-  if (measurements.empty()) {
-    return;
-  }
-  if (!fast_object_matching_.isReady(measurements.front().getTimestamp())) {
-    fast_object_matching_.buffer(measurements);
-    fast_object_matching_.popOutdated(measurements.front().getTimestamp());
-    return;
-  }
-
-  for (const auto& measurement : measurements) {
-    if (fast_object_matching_.isMatched(measurement)) {
-      continue;
+  if (!measurements.empty()) {
+    if (!fast_object_matching_.isReady(measurements.front().getTimestamp())) {
+      fast_object_matching_.buffer(measurements);
+      fast_object_matching_.popOutdated(measurements.front().getTimestamp());
+      return tracks_;
     }
-    reports.push_back(new mht::ObjectReport(false_alarm_log_likelihood_,
-                                            measurement,
-                                            frame_number_,
-                                            corner_id_++));
+
+    for (const auto& measurement : measurements) {
+      if (fast_object_matching_.isMatched(measurement)) {
+        continue;
+      }
+      reports.push_back(new mht::ObjectReport(false_alarm_log_likelihood_,
+                                              measurement,
+                                              frame_number_,
+                                              corner_id_++));
+    }
   }
 
   multi_hypothesis_tracking_->addReports(reports);
@@ -90,17 +89,24 @@ void MultiHypothesisTracking::update(const std::vector<FeatureT>& measurements) 
       tracks_.back().track_.push_back({
         track_element.likelihood_,
         track_element.timestamp_,
+        track_element.was_updated_,
         track_element.position_,
         track_element.position_covariance_,
         track_element.velocity_,
-        track_element.velocity_covariance_
+        track_element.velocity_covariance_,
+        track_element.polyline_
       });
     }
   }
 
   ++frame_number_;
-  fast_object_matching_.buffer(measurements);
-  fast_object_matching_.popOutdated(measurements.front().getTimestamp());
+
+  if (!measurements.empty()) {
+    fast_object_matching_.buffer(measurements);
+    fast_object_matching_.popOutdated(measurements.front().getTimestamp());
+  }
+
+  return tracks_;
 }
 
 MultiHypothesisTracking::~MultiHypothesisTracking() {

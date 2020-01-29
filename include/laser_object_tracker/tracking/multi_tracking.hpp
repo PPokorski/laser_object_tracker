@@ -43,7 +43,34 @@
 
 namespace laser_object_tracker {
 namespace tracking {
-class MultiTracking : public BaseMultiTracking<feature_extraction::features::Feature> {
+struct TrackElement {
+  double likelihood_;
+  ros::Time timestamp_;
+
+  Eigen::Vector2d position_;
+  Eigen::Matrix2d position_covariance_;
+
+  Eigen::Vector2d velocity_;
+  Eigen::Matrix2d velocity_covariance_;
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
+struct Track {
+  Track() = default;
+
+  explicit Track(int id) : id_(id) {}
+
+  Track(int id, std::vector<TrackElement, Eigen::aligned_allocator<TrackElement>> track)
+      : id_(id),
+        track_(std::move(track)) {}
+
+  int id_;
+
+  std::vector<TrackElement, Eigen::aligned_allocator<TrackElement>> track_;
+};
+
+class MultiTracking : public BaseMultiTracking<feature_extraction::features::Feature, Track> {
  public:
   using DistanceFunctor = std::function<double(const FeatureT&, const BaseTracking&)>;
 
@@ -54,7 +81,7 @@ class MultiTracking : public BaseMultiTracking<feature_extraction::features::Fea
 
   void predict() override;
 
-  void update(const std::vector<FeatureT>& measurements) override;
+  const Container& update(const std::vector<FeatureT>& measurements) override;
 
   Eigen::MatrixXd buildCostMatrix(const std::vector<FeatureT>& measurements);
 

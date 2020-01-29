@@ -2,7 +2,7 @@
 *
 * BSD 3-Clause License
 *
-*  Copyright (c) 2019, Piotr Pokorski
+*  Copyright (c) 2020, Piotr Pokorski
 *  All rights reserved.
 *
 *  Redistribution and use in source and binary forms, with or without
@@ -31,79 +31,76 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_TRACKING_BASE_MULTI_TRACKING_HPP
-#define LASER_OBJECT_TRACKER_TRACKING_BASE_MULTI_TRACKING_HPP
-
-#include <Eigen/Core>
-
-#include <ros/time.h>
-
-#include "laser_object_tracker/feature_extraction/features/features.hpp"
+#include "laser_object_tracker/feature_extraction/features/segment_2d.hpp"
 
 namespace laser_object_tracker {
-namespace tracking {
+namespace feature_extraction {
+namespace features {
+double distanceBetweenSegments(const Segment2D& lhs, const Segment2D& rhs) {
+  static constexpr double SMALL_NUMBER = 1e-3;
+  Eigen::Vector2d u = lhs.getEnd() - lhs.getStart(),
+                  v = rhs.getEnd() - rhs.getStart(),
+                  w = lhs.getStart() - rhs.getStart();
 
-template<class FeatureType, class TrackType>
-class BaseMultiTracking {
- public:
-  using FeatureT = FeatureType;
-  using TrackT = TrackType;
+  double a = u.dot(u),
+         b = u.dot(v),
+         c = v.dot(v),
+         d = u.dot(w),
+         e = v.dot(w);
+  double D = a * c - b * b;
+  double sc, sN, sD = D;
+  double tc, tN, tD = D;
 
-  using Container = std::vector<TrackT>;
-  using value_type = typename Container::value_type;
-  using reference = typename Container::reference;
-  using const_reference = typename Container::const_reference;
-  using iterator = typename Container::iterator;
-  using const_iterator = typename Container::const_iterator;
-  using difference_type = typename Container::difference_type;
-  using size_type = typename Container::size_type;
-
-  virtual void predict() = 0;
-
-  virtual const Container& update(const std::vector<FeatureT>& measurements) = 0;
-
-  const Container& getTracks() const {
-    return tracks_;
+  if (D < SMALL_NUMBER) {
+    sN = 0.0;
+    sD = 1.0;
+    tN = e;
+    tD = c;
+  } else {
+    sN = b * e - c * d;
+    tN = a * e - b * d;
+    if (sN < 0.0) {
+      sN = 0.0;
+      tN = e;
+      tD = c;
+    } else if (sN > sD) {
+      sN = sD;
+      tN = e + b;
+      tD = c;
+    }
   }
 
-  iterator begin() {
-    return tracks_.begin();
+  if (tN < 0.0) {
+    tN = 0.0;
+    if (-d < 0.0) {
+      sN = 0.0;
+    } else if (-d > a) {
+      sN = sD;
+    } else {
+      sN = -d;
+      sD = a;
+    }
+  } else if (tN > tD) {
+    tN = tD;
+    if ((-d + b) < 0.0) {
+      sN = 0;
+    } else if ((-d + b) > a) {
+      sN = sD;
+    } else {
+      sN = -d + b;
+      sD = a;
+    }
   }
 
-  const_iterator begin() const {
-    return tracks_.begin();
-  }
+  sc = std::abs(sN) < SMALL_NUMBER ? 0.0 : sN / sD;
+  tc = std::abs(tN) < SMALL_NUMBER ? 0.0 : tN / tD;
 
-  const_iterator cbegin() const {
-    return tracks_.cbegin();
-  }
+  Eigen::Vector2d dP = w + (sc * u) - (tc * v);
 
-  iterator end() {
-    return tracks_.end();
-  }
+  return dP.norm();
+}
 
-  const_iterator end() const {
-    return tracks_.end();
-  }
-
-  const_iterator cend() const {
-    return tracks_.cend();
-  }
-
-  size_type size() const {
-    return tracks_.size();
-  }
-
-  bool empty() const {
-    return tracks_.empty();
-  }
-
-  virtual ~BaseMultiTracking() = default;
-
- protected:
-  Container tracks_;
-};
-}  // namespace tracking
+}  // namespace features
+}  // namespace feature_extraction
 }  // namespace laser_object_tracker
 
-#endif //LASER_OBJECT_TRACKER_TRACKING_BASE_MULTI_TRACKING_HPP

@@ -52,7 +52,7 @@ void MultiTracking::predict() {
   }
 }
 
-void MultiTracking::update(const std::vector<FeatureT>& measurements) {
+const MultiTracking::Container& MultiTracking::update(const std::vector<FeatureT>& measurements) {
   Eigen::MatrixXd cost_matrix = buildCostMatrix(measurements);
 
   Eigen::VectorXi assignment_vector = buildAssignmentVector(cost_matrix);
@@ -62,6 +62,8 @@ void MultiTracking::update(const std::vector<FeatureT>& measurements) {
   handleNotUpdatedTracks(assignment_vector);
 
   handleRejectedTracks();
+
+  return tracks_;
 }
 
 std::vector<std::unique_ptr<BaseTracking>>::const_iterator MultiTracking::begin() const {
