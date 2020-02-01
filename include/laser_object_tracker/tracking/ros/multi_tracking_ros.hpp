@@ -50,12 +50,23 @@ void getParam(ros::NodeHandle& node_handle, const std::string& key, T& param) {
   }
 }
 
-class MultiTrackerROS {
+template<class T>
+T getParam(ros::NodeHandle& node_handle, const std::string& key) {
+  T param;
+  if (!node_handle.getParam(key, param)) {
+    throw std::logic_error("Param " + key + " not found!");
+  }
+  return param;
+}
+
+namespace tracking {
+namespace ros {
+class MultiTrackingROS {
  public:
   using Feature = feature_extraction::features::Object;
   using Track = tracking::ObjectTrack;
 
-  explicit MultiTrackerROS(int id, const ros::NodeHandle& node_handle);
+  explicit MultiTrackingROS(int id, const ::ros::NodeHandle& node_handle);
 
   tracking::BaseMultiTracking<Feature, Track>::Container update();
 
@@ -66,25 +77,25 @@ class MultiTrackerROS {
  private:
   void laserScanCallback(const sensor_msgs::LaserScan::Ptr& laser_scan);
 
-  static std::shared_ptr<segmentation::BaseSegmentation>getSegmentation(
-      ros::NodeHandle& node_handle);
+  static std::shared_ptr<segmentation::BaseSegmentation> getSegmentation(
+      ::ros::NodeHandle& node_handle);
   static std::shared_ptr<filtering::BaseSegmentedFiltering> getSegmentedFiltering(
-      ros::NodeHandle& node_handle);
+      ::ros::NodeHandle& node_handle);
   static std::shared_ptr<feature_extraction::BaseFeatureExtraction<Feature>> getFeatureExtraction(
-      ros::NodeHandle& node_handle);
+      ::ros::NodeHandle& node_handle);
   static std::shared_ptr<tracking::BaseMultiTracking<Feature, Track>> getMultiTracking(
-      ros::NodeHandle& node_handle);
+      ::ros::NodeHandle& node_handle);
   static std::shared_ptr<visualization::LaserObjectTrackerVisualization> getVisualization(
       int id,
-      ros::NodeHandle& node_handle);
+      ::ros::NodeHandle& node_handle);
 
   int id_;
 
-  ros::NodeHandle node_handle_;
-  ros::Subscriber sub_laser_scan;
+  ::ros::NodeHandle node_handle_;
+  ::ros::Subscriber sub_laser_scan;
 
   std::string base_frame_;
-  ros::Duration transform_wait_timeout_;
+  ::ros::Duration transform_wait_timeout_;
 
   bool is_scan_updated_;
 
@@ -97,6 +108,8 @@ class MultiTrackerROS {
   std::shared_ptr<tracking::BaseMultiTracking<Feature, Track>> multi_tracking_;
   std::shared_ptr<visualization::LaserObjectTrackerVisualization> visualization_;
 };
+}  // namespace ros
+}  // namespace tracking
 }  // namespace laser_object_tracker
 
 #endif //LASER_OBJECT_TRACKER_MULTI_TRACKER_ROS_HPP

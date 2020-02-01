@@ -588,6 +588,7 @@ struct TrackElement {
   double likelihood_;
   ros::Time timestamp_;
   bool was_updated_;
+  bool is_confirmed_;
 
   Eigen::Vector2d position_;
   Eigen::Matrix2d position_covariance_;

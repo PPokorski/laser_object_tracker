@@ -83,6 +83,11 @@ add_library(${PROJECT_NAME}_feature_extraction
 target_link_libraries(${PROJECT_NAME}_feature_extraction
         ${PROJECT_NAME}_data_types)
 
+add_library(${PROJECT_NAME}_data_association
+        src/data_association/base_data_association.cpp
+        src/data_association/hungarian_algorithm.cpp
+        src/data_association/naive_linear_assignment.cpp)
+
 add_library(${PROJECT_NAME}_tracking
         src/tracking/base_tracking.cpp
         src/tracking/corner_tracker.cpp
@@ -91,36 +96,35 @@ add_library(${PROJECT_NAME}_tracking
         src/tracking/mht/object_model.cpp
         src/tracking/multi_hypothesis_tracking.cpp
         src/tracking/multi_tracking.cpp
-        src/tracking/object_matching/fast_object_matching.cpp)
+        src/tracking/object_matching/fast_object_matching.cpp
+        src/tracking/ros/multi_tracking_ros.cpp)
 
 target_link_libraries(${PROJECT_NAME}_tracking
         ${OpenCV_LIBS}
         ${catkin_LIBRARIES}
         mht
-        ${PROJECT_NAME}_data_association)
-
-add_library(${PROJECT_NAME}_data_association
-        src/data_association/base_data_association.cpp
-        src/data_association/hungarian_algorithm.cpp
-        src/data_association/naive_linear_assignment.cpp)
-
-
-
-## Executables ##
-add_executable(${PROJECT_NAME}_node
-        src/laser_object_tracker.cpp
-        src/multi_tracker_ros.cpp
-        src/track_unifying.cpp
-        src/visualization/laser_object_tracker_visualization.cpp)
-
-target_link_libraries(${PROJECT_NAME}_node
-        ${catkin_LIBRARIES}
         ${PROJECT_NAME}_data_association
         ${PROJECT_NAME}_data_types
         ${PROJECT_NAME}_feature_extraction
         ${PROJECT_NAME}_filtering
-        ${PROJECT_NAME}_segmentation
+        ${PROJECT_NAME}_segmentation)
+
+add_library(${PROJECT_NAME}_multi_scanner_tracking
+        src/multi_scanner_tracking/ros/multi_scanner_tracking_ros.cpp
+        src/multi_scanner_tracking/track_unifying/track_unifying.cpp)
+
+target_link_libraries(${PROJECT_NAME}_multi_scanner_tracking
+        ${catkin_LIBRARIES}
         ${PROJECT_NAME}_tracking)
+
+## Executables ##
+add_executable(${PROJECT_NAME}_node
+        src/laser_object_tracker.cpp
+        src/visualization/laser_object_tracker_visualization.cpp)
+
+target_link_libraries(${PROJECT_NAME}_node
+        ${catkin_LIBRARIES}
+        ${PROJECT_NAME}_multi_scanner_tracking)
 
 ## Tests ##
 include_directories(

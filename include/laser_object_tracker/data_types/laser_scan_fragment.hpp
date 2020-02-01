@@ -141,12 +141,20 @@ class LaserScanFragment {
     return laser_scan_.angle_min;
   }
 
+  double getOriginalAngleMin() const {
+    return original_angle_min_;
+  }
+
   /**
    *
    * @return Max angle of the measurement (in polar coordinates)
    */
   double getAngleMax() const {
     return laser_scan_.angle_max;
+  }
+
+  double getOriginalAngleMax() const {
+    return original_angle_max_;
   }
 
   /**
@@ -262,6 +270,9 @@ class LaserScanFragment {
    * @brief This method clear and initializes internal elements_ container
    */
   void initializeInternalContainer();
+
+  double original_angle_min_;
+  double original_angle_max_;
 
   LaserScanType laser_scan_;
   OcclusionType occlusion_vector_;

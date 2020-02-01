@@ -1,4 +1,4 @@
-#base_frame: "/base_laser_front_link"
+#base_frame: "/odom"
 base_frame: "/robot_0/odom"
 scanners_number: 2
 transform_wait_timeout: 0.5
@@ -23,7 +23,7 @@ feature_extraction:
   max_distance: 0.05
   rho_resolution: 0.05
   theta_resolution: 0.04
-  voting_threshold: 10
+  voting_threshold: 7
 tracking:
   object_matching:
     buffer_length: 2.0
@@ -34,11 +34,11 @@ tracking:
   model:
     time_step: 0.1
     max_mahalanobis_distance: 0.5
-    target_confirmation_rate: 0.02
+    target_confirmation_rate: 0.5
     target_confirmation_threshold: 0.9
     hold_target_probability: 0.99
     probability_start: 0.01
-    probability_detection: 0.9
+    probability_detection: 0.95
     measurement_noise_covariance: [0.1, 0.0,
                                    0.0, 0.1]
     initial_state_covariance: [0.1, 0.0, 0.0, 0.0,
@@ -52,4 +52,8 @@ tracking:
   false_alarm_likelihood: 0.1
   max_depth: 1
   min_g_hypothesis_ratio: 0.001
-  max_g_hypothesis: 100
+  max_g_hypothesis: 1
+  min_velocity: 0.1
+track_unifying:
+  angle_threshold: 0.52
+  distance_threshold: 0.5

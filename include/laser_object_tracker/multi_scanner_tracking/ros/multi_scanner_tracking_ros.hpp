@@ -31,60 +31,45 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#ifndef LASER_OBJECT_TRACKER_TRACK_UNIFYING_HPP
-#define LASER_OBJECT_TRACKER_TRACK_UNIFYING_HPP
+#ifndef LASER_OBJECT_TRACKER_MULTI_SCANNER_TRACKING_ROS_MULTI_SCANNER_TRACKING_ROS_HPP
+#define LASER_OBJECT_TRACKER_MULTI_SCANNER_TRACKING_ROS_MULTI_SCANNER_TRACKING_ROS_HPP
 
-#include <map>
+#include <vector>
 
-#include <boost/bimap.hpp>
-#include <boost/bimap/multiset_of.hpp>
+#include <ros/ros.h>
 
-#include "laser_object_tracker/tracking/multi_hypothesis_tracking.hpp"
+#include "laser_object_tracker/multi_scanner_tracking/track_unifying/track_unifying.hpp"
+#include "laser_object_tracker/tracking/ros/multi_tracking_ros.hpp"
+#include "laser_object_tracker/visualization/laser_object_tracker_visualization.hpp"
 
 namespace laser_object_tracker {
-namespace track_unifying {
+namespace multi_scanner_tracking {
+namespace ros {
 
-class TrackUnifying {
+class MultiScannerTrackingROS {
  public:
-  using Track = tracking::MultiHypothesisTracking::value_type;
-  using Tracks = tracking::MultiHypothesisTracking::Container;
+  explicit MultiScannerTrackingROS(const ::ros::NodeHandle& node_handle);
 
-  TrackUnifying(double angle_threshold, double distance_threshold);
-
-  std::vector<tracking::ObjectTrack> unifyTracks(const std::map<int, Tracks>& tracks);
+  void update();
 
  private:
-  struct TrackSource {
-    friend bool operator<(const TrackSource& lhs, const TrackSource& rhs) {
-      return std::make_tuple(lhs.tracker_id, lhs.track_id) < std::make_tuple(rhs.tracker_id, rhs.track_id);
-    }
+  track_unifying::TrackUnifying getTrackUnifying(
+      ::ros::NodeHandle& node_handle);
+  visualization::LaserObjectTrackerVisualization getVisualization(
+      ::ros::NodeHandle& node_handle);
 
-    int tracker_id;
-    int track_id;
-  };
+  ::ros::NodeHandle node_handle_;
 
-  void unifySourcePair(const std::pair<int, Tracks>& lhs,
-                       const std::pair<int, Tracks>& rhs);
+  int scanners_number_;
 
-  bool tracksOverlap(const Track& lhs, const Track& rhs);
+  std::vector<tracking::ros::MultiTrackingROS> ros_trackers_;
+  track_unifying::TrackUnifying track_unifying_;
 
-  Track mergeTracks(const Tracks& tracks, int output_id);
-
-  Tracks::const_iterator findTrackByID(const Tracks& tracks, int id);
-
-  Tracks::iterator findTrackByID(Tracks& tracks, int id);
-
-  void eraseTrack(int id);
-
-  int current_id_ = 0;
-
-  double angle_threshold_;
-  double distance_threshold_;
-
-  boost::bimap<boost::bimaps::multiset_of<int>, TrackSource> tracks_sources_;
-  Tracks tracks_;
+  visualization::LaserObjectTrackerVisualization visualization_;
 };
-}  // namespace track_merging
+
+}  // namespace ros
+}  // namespace multi_scanner_tracking
 }  // namespace laser_object_tracker
 
-#endif //LASER_OBJECT_TRACKER_TRACK_UNIFYING_HPP
+#endif //LASER_OBJECT_TRACKER_MULTI_SCANNER_TRACKING_ROS_MULTI_SCANNER_TRACKING_ROS_HPP

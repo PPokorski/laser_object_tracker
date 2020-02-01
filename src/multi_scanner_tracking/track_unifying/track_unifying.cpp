@@ -31,7 +31,7 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include "laser_object_tracker/track_unifying.hpp"
+#include "laser_object_tracker/multi_scanner_tracking/track_unifying/track_unifying.hpp"
 
 namespace laser_object_tracker {
 namespace track_unifying {
@@ -59,17 +59,17 @@ std::vector<tracking::ObjectTrack> TrackUnifying::unifyTracks(const std::map<int
     auto left_it_end = tracks_sources_.left.upper_bound(id);
     auto it_end = tracks_sources_.project_up(left_it_end);
     Tracks filtered_tracks;
-    for (; it != it_end; ++it) {
+    for (; it != it_end;) {
       auto& track = tracks.at(it->right.tracker_id);
       auto track_it = findTrackByID(track, it->right.track_id);
+      auto current_it = it++; // Set "it" to next position
       if (track_it != track.end()) {
         filtered_tracks.push_back(*track_it);
       } else {
-        auto it_to_erase = it--; // Set it to previous position
         if (tracks_sources_.left.count(id) == 1) {
           eraseTrack(id);
         }
-        tracks_sources_.erase(it_to_erase);
+        tracks_sources_.erase(current_it);
       }
     }
 

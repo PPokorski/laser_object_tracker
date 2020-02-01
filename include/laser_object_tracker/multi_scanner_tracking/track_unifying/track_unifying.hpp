@@ -2,7 +2,7 @@
 *
 * BSD 3-Clause License
 *
-*  Copyright (c) 2019, Piotr Pokorski
+*  Copyright (c) 2020, Piotr Pokorski
 *  All rights reserved.
 *
 *  Redistribution and use in source and binary forms, with or without
@@ -31,30 +31,60 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include <chrono>
+#ifndef LASER_OBJECT_TRACKER_TRACK_UNIFYING_HPP
+#define LASER_OBJECT_TRACKER_TRACK_UNIFYING_HPP
 
-#include "laser_object_tracker/multi_scanner_tracking/ros/multi_scanner_tracking_ros.hpp"
+#include <map>
 
-int main(int ac, char **av) {
-  ros::init(ac, av, "laser_object_tracker");
-  ros::NodeHandle pnh("~");
+#include <boost/bimap.hpp>
+#include <boost/bimap/multiset_of.hpp>
 
-  ros::Rate rate(50.0);
-  laser_object_tracker::multi_scanner_tracking::ros::MultiScannerTrackingROS multi_scanner_tracking_ros(pnh);
-  ROS_INFO("Done initialization");
+#include "laser_object_tracker/tracking/multi_hypothesis_tracking.hpp"
 
-  std::chrono::high_resolution_clock::time_point begin, end;
-  while (ros::ok()) {
-    ros::spinOnce();
-    begin = std::chrono::high_resolution_clock::now();
+namespace laser_object_tracker {
+namespace track_unifying {
 
-    multi_scanner_tracking_ros.update();
+class TrackUnifying {
+ public:
+  using Track = tracking::MultiHypothesisTracking::value_type;
+  using Tracks = tracking::MultiHypothesisTracking::Container;
 
-    end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> duration = end - begin;
-    ROS_INFO("Iteration took: %.2f ms", (duration.count()));
+  TrackUnifying(double angle_threshold, double distance_threshold);
 
-    rate.sleep();
-  }
-  return 0;
-}
+  std::vector<tracking::ObjectTrack> unifyTracks(const std::map<int, Tracks>& tracks);
+
+ private:
+  struct TrackSource {
+    friend bool operator<(const TrackSource& lhs, const TrackSource& rhs) {
+      return std::make_tuple(lhs.tracker_id, lhs.track_id) < std::make_tuple(rhs.tracker_id, rhs.track_id);
+    }
+
+    int tracker_id;
+    int track_id;
+  };
+
+  void unifySourcePair(const std::pair<int, Tracks>& lhs,
+                       const std::pair<int, Tracks>& rhs);
+
+  bool tracksOverlap(const Track& lhs, const Track& rhs);
+
+  Track mergeTracks(const Tracks& tracks, int output_id);
+
+  Tracks::const_iterator findTrackByID(const Tracks& tracks, int id);
+
+  Tracks::iterator findTrackByID(Tracks& tracks, int id);
+
+  void eraseTrack(int id);
+
+  int current_id_ = 0;
+  // Add support for velocity difference
+  double angle_threshold_;
+  double distance_threshold_;
+
+  boost::bimap<boost::bimaps::multiset_of<int>, TrackSource> tracks_sources_;
+  Tracks tracks_;
+};
+}  // namespace track_merging
+}  // namespace laser_object_tracker
+
+#endif //LASER_OBJECT_TRACKER_TRACK_UNIFYING_HPP

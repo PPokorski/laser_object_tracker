@@ -32,15 +32,17 @@
 *********************************************************************/
 
 #include <laser_object_tracker/filtering/occlusion_detection.hpp>
-#include "laser_object_tracker/multi_tracker_ros.hpp"
+#include "laser_object_tracker/tracking/ros/multi_tracking_ros.hpp"
 
 namespace laser_object_tracker {
-MultiTrackerROS::MultiTrackerROS(int id, const ros::NodeHandle& node_handle)
+namespace tracking {
+namespace ros {
+MultiTrackingROS::MultiTrackingROS(int id, const ::ros::NodeHandle& node_handle)
   : id_(id),
     node_handle_(node_handle),
     sub_laser_scan(node_handle_.subscribe("in_laser_scan/" + std::to_string(id_),
                                           1,
-                                          &MultiTrackerROS::laserScanCallback,
+                                          &MultiTrackingROS::laserScanCallback,
                                           this)),
     is_scan_updated_(false),
     scan_fragment_factory_(),
@@ -56,7 +58,7 @@ MultiTrackerROS::MultiTrackerROS(int id, const ros::NodeHandle& node_handle)
   transform_wait_timeout_ = transform_wait_timeout_.fromSec(transform_wait_timeout);
 }
 
-tracking::BaseMultiTracking<MultiTrackerROS::Feature, MultiTrackerROS::Track>::Container MultiTrackerROS::update() {
+tracking::BaseMultiTracking<MultiTrackingROS::Feature, MultiTrackingROS::Track>::Container MultiTrackingROS::update() {
   if (!is_scan_updated_) {
     ROS_WARN("None laser scan received!");
     return {};
@@ -94,7 +96,7 @@ tracking::BaseMultiTracking<MultiTrackerROS::Feature, MultiTrackerROS::Track>::C
   return tracks;
 }
 
-void MultiTrackerROS::laserScanCallback(const sensor_msgs::LaserScan::Ptr& laser_scan) {
+void MultiTrackingROS::laserScanCallback(const sensor_msgs::LaserScan::Ptr& laser_scan) {
   last_scan_fragment_ = scan_fragment_factory_.fromLaserScan(std::move(*laser_scan),
                                                              base_frame_,
                                                              transform_wait_timeout_);
@@ -102,7 +104,7 @@ void MultiTrackerROS::laserScanCallback(const sensor_msgs::LaserScan::Ptr& laser
   is_scan_updated_ = true;
 }
 
-std::shared_ptr<segmentation::BaseSegmentation> MultiTrackerROS::getSegmentation(ros::NodeHandle& node_handle) {
+std::shared_ptr<segmentation::BaseSegmentation> MultiTrackingROS::getSegmentation(::ros::NodeHandle& node_handle) {
   std::shared_ptr<segmentation::BaseSegmentation> segmentation;
   double angle, sigma;
   getParam(node_handle, "segmentation/angle", angle);
@@ -112,7 +114,7 @@ std::shared_ptr<segmentation::BaseSegmentation> MultiTrackerROS::getSegmentation
   return segmentation;
 }
 
-std::shared_ptr<filtering::BaseSegmentedFiltering> MultiTrackerROS::getSegmentedFiltering(ros::NodeHandle& node_handle) {
+std::shared_ptr<filtering::BaseSegmentedFiltering> MultiTrackingROS::getSegmentedFiltering(::ros::NodeHandle& node_handle) {
   std::shared_ptr<filtering::BaseSegmentedFiltering> segmented_filtering;
 
   double max_angle_gap;
@@ -140,8 +142,8 @@ std::shared_ptr<filtering::BaseSegmentedFiltering> MultiTrackerROS::getSegmented
   return segmented_filtering;
 }
 
-std::shared_ptr<feature_extraction::BaseFeatureExtraction<MultiTrackerROS::Feature>>
-MultiTrackerROS::getFeatureExtraction(ros::NodeHandle& node_handle) {
+std::shared_ptr<feature_extraction::BaseFeatureExtraction<MultiTrackingROS::Feature>>
+MultiTrackingROS::getFeatureExtraction(::ros::NodeHandle& node_handle) {
   std::shared_ptr<feature_extraction::BaseFeatureExtraction<Feature>> feature_extraction;
   double occlusion_distance_threshold,
          min_angle_between_lines,
@@ -167,8 +169,8 @@ MultiTrackerROS::getFeatureExtraction(ros::NodeHandle& node_handle) {
   return feature_extraction;
 }
 
-std::shared_ptr<tracking::BaseMultiTracking<MultiTrackerROS::Feature, MultiTrackerROS::Track>>
-MultiTrackerROS::getMultiTracking(ros::NodeHandle& node_handle) {
+std::shared_ptr<tracking::BaseMultiTracking<MultiTrackingROS::Feature, MultiTrackingROS::Track>>
+MultiTrackingROS::getMultiTracking(::ros::NodeHandle& node_handle) {
   std::shared_ptr<tracking::BaseMultiTracking<Feature, Track>> multi_tracking;
   double buffer_length,
          min_buffer_filling,
@@ -182,6 +184,7 @@ MultiTrackerROS::getMultiTracking(ros::NodeHandle& node_handle) {
          hold_target_probability,
          probability_start,
          probability_detection,
+         min_velocity,
          false_alarm_likelihood,
          min_g_hypothesis_ratio;
 
@@ -207,6 +210,7 @@ MultiTrackerROS::getMultiTracking(ros::NodeHandle& node_handle) {
   getParam(node_handle, "tracking/model/measurement_noise_covariance", measurement_noise_covariance_data);
   getParam(node_handle, "tracking/model/initial_state_covariance", initial_state_covariance_data);
   getParam(node_handle, "tracking/model/process_noise_covariance", process_noise_covariance_data);
+  getParam(node_handle, "tracking/min_velocity", min_velocity);
   getParam(node_handle, "tracking/false_alarm_likelihood", false_alarm_likelihood);
   getParam(node_handle, "tracking/max_depth", max_depth);
   getParam(node_handle, "tracking/min_g_hypothesis_ratio", min_g_hypothesis_ratio);
@@ -240,6 +244,7 @@ MultiTrackerROS::getMultiTracking(ros::NodeHandle& node_handle) {
 
   multi_tracking.reset(new tracking::MultiHypothesisTracking(fast_object_matching,
                                                              model,
+                                                             min_velocity,
                                                              false_alarm_likelihood,
                                                              max_depth,
                                                              min_g_hypothesis_ratio,
@@ -247,12 +252,16 @@ MultiTrackerROS::getMultiTracking(ros::NodeHandle& node_handle) {
   return multi_tracking;
 }
 
-std::shared_ptr<visualization::LaserObjectTrackerVisualization> MultiTrackerROS::getVisualization(
+std::shared_ptr<visualization::LaserObjectTrackerVisualization> MultiTrackingROS::getVisualization(
     int id,
-    ros::NodeHandle& node_handle) {
+    ::ros::NodeHandle& node_handle) {
   std::string base_frame;
   getParam(node_handle, "base_frame", base_frame);
 
-  return std::make_shared<visualization::LaserObjectTrackerVisualization>(id, node_handle, base_frame);
+  return std::make_shared<visualization::LaserObjectTrackerVisualization>("scanner/" + std::to_string(id),
+                                                                          node_handle,
+                                                                          base_frame);
 }
+}  // namespace ros
+}  // namespace tracking
 }  // namespace laser_object_tracker

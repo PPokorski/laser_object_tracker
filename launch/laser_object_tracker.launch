@@ -1,5 +1,7 @@
 <launch>
 <!--    <remap from="/laser_object_tracker/in_laser_scan" to="/scan/front/filtered" />-->
+<!--     <remap from="/laser_object_tracker/in_laser_scan/0" to="/scan/back/filtered" /> -->
+<!--     <remap from="/laser_object_tracker/in_laser_scan/1" to="/scan/front/filtered" /> -->
     <remap from="/laser_object_tracker/in_laser_scan/0" to="/robot_0/base_scan_0" />
     <remap from="/laser_object_tracker/in_laser_scan/1" to="/robot_0/base_scan_1" />
     <node pkg="laser_object_tracker" type="laser_object_tracker_node" name="laser_object_tracker" output="screen" launch-prefix="">

@@ -206,7 +206,7 @@ void LaserObjectTrackerVisualization::publishMultiTracker(const tracking::BaseMu
                           track->track_.back().velocity_.y());
 
     rviz_visual_tools::scales text_scale;
-    if (state.tail<2>().norm() >= 0.0) {
+    if (state.tail<2>().norm() > 0.0) {
       double yaw = state.tail<2>().norm() > 0.0 ? std::atan2(state(3), state(2)) : 0.0;
 
       Eigen::Affine3d pose = rviz_visual_tools::RvizVisualTools::convertFromXYZRPY(state(0), state(1), 0.0, 0.0, 0.0, yaw,

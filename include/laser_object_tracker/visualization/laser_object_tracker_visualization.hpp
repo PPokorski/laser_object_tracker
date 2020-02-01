@@ -49,13 +49,13 @@ namespace laser_object_tracker {
 namespace visualization {
 class LaserObjectTrackerVisualization {
  public:
-  LaserObjectTrackerVisualization(int id, ros::NodeHandle& pnh, const std::string& base_frame) {
+  LaserObjectTrackerVisualization(const std::string& id, ros::NodeHandle& pnh, const std::string& base_frame) {
     rviz_visual_tools_.reset(new rviz_visual_tools::RvizVisualTools(base_frame,
-                                                                       "visualization/markers/" + std::to_string(id)));
+                                                                       "visualization/markers/" + id));
     rviz_visual_tools_->setLifetime(0.0);
 
-    pub_point_cloud_ = pnh.advertise<data_types::PointCloudType>("visualization/point_cloud/" + std::to_string(id), 1);
-    pub_point_clouds_ = pnh.advertise<pcl::PointCloud<pcl::PointXYZRGB>>("visualization/point_clouds/" + std::to_string(id), 1);
+    pub_point_cloud_ = pnh.advertise<data_types::PointCloudType>("visualization/point_cloud/" + id, 1);
+    pub_point_clouds_ = pnh.advertise<pcl::PointCloud<pcl::PointXYZRGB>>("visualization/point_clouds/" + id, 1);
   }
 
   void publishPointCloud(const data_types::LaserScanFragment& fragment) {

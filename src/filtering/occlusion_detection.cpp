@@ -46,7 +46,10 @@ void OcclusionDetection::filter(std::vector<data_types::LaserScanFragment>& frag
   if (fragments.empty()) {
     return;
   }
-  fragments.front().front().isOccluded() = true;
+
+  if (fragments.front().getAngleMin() - fragments.front().getOriginalAngleMin() <= max_angle_gap_) {
+    fragments.front().front().isOccluded() = true;
+  }
 
   for (int i = 1; i < fragments.size(); ++i) {
     auto& current_element = fragments.at(i).front();
@@ -64,7 +67,9 @@ void OcclusionDetection::filter(std::vector<data_types::LaserScanFragment>& frag
     }
   }
 
-  fragments.back().back().isOccluded() = true;
+  if (fragments.front().getOriginalAngleMax() - fragments.front().getAngleMax() <= max_angle_gap_) {
+    fragments.back().back().isOccluded() = true;
+  }
 }
 }  // namespace filtering
 }  // namespace laser_object_tracker

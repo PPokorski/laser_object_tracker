@@ -229,42 +229,44 @@ MDL_STATE *ObjectModel::getNewState(int i, MDL_STATE *state, MDL_REPORT *report)
   auto object_report = dynamic_cast<ObjectReport*>(report);
 
   ObjectState* next_state = nullptr;
-  if (object_state == nullptr) {
-    ObjectState::State state_vector;
-    state_vector.setZero();
-    state_vector.head<2>() = object_report->getReferencePoint();
-    next_state = new ObjectState(this,
-                                 time_step_,
-                                 object_report->getTimestamp(),
-                                 start_log_likelihood_,
-                                 0,
-                                 0,
-                                 false,
-                                 object_report->getReferencePointType(),
-                                 object_report->getReferencePointSource(),
-                                 std::move(getKalmanFilter()),
-                                 state_vector);
-  } else if (object_report == nullptr) {
+  if (object_report == nullptr) {
     next_state = new ObjectState(*object_state);
 
     next_state->predict();
     next_state->incrementTimesSkipped();
   } else if (object_report->hasValidReferencePoint()) {
-    next_state = new ObjectState(*object_state);
+    if (object_state == nullptr) {
+      ObjectState::State state_vector;
+      state_vector.setZero();
+      state_vector.head<2>() = object_report->getReferencePoint();
+      next_state = new ObjectState(this,
+                                   time_step_,
+                                   object_report->getTimestamp(),
+                                   start_log_likelihood_,
+                                   0,
+                                   0,
+                                   false,
+                                   object_report->getReferencePointType(),
+                                   object_report->getReferencePointSource(),
+                                   std::move(getKalmanFilter()),
+                                   state_vector);
+    } else {
+      next_state = new ObjectState(*object_state);
 
-    next_state->predict();
-    auto assignment = next_state->updateReferencePointSource(object_report->getReferencePointSource());
+      next_state->predict();
+      auto assignment = next_state->updateReferencePointSource(object_report->getReferencePointSource());
 
-    // TODO Think which one would be better
-    // if (next_state->getReferencePointType() != object_report->getReferencePointType()) {
-    if (next_state->getReferencePointType() != ObjectState::ReferencePointType::CORNER ||
-        object_report->getReferencePointType() != ObjectState::ReferencePointType::CORNER) {
-      tryMoveState(next_state, object_report, assignment);
-    }
+      // TODO Think which one would be better
+      // if (next_state->getReferencePointType() != object_report->getReferencePointType()) {
+      if (next_state->getReferencePointType() != ObjectState::ReferencePointType::CORNER ||
+          object_report->getReferencePointType() != ObjectState::ReferencePointType::CORNER) {
+        tryMoveState(next_state, object_report, assignment);
+      }
 
-    if (!updateState(next_state, object_report)) {
-      delete next_state;
-      next_state = nullptr;
+      if (!updateState(next_state, object_report)) {
+        delete next_state;
+        next_state = nullptr;
+      }
     }
   }
 
@@ -385,6 +387,7 @@ void ObjectTracker::startTrack(int i, int i1, MDL_STATE *state, MDL_REPORT *repo
     object_state->getLogLikelihood(),
     object_state->getTimestamp(),
     true,
+    object_state->isConfirmedTarget(),
     object_state->getPosition(),
     object_state->getPositionCovariance(),
     object_state->getVelocity(),
@@ -404,6 +407,7 @@ void ObjectTracker::continueTrack(int i, int i1, MDL_STATE *state, MDL_REPORT *r
       object_state->getLogLikelihood(),
       object_state->getTimestamp(),
       true,
+      object_state->isConfirmedTarget(),
       object_state->getPosition(),
       object_state->getPositionCovariance(),
       object_state->getVelocity(),
@@ -422,6 +426,7 @@ void ObjectTracker::skipTrack(int i, int i1, MDL_STATE *state) {
       object_state->getLogLikelihood(),
       object_state->getTimestamp(),
       false,
+      object_state->isConfirmedTarget(),
       object_state->getPosition(),
       object_state->getPositionCovariance(),
       object_state->getVelocity(),

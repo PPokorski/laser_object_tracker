@@ -37,11 +37,13 @@ namespace laser_object_tracker {
 namespace tracking {
 MultiHypothesisTracking::MultiHypothesisTracking(object_matching::FastObjectMatching object_matching,
                                                  tracking::mht::ObjectModel* model,
+                                                 double min_velocity,
                                                  double false_alarm_likelihood,
                                                  int max_depth,
                                                  double min_g_hypothesis_ratio,
                                                  int max_g_hypothesis)
-    : false_alarm_log_likelihood_(std::log(false_alarm_likelihood)),
+    : min_velocity_(min_velocity),
+      false_alarm_log_likelihood_(std::log(false_alarm_likelihood)),
       fast_object_matching_(std::move(object_matching)) {
   models_.append(*model);
 
@@ -86,16 +88,22 @@ const MultiHypothesisTracking::Container& MultiHypothesisTracking::update(const 
     tracks_.back().track_.reserve(track.track_.size());
 
     for (const auto& track_element : track.track_) {
-      tracks_.back().track_.push_back({
-        track_element.likelihood_,
-        track_element.timestamp_,
-        track_element.was_updated_,
-        track_element.position_,
-        track_element.position_covariance_,
-        track_element.velocity_,
-        track_element.velocity_covariance_,
-        track_element.polyline_
-      });
+      if (track_element.is_confirmed_) {
+        tracks_.back().track_.push_back({
+          track_element.likelihood_,
+          track_element.timestamp_,
+          track_element.was_updated_,
+          track_element.position_,
+          track_element.position_covariance_,
+          track_element.velocity_,
+          track_element.velocity_covariance_,
+          track_element.polyline_
+        });
+      }
+    }
+
+    if (tracks_.back().track_.empty()) {
+      tracks_.erase(std::prev(tracks_.end()));
     }
   }
 
@@ -105,6 +113,12 @@ const MultiHypothesisTracking::Container& MultiHypothesisTracking::update(const 
     fast_object_matching_.buffer(measurements);
     fast_object_matching_.popOutdated(measurements.front().getTimestamp());
   }
+
+  tracks_.erase(std::remove_if(tracks_.begin(),
+                               tracks_.end(),
+                               [min_v = min_velocity_](const auto& track) {
+                                 return track.track_.back().velocity_.squaredNorm() < min_v * min_v;}),
+                tracks_.end());
 
   return tracks_;
 }
