@@ -67,7 +67,7 @@ void OcclusionDetection::filter(std::vector<data_types::LaserScanFragment>& frag
     }
   }
 
-  if (fragments.front().getOriginalAngleMax() - fragments.front().getAngleMax() <= max_angle_gap_) {
+  if (fragments.back().getOriginalAngleMax() - fragments.back().getAngleMax() <= max_angle_gap_) {
     fragments.back().back().isOccluded() = true;
   }
 }

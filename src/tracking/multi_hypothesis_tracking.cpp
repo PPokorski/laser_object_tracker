@@ -68,7 +68,8 @@ const MultiHypothesisTracking::Container& MultiHypothesisTracking::update(const 
     }
 
     for (const auto& measurement : measurements) {
-      if (fast_object_matching_.isMatched(measurement)) {
+      if (!measurement.hasValidReferencePoint() ||
+          fast_object_matching_.isMatched(measurement)) {
         continue;
       }
       reports.push_back(new mht::ObjectReport(false_alarm_log_likelihood_,
@@ -77,6 +78,8 @@ const MultiHypothesisTracking::Container& MultiHypothesisTracking::update(const 
                                               corner_id_++));
     }
   }
+
+  ROS_INFO("Updating tracking for %lu reports", reports.size());
 
   multi_hypothesis_tracking_->addReports(reports);
   multi_hypothesis_tracking_->scan();

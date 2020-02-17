@@ -61,7 +61,7 @@ void LaserObjectTrackerVisualization::publishPointClouds(const std::vector<data_
     for (const auto& point : fragment) {
       if (point.isOccluded()) {
         feature_extraction::features::Point2D xy(point.point().x, point.point().y);
-        publishPoint(xy, rgb_colors_.at(i), "Occlusion");
+        publishPoint(xy, rviz_visual_tools_->getColor(rviz_visual_tools::RED), "Occlusion");
       }
     }
 
@@ -155,7 +155,7 @@ void LaserObjectTrackerVisualization::publishCorner(const feature_extraction::fe
   point.x() = corner.getCorner().x();
   point.y() = corner.getCorner().y();
   point.z() = 0.0;
-  Eigen::Affine3d pose = rviz_visual_tools::RvizVisualTools::convertPointToPose(point);
+  Eigen::Isometry3d pose = rviz_visual_tools::RvizVisualTools::convertPointToPose(point);
   pose.rotate(Eigen::AngleAxisd(corner.getOrientation(), Eigen::Vector3d::UnitZ()));
 
   rviz_visual_tools_->publishArrow(pose, rviz_visual_tools::colors::LIME_GREEN, rviz_visual_tools::scales::XXLARGE);
@@ -209,7 +209,7 @@ void LaserObjectTrackerVisualization::publishMultiTracker(const tracking::BaseMu
     if (state.tail<2>().norm() > 0.0) {
       double yaw = state.tail<2>().norm() > 0.0 ? std::atan2(state(3), state(2)) : 0.0;
 
-      Eigen::Affine3d pose = rviz_visual_tools::RvizVisualTools::convertFromXYZRPY(state(0), state(1), 0.0, 0.0, 0.0, yaw,
+      Eigen::Isometry3d pose = rviz_visual_tools::RvizVisualTools::convertFromXYZRPY(state(0), state(1), 0.0, 0.0, 0.0, yaw,
                                                                                    rviz_visual_tools::EulerConvention::XYZ);
 
       pose.translation()(2) += 0.2;
@@ -240,7 +240,7 @@ void LaserObjectTrackerVisualization::publishAssignments(const tracking::MultiTr
       end << state(0), state(1), 0.0;
 
 
-      Eigen::Affine3d pose = rviz_visual_tools_->getVectorBetweenPoints(start, end);
+      Eigen::Isometry3d pose = rviz_visual_tools_->getVectorBetweenPoints(start, end);
       if (!(end - start).isZero()) {
         rviz_visual_tools_->publishArrow(pose,
                                          rviz_visual_tools::RED,

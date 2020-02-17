@@ -2,14 +2,26 @@
 ## Project ##
 #############
 
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.9)
 project(laser_object_tracker)
 
 ## Build flags ##
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-#set(CMAKE_CXX_CPPLINT /usr/local/bin/cpplint;--linelength=120 --root=include)
+IF(CMAKE_BUILD_TYPE MATCHES Debug)
+    message("Debug build type - turning on address sanitizer and FORTIFY")
+#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -D_FORTIFY_SOURCE=1")
+ELSEIF(CMAKE_BUILD_TYPE MATCHES Release)
+    message("Release build type - turning on LTO")
+
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT result)
+    if(result)
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION result)
+    endif()
+ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
+    #set(CMAKE_CXX_CPPLINT /usr/local/bin/cpplint;--linelength=120 --root=include)
 
 include(cmake/ConfigureExternalProject.cmake)
 configureExternalProject(mht cmake/mht.cmake mht/include)

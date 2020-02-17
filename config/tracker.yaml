@@ -4,14 +4,14 @@ scanners_number: 2
 transform_wait_timeout: 0.5
 segmentation:
     type: "AdaptiveThresholdDetection"
-    angle: 0.2
+    angle: 1.0
     sigma: 0.2
 filtering:
   points_number:
     min_points: 5
     max_points: 100
   area:
-    min_area: 0.005
+    min_area: 0.01
     max_area: 1.0
     min_dimension: 0.05
   occlusion:
@@ -28,12 +28,13 @@ tracking:
   object_matching:
     buffer_length: 2.0
     min_buffer_filling: 1.0
-    distance_threshold: 0.1
-    orientation_angle_threshold: 0.17 # 10 degrees
-    aperture_angle_threshold: 0.17 # 10 degrees
+    distance_threshold: 0.3
+    orientation_angle_threshold: 0.35 # 20 degrees
+    aperture_angle_threshold: 0.35 # 10 degrees
   model:
-    time_step: 0.1
-    max_mahalanobis_distance: 0.5
+#    time_step: 0.08
+    time_step: 0.10
+    max_mahalanobis_distance: 0.3
     target_confirmation_rate: 0.5
     target_confirmation_threshold: 0.9
     hold_target_probability: 0.99
@@ -51,7 +52,7 @@ tracking:
                                0.0, 0.0, 0.0, 0.2]
   false_alarm_likelihood: 0.1
   max_depth: 1
-  min_g_hypothesis_ratio: 0.001
+  min_g_hypothesis_ratio: 0.01
   max_g_hypothesis: 1
   min_velocity: 0.1
 track_unifying:

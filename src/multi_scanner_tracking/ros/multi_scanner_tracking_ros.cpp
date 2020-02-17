@@ -48,12 +48,12 @@ MultiScannerTrackingROS::MultiScannerTrackingROS(const ::ros::NodeHandle& node_h
 }
 
 void MultiScannerTrackingROS::update() {
-  std::map<int, tracking::MultiHypothesisTracking::Container> tracks;
+  std::map<int, std::optional<tracking::MultiHypothesisTracking::Container>> tracks;
   for (auto& tracker: ros_trackers_) {
     tracks.emplace(tracker.getID(), tracker.update());
   }
 
-  if (std::any_of(tracks.begin(), tracks.end(), [](const auto& id_track) {return !id_track.second.empty();})) {
+  if (std::any_of(tracks.begin(), tracks.end(), [](const auto& id_track) {return id_track.second;})) {
     visualization_.clearMarkers();
     auto unified_tracks = track_unifying_.unifyTracks(tracks);
     visualization_.publishMultiTracker(unified_tracks);

@@ -55,10 +55,7 @@ cv::KalmanFilter buildKalmanFilter(int state_dimensions,
 }
 
 cv::KalmanFilter copyKalmanFilter(const cv::KalmanFilter& kalman_filter) {
-  cv::KalmanFilter copy_kalman_filter(kalman_filter.measurementMatrix.cols,
-                                      kalman_filter.measurementMatrix.rows,
-                                      0,
-                                      CV_64F);
+  cv::KalmanFilter copy_kalman_filter;
 
   kalman_filter.controlMatrix.copyTo(copy_kalman_filter.controlMatrix);
   kalman_filter.errorCovPost.copyTo(copy_kalman_filter.errorCovPost);
@@ -152,17 +149,29 @@ std::pair<const feature_extraction::features::Segment2D*,
 
       assignment.first = &segment_1_;
     } else {
-      Segment2D* closer_segment;
+      Segment2D* closer_segment,* farther_segment;
       if (assignmentCost(segment_1_, segment) <= assignmentCost(segment_2_, segment)) {
         closer_segment = &segment_1_;
+        farther_segment = &segment_2_;
       } else {
         closer_segment = &segment_2_;
+        farther_segment = &segment_1_;
       }
 
       (*closer_segment) = Segment2D(segment.getStart(),
                                     segment.getOrientation(),
                                     std::max(closer_segment->length(),
                                              segment.length()));
+
+      using feature_extraction::features::distance;
+      feature_extraction::features::Point2D closer_point =
+          distance(closer_segment->getStart(), farther_segment->getStart()) <=
+          distance(closer_segment->getEnd(), farther_segment->getStart()) ?
+          closer_segment->getStart() : closer_segment->getEnd();
+      (*farther_segment) = Segment2D(closer_point,
+                                     farther_segment->getOrientation(),
+                                     farther_segment->length());
+
       assignment.first = closer_segment;
     }
   } else {
@@ -233,6 +242,7 @@ MDL_STATE *ObjectModel::getNewState(int i, MDL_STATE *state, MDL_REPORT *report)
     next_state = new ObjectState(*object_state);
 
     next_state->predict();
+    next_state->incrementTimestamp(time_step_);
     next_state->incrementTimesSkipped();
   } else if (object_report->hasValidReferencePoint()) {
     if (object_state == nullptr) {
@@ -365,6 +375,7 @@ bool ObjectModel::updateState(ObjectState* state, const ObjectReport* report) co
 
     const ObjectState::Measurement& measurement = report->getReferencePoint();
     state->update(measurement);
+    state->setTimestamp(report->getTimestamp());
     state->resetTimesSkipped();
 
     return true;

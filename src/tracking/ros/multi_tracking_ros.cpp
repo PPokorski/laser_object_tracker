@@ -58,10 +58,12 @@ MultiTrackingROS::MultiTrackingROS(int id, const ::ros::NodeHandle& node_handle)
   transform_wait_timeout_ = transform_wait_timeout_.fromSec(transform_wait_timeout);
 }
 
-tracking::BaseMultiTracking<MultiTrackingROS::Feature, MultiTrackingROS::Track>::Container MultiTrackingROS::update() {
+std::optional<tracking::BaseMultiTracking<MultiTrackingROS::Feature, MultiTrackingROS::Track>::Container>
+MultiTrackingROS::update() {
+  std::optional<tracking::BaseMultiTracking<Feature, Track>::Container> tracks_optional;
   if (!is_scan_updated_) {
-    ROS_WARN("None laser scan received!");
-    return {};
+//    ROS_WARN("None laser scan received!");
+    return tracks_optional;
   }
 
   // PREDICTION
@@ -69,8 +71,10 @@ tracking::BaseMultiTracking<MultiTrackingROS::Feature, MultiTrackingROS::Track>:
 
   if (last_scan_fragment_.empty()) {
     ROS_WARN("Laser scan fragment is empty!");
-    return {};
+    tracks_optional.emplace();
+    return tracks_optional;
   }
+  ROS_INFO("Updating no.%d", id_);
 
   visualization_->clearMarkers();
   visualization_->publishPointCloud(last_scan_fragment_);
@@ -87,13 +91,13 @@ tracking::BaseMultiTracking<MultiTrackingROS::Feature, MultiTrackingROS::Track>:
   visualization_->publishObjects(features);
 
   // UPDATING
-  const auto& tracks = multi_tracking_->update(features);
+  tracks_optional.emplace(multi_tracking_->update(features));
   visualization_->publishMultiTracker(multi_tracking_);
 
   visualization_->trigger();
   is_scan_updated_ = false;
 
-  return tracks;
+  return tracks_optional;
 }
 
 void MultiTrackingROS::laserScanCallback(const sensor_msgs::LaserScan::Ptr& laser_scan) {

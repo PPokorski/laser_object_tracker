@@ -68,7 +68,7 @@ class MultiTrackingROS {
 
   explicit MultiTrackingROS(int id, const ::ros::NodeHandle& node_handle);
 
-  tracking::BaseMultiTracking<Feature, Track>::Container update();
+  std::optional<tracking::BaseMultiTracking<Feature, Track>::Container> update();
 
   int getID() const {
     return id_;

@@ -300,6 +300,14 @@ class ObjectState : public MDL_STATE {
     return timestamp_;
   }
 
+  void setTimestamp(const ros::Time& timestamp) {
+    timestamp_ = timestamp;
+  }
+
+  void incrementTimestamp(double seconds) {
+    timestamp_ += ros::Duration(seconds);
+  }
+
   std::pair<const feature_extraction::features::Segment2D*,
             const feature_extraction::features::Segment2D*>
             updateReferencePointSource(const ReferencePointSource& reference_source);
@@ -488,7 +496,7 @@ class ObjectModel : public MODEL {
         target_confirmation_log_threshold_(std::log(target_confirmation_threshold)),
         hold_target_probability_(hold_target_probability),
         start_log_likelihood_(std::log(start_likelihood)),
-        skip_log_likelihood_(std::log(1 - detect_likelihood)),
+        skip_log_likelihood_(std::log(1.0 - detect_likelihood)),
         detect_log_likelihood_(std::log(detect_likelihood)),
         measurement_noise_covariance_(measurement_noise_covariance),
         initial_state_covariance_(initial_state_covariance),
@@ -507,13 +515,13 @@ class ObjectModel : public MODEL {
   }
 
   double getEndLogLikelihood(MDL_STATE *state) override {
-    auto object_state = dynamic_cast<ObjectState&>(*state);
+    auto& object_state = dynamic_cast<ObjectState&>(*state);
     // Likelihood cannot be 0.0, hence std::nextafter, when getContinueLikelihood returns 1.0
     return std::log(std::nextafter(1.0 - getContinueLikelihood(object_state), 1.0));
   }
 
   double getContinueLogLikelihood(MDL_STATE *state) override {
-    auto object_state = dynamic_cast<ObjectState&>(*state);
+    auto& object_state = dynamic_cast<ObjectState&>(*state);
     return std::log(getContinueLikelihood(object_state));
   }
 
@@ -574,6 +582,13 @@ class ObjectFalseAlarm : public DLISTnode {
         y_(report->getObject().getReferencePoint().x()),
         frame_number_(report->getFrameNumber()),
         corner_id_(report->getCornerId()) {}
+
+  double getX() const {
+    return x_;
+  }
+  double getY() const {
+    return y_;
+  }
 
  protected:
   MEMBERS_FOR_DLISTnode(ObjectFalseAlarm)

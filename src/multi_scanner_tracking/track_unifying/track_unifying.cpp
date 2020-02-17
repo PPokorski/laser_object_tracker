@@ -38,18 +38,24 @@ namespace track_unifying {
 TrackUnifying::TrackUnifying(double angle_threshold, double distance_threshold)
     : angle_threshold_(angle_threshold), distance_threshold_(distance_threshold) {}
 
-std::vector<tracking::ObjectTrack> TrackUnifying::unifyTracks(const std::map<int, Tracks>& tracks) {
+std::vector<tracking::ObjectTrack> TrackUnifying::unifyTracks(const std::map<int, std::optional<Tracks>>& tracks) {
   for (const auto& id_tracks : tracks) {
-    for (const auto& track : id_tracks.second) {
-      if (tracks_sources_.right.count(TrackSource{id_tracks.first, track.id_}) == 0) {
-        tracks_sources_.insert({current_id_++, {id_tracks.first, track.id_}});
+    if (id_tracks.second) {
+      for (const auto& track : id_tracks.second.value()) {
+        if (tracks_sources_.right.count(TrackSource{id_tracks.first, track.id_}) == 0) {
+          tracks_sources_.insert({current_id_++, {id_tracks.first, track.id_}});
+        }
       }
     }
   }
 
   for (auto it_1 = tracks.begin(); it_1 != tracks.end(); ++it_1) {
-    for (auto it_2 = std::next(it_1); it_2 != tracks.end(); ++it_2) {
-      unifySourcePair(*it_1, *it_2);
+    if (it_1->second) {
+      for (auto it_2 = std::next(it_1); it_2 != tracks.end(); ++it_2) {
+        if (it_2->second) {
+          unifySourcePair({it_1->first, it_1->second.value()}, {it_2->first, it_2->second.value()});
+        }
+      }
     }
   }
 
@@ -60,16 +66,19 @@ std::vector<tracking::ObjectTrack> TrackUnifying::unifyTracks(const std::map<int
     auto it_end = tracks_sources_.project_up(left_it_end);
     Tracks filtered_tracks;
     for (; it != it_end;) {
-      auto& track = tracks.at(it->right.tracker_id);
-      auto track_it = findTrackByID(track, it->right.track_id);
+      const auto& track_optional = tracks.at(it->right.tracker_id);
       auto current_it = it++; // Set "it" to next position
-      if (track_it != track.end()) {
-        filtered_tracks.push_back(*track_it);
-      } else {
-        if (tracks_sources_.left.count(id) == 1) {
-          eraseTrack(id);
+      if (track_optional) {
+        const auto& track = track_optional.value();
+        auto track_it = findTrackByID(track, current_it->right.track_id);
+        if (track_it != track.end()) {
+          filtered_tracks.push_back(*track_it);
+        } else {
+          if (tracks_sources_.left.count(id) == 1) {
+            eraseTrack(id);
+          }
+          tracks_sources_.erase(current_it);
         }
-        tracks_sources_.erase(current_it);
       }
     }
 
@@ -87,8 +96,8 @@ std::vector<tracking::ObjectTrack> TrackUnifying::unifyTracks(const std::map<int
   return tracks_;
 }
 
-void TrackUnifying::unifySourcePair(const std::pair<int, Tracks>& lhs,
-                                    const std::pair<int, Tracks>& rhs) {
+void TrackUnifying::unifySourcePair(const std::pair<int, const Tracks&>& lhs,
+                                    const std::pair<int, const Tracks&>& rhs) {
   for (auto it_1 = lhs.second.begin(); it_1 != lhs.second.end(); ++it_1) {
     for (auto it_2 = rhs.second.begin(); it_2 != rhs.second.end(); ++it_2) {
       if (tracksOverlap(*it_1, *it_2)) {

@@ -127,9 +127,9 @@ class Segment2D {
     return std::atan2(end_.y() - start_.y(), end_.x() - start_.x());
   }
 
-  Point2D start_, end_;
-  bool is_start_occluded_, is_end_occluded_;
-  double orientation_;
+  Point2D start_ {0.0, 0.0}, end_ {0.0, 0.0};
+  bool is_start_occluded_ = false, is_end_occluded_ = false;
+  double orientation_ = 0.0;
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;

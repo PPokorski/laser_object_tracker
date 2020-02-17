@@ -51,7 +51,7 @@ class TrackUnifying {
 
   TrackUnifying(double angle_threshold, double distance_threshold);
 
-  std::vector<tracking::ObjectTrack> unifyTracks(const std::map<int, Tracks>& tracks);
+  std::vector<tracking::ObjectTrack> unifyTracks(const std::map<int, std::optional<Tracks>>& tracks);
 
  private:
   struct TrackSource {
@@ -63,8 +63,8 @@ class TrackUnifying {
     int track_id;
   };
 
-  void unifySourcePair(const std::pair<int, Tracks>& lhs,
-                       const std::pair<int, Tracks>& rhs);
+  void unifySourcePair(const std::pair<int, const Tracks&>& lhs,
+                       const std::pair<int, const Tracks&>& rhs);
 
   bool tracksOverlap(const Track& lhs, const Track& rhs);
 
