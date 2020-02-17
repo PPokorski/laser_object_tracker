@@ -31,19 +31,84 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include <laser_object_tracker/filtering/occlusion_detection.hpp>
 #include "laser_object_tracker/tracking/ros/multi_tracking_ros.hpp"
+
+#include "laser_object_tracker/filtering/occlusion_detection.hpp"
 
 namespace laser_object_tracker {
 namespace tracking {
 namespace ros {
+laser_object_tracker_msgs::TrackElement toROSMsg(const ObjectTrackElement& track_element, const std::string& frame) {
+  laser_object_tracker_msgs::TrackElement ros_track_element {};
+  ros_track_element.header.stamp = track_element.timestamp_;
+  ros_track_element.header.frame_id = frame;
+
+  ros_track_element.position.pose.position.x = track_element.position_.x();
+  ros_track_element.position.pose.position.y = track_element.position_.y();
+  ros_track_element.position.pose.orientation.w = 1.0;
+
+  Eigen::Matrix<double, 6, 6, Eigen::RowMajor> covariance = Eigen::Matrix<double, 6, 6, Eigen::RowMajor>::Zero();
+  covariance.topLeftCorner<2, 2>() = track_element.position_covariance_;
+  std::copy(covariance.data(), covariance.data() + covariance.size(), ros_track_element.position.covariance.data());
+
+  ros_track_element.velocity.twist.linear.x = track_element.velocity_.x();
+  ros_track_element.velocity.twist.linear.y = track_element.velocity_.y();
+  covariance.topLeftCorner<2, 2>() = track_element.velocity_covariance_;
+  std::copy(covariance.data(), covariance.data() + covariance.size(), ros_track_element.velocity.covariance.data());
+
+  ros_track_element.polygon.points.reserve(track_element.polyline_.size());
+  for (const auto& point : track_element.polyline_) {
+    geometry_msgs::Point32 polygon_point;
+    polygon_point.x = point.x();
+    polygon_point.y = point.y();
+    polygon_point.z = 0.0f;
+    ros_track_element.polygon.points.push_back(polygon_point);
+  }
+
+  return ros_track_element;
+}
+
+laser_object_tracker_msgs::Track toROSMsg(const ObjectTrack& track,
+                                          const ::ros::Time& stamp,
+                                          const std::string& frame) {
+  laser_object_tracker_msgs::Track ros_track {};
+  ros_track.header.stamp = stamp;
+  ros_track.header.frame_id = frame;
+
+  ros_track.id = track.id_;
+  ros_track.track.reserve(track.track_.size());
+  for (const auto& track_element : track.track_) {
+    ros_track.track.push_back(toROSMsg(track_element, frame));
+  }
+
+  return ros_track;
+}
+
+laser_object_tracker_msgs::TrackArray toROSMsg(const std::vector<ObjectTrack>& tracks,
+                                               const ::ros::Time& stamp,
+                                               const std::string& frame) {
+  laser_object_tracker_msgs::TrackArray ros_tracks {};
+  ros_tracks.header.stamp = stamp;
+  ros_tracks.header.frame_id = frame;
+
+  ros_tracks.tracks.reserve(tracks.size());
+  for (const auto& track : tracks) {
+    ros_tracks.tracks.push_back(toROSMsg(track, stamp, frame));
+  }
+
+  return ros_tracks;
+}
+
 MultiTrackingROS::MultiTrackingROS(int id, const ::ros::NodeHandle& node_handle)
   : id_(id),
     node_handle_(node_handle),
-    sub_laser_scan(node_handle_.subscribe("in_laser_scan/" + std::to_string(id_),
-                                          1,
-                                          &MultiTrackingROS::laserScanCallback,
-                                          this)),
+    sub_laser_scan_(node_handle_.subscribe("in_laser_scan/" + std::to_string(id_),
+                                           1,
+                                           &MultiTrackingROS::laserScanCallback,
+                                           this)),
+    pub_tracks_(node_handle_.advertise<laser_object_tracker_msgs::TrackArray>("out_tracks/" + std::to_string(id_),
+                                                                              1,
+                                                                              true)),
     is_scan_updated_(false),
     scan_fragment_factory_(),
     last_scan_fragment_(),
@@ -92,6 +157,7 @@ MultiTrackingROS::update() {
 
   // UPDATING
   tracks_optional.emplace(multi_tracking_->update(features));
+  pub_tracks_.publish(toROSMsg(*tracks_optional, last_scan_fragment_.getHeader().stamp, base_frame_));
   visualization_->publishMultiTracker(multi_tracking_);
 
   visualization_->trigger();

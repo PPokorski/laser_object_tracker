@@ -36,11 +36,13 @@
 namespace laser_object_tracker {
 namespace multi_scanner_tracking {
 namespace ros {
-MultiScannerTrackingROS::MultiScannerTrackingROS(const ::ros::NodeHandle& node_handle)
+MultiScannerTrackingROS::MultiScannerTrackingROS(::ros::NodeHandle& node_handle)
     : node_handle_(node_handle),
+      pub_tracks_(node_handle.advertise<laser_object_tracker_msgs::TrackArray>("out_tracks/unified", 1, true)),
       scanners_number_(getParam<int>(node_handle_, "scanners_number")),
       track_unifying_(getTrackUnifying(node_handle_)),
       visualization_(getVisualization(node_handle_)) {
+  getParam(node_handle_, "base_frame", base_frame_);
   ros_trackers_.reserve(scanners_number_);
   for (int i = 0; i < scanners_number_; ++i) {
     ros_trackers_.emplace_back(i, node_handle_);
@@ -56,6 +58,7 @@ void MultiScannerTrackingROS::update() {
   if (std::any_of(tracks.begin(), tracks.end(), [](const auto& id_track) {return id_track.second;})) {
     visualization_.clearMarkers();
     auto unified_tracks = track_unifying_.unifyTracks(tracks);
+    pub_tracks_.publish(tracking::ros::toROSMsg(unified_tracks, ::ros::Time::now(), base_frame_));
     visualization_.publishMultiTracker(unified_tracks);
     visualization_.trigger();
   }

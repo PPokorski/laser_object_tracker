@@ -48,7 +48,7 @@ namespace ros {
 
 class MultiScannerTrackingROS {
  public:
-  explicit MultiScannerTrackingROS(const ::ros::NodeHandle& node_handle);
+  explicit MultiScannerTrackingROS(::ros::NodeHandle& node_handle);
 
   void update();
 
@@ -59,8 +59,10 @@ class MultiScannerTrackingROS {
       ::ros::NodeHandle& node_handle);
 
   ::ros::NodeHandle node_handle_;
+  ::ros::Publisher pub_tracks_;
 
   int scanners_number_;
+  std::string base_frame_;
 
   std::vector<tracking::ros::MultiTrackingROS> ros_trackers_;
   track_unifying::TrackUnifying track_unifying_;

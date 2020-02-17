@@ -162,20 +162,60 @@ bool TrackUnifying::tracksOverlap(const TrackUnifying::Track& lhs, const TrackUn
 TrackUnifying::Track TrackUnifying::mergeTracks(const Tracks& tracks, int output_id) {
   std::vector<tracking::ObjectTrackElement> last_positions;
   last_positions.reserve(tracks.size());
+  size_t points_number = 0;
   for (const auto& track : tracks) {
     if (tracks.size() < 2 || track.track_.back().was_updated_) {
       last_positions.push_back(track.track_.back());
+      points_number += last_positions.back().polyline_.size();
     }
   }
 
   tracking::ObjectTrackElement output_position {};
-  for (const auto& position : last_positions) {
-    output_position.position_ += position.position_;
-    output_position.velocity_ += position.velocity_;
-  }
+  if (last_positions.size() == 1) {
+    output_position = last_positions.front();
+  } else {
+    std::vector<cv::Point2f> points;
+    points.reserve(points_number);
 
-  output_position.position_ /= last_positions.size();
-  output_position.velocity_ /= last_positions.size();
+    // Calculation of the product of n Multivariate Gaussian PDFs
+    // http://www.tina-vision.net/docs/memos/2003-003.pdf
+    Eigen::Matrix2d inverse_position_covariances_sum = Eigen::Matrix2d::Zero();
+    Eigen::Matrix2d inverse_velocity_covariances_sum = Eigen::Matrix2d::Zero();
+    Eigen::Matrix2d inverse_covariance;
+    for (const auto& position : last_positions) {
+      inverse_covariance = position.position_covariance_.inverse();
+      output_position.position_ += inverse_covariance * position.position_;
+      inverse_position_covariances_sum += inverse_covariance;
+
+      inverse_covariance = position.velocity_covariance_.inverse();
+      output_position.velocity_ += inverse_covariance * position.velocity_;
+      inverse_velocity_covariances_sum += inverse_covariance;
+
+      for (const auto& point : position.polyline_) {
+        points.emplace_back(point.x(), point.y());
+      }
+    }
+
+    // TODO Handle likelihood
+    output_position.timestamp_ = last_positions.front().timestamp_;
+    output_position.was_updated_ = true;  // Because if we have more than one track, then only updated are considered,
+    // see first for loop in the function
+    output_position.position_covariance_ = inverse_position_covariances_sum.inverse();
+    output_position.position_ = output_position.position_covariance_ * output_position.position_;
+
+    output_position.velocity_covariance_ = inverse_velocity_covariances_sum.inverse();
+    output_position.velocity_ = output_position.velocity_covariance_ * output_position.velocity_;
+
+    auto rectangle = cv::minAreaRect(points);
+    static constexpr int VERTICES_NUMBER = 4;
+    cv::Point2f points_ptr[VERTICES_NUMBER];
+    rectangle.points(points_ptr);
+    output_position.polyline_.resize(VERTICES_NUMBER);
+    for (int i = 0; i < VERTICES_NUMBER; ++i) {
+      output_position.polyline_.at(i).x() = points_ptr[i].x;
+      output_position.polyline_.at(i).y() = points_ptr[i].y;
+    }
+  }
 
   Track output_track;
   output_track.id_ = output_id;

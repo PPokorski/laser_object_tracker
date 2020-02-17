@@ -417,13 +417,13 @@ class ObjectState : public MDL_STATE {
 
   Eigen::Matrix2d getPositionCovarianceUpdated() const {
     Eigen::Matrix4d covariance;
-    cv::cv2eigen(kalman_filter_.statePost, covariance);
+    cv::cv2eigen(kalman_filter_.errorCovPost, covariance);
     return covariance.topLeftCorner<2, 2>();
   }
 
   Eigen::Matrix2d getPositionCovariancePredicted() const {
     Eigen::Matrix4d covariance;
-    cv::cv2eigen(kalman_filter_.statePre, covariance);
+    cv::cv2eigen(kalman_filter_.errorCovPre, covariance);
     return covariance.topLeftCorner<2, 2>();
   }
 
@@ -433,13 +433,13 @@ class ObjectState : public MDL_STATE {
 
   Eigen::Matrix2d getVelocityCovarianceUpdated() const {
     Eigen::Matrix4d covariance;
-    cv::cv2eigen(kalman_filter_.statePost, covariance);
+    cv::cv2eigen(kalman_filter_.errorCovPost, covariance);
     return covariance.bottomRightCorner<2, 2>();
   }
 
   Eigen::Matrix2d getVelocityCovariancePredicted() const {
     Eigen::Matrix4d covariance;
-    cv::cv2eigen(kalman_filter_.statePre, covariance);
+    cv::cv2eigen(kalman_filter_.errorCovPre, covariance);
     return covariance.bottomRightCorner<2, 2>();
   }
 

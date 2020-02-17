@@ -30,22 +30,22 @@ configureExternalProject(mht cmake/mht.cmake mht/include)
 find_package(OpenCV 3.4.1 REQUIRED)
 
 find_package(catkin REQUIRED COMPONENTS
-        roscpp
+        geometry_msgs
         laser_geometry
+        laser_object_tracker_msgs
         pcl_conversions
         pcl_ros
+        roscpp
         rviz_visual_tools
         sensor_msgs
         visualization_msgs)
 
-
 ## catkin specific configuration ##
 catkin_package(
         INCLUDE_DIRS include
-        #  LIBRARIES vb_range_to_laserscan
-        CATKIN_DEPENDS roscpp
-        #  DEPENDS system_lib
-)
+        #  LIBRARIES
+        CATKIN_DEPENDS roscpp)
+        #  DEPENDS system_lib )
 
 ###########
 ## Build ##

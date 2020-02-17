@@ -34,6 +34,8 @@
 #ifndef LASER_OBJECT_TRACKER_MULTI_TRACKER_ROS_HPP
 #define LASER_OBJECT_TRACKER_MULTI_TRACKER_ROS_HPP
 
+#include <laser_object_tracker_msgs/TrackArray.h>
+
 #include "laser_object_tracker/data_association/data_association.hpp"
 #include "laser_object_tracker/data_types/data_types.hpp"
 #include "laser_object_tracker/feature_extraction/feature_extraction.hpp"
@@ -61,6 +63,16 @@ T getParam(ros::NodeHandle& node_handle, const std::string& key) {
 
 namespace tracking {
 namespace ros {
+laser_object_tracker_msgs::TrackElement toROSMsg(const ObjectTrackElement& track_element, const std::string& frame);
+
+laser_object_tracker_msgs::Track toROSMsg(const ObjectTrack& track,
+                                          const ::ros::Time& stamp,
+                                          const std::string& frame);
+
+laser_object_tracker_msgs::TrackArray toROSMsg(const std::vector<ObjectTrack>& tracks,
+                                               const ::ros::Time& stamp,
+                                               const std::string& frame);
+
 class MultiTrackingROS {
  public:
   using Feature = feature_extraction::features::Object;
@@ -92,7 +104,8 @@ class MultiTrackingROS {
   int id_;
 
   ::ros::NodeHandle node_handle_;
-  ::ros::Subscriber sub_laser_scan;
+  ::ros::Subscriber sub_laser_scan_;
+  ::ros::Publisher pub_tracks_;
 
   std::string base_frame_;
   ::ros::Duration transform_wait_timeout_;
